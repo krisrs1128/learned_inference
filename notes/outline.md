@@ -23,20 +23,42 @@ II. Contributions
   B. We'll give a few practical approaches to deriving / aggregating features
   from images (known in ML, but not really statistics), and examine their
   appropriateness
-    1. Autoencoders
+  C. We'll examine how inference and interpretation works in this setting
+  D. We'll release all our beautiful code and singularity images
+  E. We may not be inventing anything that novel here, but we will share some
+     things we learned that no one in the world knows
+III. Methodology
+  A. Overview
+    1. Ambiguity of "features"
+      a. We have to learn them from the data, and our scientific expertise might
+      not be enough
+      b. You can often separate known vs. learned features
+    2. Ambiguity of "samples"
+      a. We have many cells within each sample
+      b. We have many blocks within a city
+      c. These boundaries are really sort of arbitrary: we're getting closer to
+      sensing the world as a continuous stochastic process
+  B. Dealing with feature ambiguity
+    1. We'll consider feature learning algorithms of increasing sophistication
+    2. Autoencoders
       a. For satellites and mibi, gives representation at granular level. Then,
          compare the density of cells / neighborhoods in different parts of
          autoencoder space, and use them as predictors in addition to the usual
          cell / neighborhood features.
-    2. tile2vec
+    3. tile2vec
       a. Same idea as autoencoders, but supposedly more suited towards mapping
-    3. CNNs
+    4. CNNs
       a. Analogy is supervised pca / partial least squares
       b. We can't learn features on the same sets we use to do inference
-    4. Graphs
+    5. Graphs
       a. For single-cell, this is how cell types are linked to one another
       b. For satellites, this is how different land types relate?
-  C. We'll examine how inference and interpretation works in this setting
+  C. Dealing with sample ambiguity
+    1. We aggregate features on the learned feature spaces + (partial)
+       reductions of the original feature space
+    2. We have a choice of how many subtiles to make in the learned space
+      a. There is a bias variance tradeoff going on here
+  D. Drawing inferences
     1. The main difference is that the features we learn may not be stable from
     one investigation to another.
       a. We'll check out whether we can at least correlate the feature subspaces
@@ -44,12 +66,13 @@ II. Contributions
       b. We'll see how the correlation between features really affects things
     2. We'll also compare with a "two-step" procedure that regresses onto the
     residuals from the non-image features
-  D. We'll release all our beautiful code and singularity images
-  E. We may not be inventing anything that novel here, but we will share some
-     things we learned that no one in the world knows
-III. Methodology
+    3. We'll want some new data on stability from different feature learning and
+       aggregation procedures
 IV. Simulation Experiments
-  A. 
+  A. Goal: Study the relative efficiency of different feature learning +
+  aggregation + selection strategies
+  B. Simulation Setup
+  C. Simulation Results
 V. Data Analysis
   A. Spatial Single-Cell
     1. Show survival prediction performance
@@ -72,3 +95,6 @@ VI. Discussion
        prediction
     3. But we haven't learned how to use those streams to draw better
        generalizable inferences in more sensitive contexts
+  C. We need to think of methods for working at several scales. The idea of
+  single-scale sampling is a bit naive. Our aggregation approach is something,
+  but lots of things unknown.
