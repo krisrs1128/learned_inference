@@ -1,0 +1,30 @@
+---
+title: 
+BiocStyle::html_document
+---
+
+```{r}
+library("ggplot2")
+theme_set(theme_bw() + theme(panel.grid=element_blank()))
+source("point_process.R")
+```
+
+```{r}
+x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
+probs <- relative_intensities(x, 4, nu = 1)
+mprobs <- melt(probs, id.vars = c("Var1", "Var2"))
+ggplot(mprobs) +
+  geom_tile(aes(x = Var1, y = Var2, fill=value)) +
+  facet_wrap(~variable)
+
+intensity <- matern_process(x, 1)
+z <- inhomogeous_process(1000, intensity)
+ggplot(intensity, aes(x = Var1, y = Var2, fill = z)) +
+  geom_tile()
+ggplot(data.frame(z)) +
+  geom_point(aes(x = X1, y = X2))
+
+marks <- mark_process(z, probs, tau = 10)
+ggplot(marks) +
+  geom_point(aes(x = X1, y = X2, col = mark))
+```
