@@ -4,6 +4,7 @@
 library("reshape2")
 library("MASS")
 library("ggplot2")
+library("dplyr")
 
 #' Simulate from a Matern Process
 #'
@@ -35,10 +36,6 @@ matern_kernel <- function(x, nu, alpha) {
 #' library("reshape2")
 #' x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
 #' probs <- relative_intensities(x, nu = 1)
-#' mprobs <- melt(probs, id.vars = c("Var1", "Var2"))
-#' ggplot(mprobs) +
-#'   geom_tile(aes(x = Var1, y = Var2, fill=value)) +
-#'   facet_wrap(~variable)
 #' @details #' See page 551 in SPATIAL AND SPATIO-TEMPORAL LOG-GAUSSIAN COX
 #'   PROCESSES
 relative_intensities <- function(x, K = 4, betas = NULL, ...) {
@@ -54,7 +51,7 @@ relative_intensities <- function(x, K = 4, betas = NULL, ...) {
   lambdas <- matrix(0, nrow(x), K)
   betas_mat <- t(replicate(nrow(x), betas))
   for (k in seq_len(K)) {
-    lambdas[, k] <- exp(-(betas_mat[, k] + processes[, k]))
+    lambdas[, k] <- exp(betas_mat[, k] + processes[, k])
   }
 
   probs <- t(apply(lambdas, 1, function(r) r / sum(r)))
@@ -63,24 +60,39 @@ relative_intensities <- function(x, K = 4, betas = NULL, ...) {
 
 #' Simulate an Inhomogeneous Poisson Process
 #'
-#' @examples
-#' probs <- relative_intensities(x, 3, nu = 1)
-#' intensity <- matern_process(x, 2)
-#' z <- inhomogeous_process(500, intensity)
-#' ggplot(intensity, aes(x = Var1, y = Var2, fill = z)) +
-#'   geom_tile()
-#' plot(z)
+#' We just thin out an ordinary poisson process.
 inhomogeous_process <- function(N0, intensity) {
   z <- matrix(runif(2 * N0), N0, 2)
   x <- as.matrix(intensity[, 1:2])
 
   sample_probs <- vector(length = N0)
-  weight <- sum(exp(intensity$z))
   max_z <- max(intensity$z)
-  for (i in seq_along(z)) {
-    dists <- rowSums((x - z[i]) ^ 2)
-    sample_probs[i] <- exp(intensity$z[which.min(dists)] - max_z)
+  ixs <- vector(length = N0)
+
+  for (i in seq_len(nrow(z))) {
+    diffs <- x - t(replicate(nrow(x), z[i, ]))
+    ixs[i] <- which.min(rowSums(diffs ^ 2))
+    sample_probs[i] <- exp(intensity$z[ixs[i]] - max_z)
   }
 
-  z[which(rbinom(N0, 1, prob=sample_probs) == 1), ]
+  keep_ix <- which(rbinom(N0, 1, prob=sample_probs) == 1)
+  z[keep_ix, ]
+}
+
+#' Mark an Inhomogeneous Poisson Process
+mark_process <- function(z, probs, tau=1) {
+  N <- nrow(z)
+  marks <- vector(length = N)
+
+  x <- as.matrix(probs[, 1:2])
+  K <- ncol(probs) - 2
+
+  for (i in seq_len(N)) {
+    diffs <- x - t(replicate(nrow(x), z[i, ]))
+    ix <- which.min(rowSums(diffs ^ 2))
+    p <- unlist(probs[ix, 2:ncol(probs)])
+    marks[i] <- rbinom(1, K - 1, p) # ignoring weighting for now
+  }
+
+  data.frame(z, mark = as.factor(1 + marks))
 }
