@@ -35,7 +35,7 @@ matern_kernel <- function(x, nu, alpha) {
 #' library("reshape2")
 #' x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
 #' probs <- relative_intensities(x, nu = 1)
-#' mprobs <- melt(data.frame(x, probs), id.vars = c("Var1", "Var2"))
+#' mprobs <- melt(probs, id.vars = c("Var1", "Var2"))
 #' ggplot(mprobs) +
 #'   geom_tile(aes(x = Var1, y = Var2, fill=value)) +
 #'   facet_wrap(~variable)
@@ -57,5 +57,30 @@ relative_intensities <- function(x, K = 4, betas = NULL, ...) {
     lambdas[, k] <- exp(-(betas_mat[, k] + processes[, k]))
   }
 
-  t(apply(lambdas, 1, function(r) r / sum(r)))
+  probs <- t(apply(lambdas, 1, function(r) r / sum(r)))
+  data.frame(x, probs)
+}
+
+#' Simulate an Inhomogeneous Poisson Process
+#'
+#' @examples
+#' probs <- relative_intensities(x, 3, nu = 1)
+#' intensity <- matern_process(x, 2)
+#' z <- inhomogeous_process(500, intensity)
+#' ggplot(intensity, aes(x = Var1, y = Var2, fill = z)) +
+#'   geom_tile()
+#' plot(z)
+inhomogeous_process <- function(N0, intensity) {
+  z <- matrix(runif(2 * N0), N0, 2)
+  x <- as.matrix(intensity[, 1:2])
+
+  sample_probs <- vector(length = N0)
+  weight <- sum(exp(intensity$z))
+  max_z <- max(intensity$z)
+  for (i in seq_along(z)) {
+    dists <- rowSums((x - z[i]) ^ 2)
+    sample_probs[i] <- exp(intensity$z[which.min(dists)] - max_z)
+  }
+
+  z[which(rbinom(N0, 1, prob=sample_probs) == 1), ]
 }
