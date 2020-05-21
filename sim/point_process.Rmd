@@ -23,10 +23,11 @@ First, we'll show how to simulate a single image.
 ```{r}
 x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
 intensity <- matern_process(x)
-z <- inhomogeous_process(1000, intensity)
+z <- inhomogeneous_process(1000, intensity)
 ggplot() +
   geom_tile(aes(x = Var1, y = Var2, fill = z), intensity) +
-  geom_point(mapping = aes(x = X1, y = X2), data.frame(z), col = "red")
+  geom_point(mapping = aes(x = X1, y = X2), data.frame(z), col = "red") +
+  coord_fixed()
 
 probs <- relative_intensities(x, 4, nu = 1)
 mprobs <- melt(probs, id.vars = c("Var1", "Var2"))
@@ -35,24 +36,93 @@ marks <- mark_process(z, probs, tau = 1) %>%
 ggplot() +
   geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
   geom_point(aes(x = X1, y = X2, col = mark), marks) +
-  facet_wrap(~ variable)
+  facet_wrap(~ variable) +
+  coord_fixed()
 ```
 
 Now, let's think about how we want to link the parameters of image generation to
-something like a survival time.
+something like a survival time. This is a specification of all the parameters.
 
 ```{r}
+x <- expand.grid(seq(0.1, 1, 0.1), seq(0.1, 1, 0.1))
 beta_r <- c(-0.5, 0, 0.5)
-alpha_r <- 1 # bandwidth of the relative processes (higher is rougher)
-eta_r <- 1 # smoothness of the relative intensity functions
-alpha <- 0.1 # bandwidth of the overall process
-tau <- 0.2 # temperature for the marking (0 -> uniform, inf -> hard assignment)
-n_original <- 5e3
+nu_r <- 1 # smoothness of the relative intensity functions (higher is smoother)
+alpha_r <- 0.5 # bandwidth of the relative processes (higher is smoother)
+nu <- 2 # smoothness of the overall process
+alpha <- 2 # bandwidth of the overall process
+tau <- 1 # temperature for the marking (0 -> uniform, inf -> hard assignment)
+n_original <- 1000
 ```
 
 ```{r}
-intensity <- matern_process(x, eta, alpha)
-z <- inhomogeneous_process(n_original)
-probs <- relative_intensities(x, betas = beta_r, eta = eta_r, alpha = alpha_r)
-marks <- mark_process(z, probs, tau)
+result <- sim_wrapper(nu, alpha, beta_r, nu_r, alpha_r, tau)
+marks <- result$marks %>%
+  mutate(variable = paste0("X", mark))
+mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
+ggplot() +
+  geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
+  geom_point(aes(x = X1, y = X2, col = mark), marks) +
+  facet_wrap(~ variable) +
+  coord_fixed()
+```
+
+# Simulating Images
+
+We've sanity checked what all the images look like, when we vary the simulation
+parameters. Let's have a way of relating these parameters to an ``outcome''
+associated with each image "look." We'll make these assumptions,
+
+* More mixing between cell types is associated with better outcomes
+* Less uniform distribution in cell densities is associated with worse outcomes.
+* More of the first cell type is better for outcomes, more of the other two is bad.
+
+In particular, we'll make up this equation, for some hypothetical outcome y,
+
+y =  (beta_r[1] - beta_r[2] - beta_r[3]) / 3 + (nu_r + alpha_r + nu + alpha) / 4 - tau + noise
+
+so that the signs are in the intuitive direction and so that no one group of
+terms dominates. We'll consider modulating the noise level to gauge the
+sensitivity of different approaches.
+
+We'll generate the parameters according to t and gamma distributions (though
+they won't be too wild), depending on whether they are allowed to be negative.
+
+```{r}
+n_images <- 200
+beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
+  matrix(ncol = 3)
+nu_r <- rgamma(n_images, 3, 3)
+alpha_r <- rgamma(n_images, 3, 3)
+nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
+alpha <- rgamma(n_images, 5, 3)
+tau <- rbeta(n_images, 1.5, 1.5)
+
+# simulate the response
+eps <- 0.1
+X <- cbind(beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau)
+y <- X %*% c(1, -1, -1, 1, 1, 1, 1, -1) + rnorm(n_images, 0, eps)
+```
+
+Now we can simulate all the images.
+
+```{r}
+for (i in seq_len(n_images)) {
+  result <- sim_wrapper(
+    nu[i],
+    alpha[i],
+    beta_r[i, ],
+    nu_r[i],
+    alpha_r[i],
+    tau[i]
+  )
+
+  marks <- result$marks %>%
+    mutate(variable = paste0("X", mark))
+  mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
+  ggplot() +
+    geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
+    geom_point(aes(x = X1, y = X2, col = mark), marks) +
+    facet_wrap(~ variable) +
+    coord_fixed()
+}
 ```

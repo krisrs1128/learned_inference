@@ -42,6 +42,8 @@ matern_kernel <- function(x, nu, alpha) {
 relative_intensities <- function(x, K = 4, betas = NULL, ...) {
   if (is.null(betas)) {
     betas <- rnorm(K, 0, 0.5)
+  } else {
+    K <- length(betas)
   }
 
   processes <- matrix(0, nrow(x), K)
@@ -62,7 +64,7 @@ relative_intensities <- function(x, K = 4, betas = NULL, ...) {
 #' Simulate an Inhomogeneous Poisson Process
 #'
 #' We just thin out an ordinary poisson process.
-inhomogeous_process <- function(N0, intensity) {
+inhomogeneous_process <- function(N0, intensity) {
   z <- matrix(runif(2 * N0), N0, 2)
   x <- as.matrix(intensity[, 1:2])
 
@@ -97,4 +99,13 @@ mark_process <- function(z, probs, tau=1) {
   }
 
   data.frame(z, mark = as.factor(marks))
+}
+
+#' Helper to Wrap Simulation
+sim_wrapper <- function(nu, alpha, beta_r, nu_r, alpha_r, tau) {
+  intensity <- matern_process(x, nu, alpha)
+  z <- inhomogeneous_process(n_original, intensity)
+  probs <- relative_intensities(x, betas = beta_r, nu = nu_r, alpha = alpha_r)
+  marks <- mark_process(z, probs, tau)
+  list(intensity = intensity, z = z, probs = probs, marks = marks)
 }
