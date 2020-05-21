@@ -1,5 +1,5 @@
 ---
-title: 
+title:
 BiocStyle::html_document
 ---
 
@@ -7,24 +7,52 @@ BiocStyle::html_document
 library("ggplot2")
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
 source("point_process.R")
+scale_x_continuous <- function(...) {
+  ggplot2::scale_x_continuous(..., expand = c(0, 0))
+}
+scale_y_continuous <- function(...) {
+  ggplot2::scale_y_continuous(..., expand = c(0, 0))
+}
+scale_fill_continuous <- function(...) {
+  ggplot2::scale_fill_continuous(..., low="white", high="black")
+}
 ```
+
+First, we'll show how to simulate a single image.
 
 ```{r}
 x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
+intensity <- matern_process(x)
+z <- inhomogeous_process(1000, intensity)
+ggplot() +
+  geom_tile(aes(x = Var1, y = Var2, fill = z), intensity) +
+  geom_point(mapping = aes(x = X1, y = X2), data.frame(z), col = "red")
+
 probs <- relative_intensities(x, 4, nu = 1)
 mprobs <- melt(probs, id.vars = c("Var1", "Var2"))
-ggplot(mprobs) +
-  geom_tile(aes(x = Var1, y = Var2, fill=value)) +
-  facet_wrap(~variable)
+marks <- mark_process(z, probs, tau = 1) %>%
+  mutate(variable = paste0("X", mark))
+ggplot() +
+  geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
+  geom_point(aes(x = X1, y = X2, col = mark), marks) +
+  facet_wrap(~ variable)
+```
 
-intensity <- matern_process(x, 1)
-z <- inhomogeous_process(1000, intensity)
-ggplot(intensity, aes(x = Var1, y = Var2, fill = z)) +
-  geom_tile()
-ggplot(data.frame(z)) +
-  geom_point(aes(x = X1, y = X2))
+Now, let's think about how we want to link the parameters of image generation to
+something like a survival time.
 
-marks <- mark_process(z, probs, tau = 10)
-ggplot(marks) +
-  geom_point(aes(x = X1, y = X2, col = mark))
+```{r}
+beta_r <- c(-0.5, 0, 0.5)
+alpha_r <- 1 # bandwidth of the relative processes (higher is rougher)
+eta_r <- 1 # smoothness of the relative intensity functions
+alpha <- 0.1 # bandwidth of the overall process
+tau <- 0.2 # temperature for the marking (0 -> uniform, inf -> hard assignment)
+n_original <- 5e3
+```
+
+```{r}
+intensity <- matern_process(x, eta, alpha)
+z <- inhomogeneous_process(n_original)
+probs <- relative_intensities(x, betas = beta_r, eta = eta_r, alpha = alpha_r)
+marks <- mark_process(z, probs, tau)
 ```
