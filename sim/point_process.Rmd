@@ -1,6 +1,5 @@
 ---
-title:
-BiocStyle::html_document
+title: Data Generation Mechanism
 ---
 
 ```{r}
@@ -51,11 +50,11 @@ alpha_r <- 0.5 # bandwidth of the relative processes (higher is smoother)
 nu <- 2 # smoothness of the overall process
 alpha <- 2 # bandwidth of the overall process
 tau <- 1 # temperature for the marking (0 -> uniform, inf -> hard assignment)
-n_original <- 1000
+lambdas <- c(200, 400, 800) # rate parameters in gamma controlling size
 ```
 
 ```{r}
-result <- sim_wrapper(nu, alpha, beta_r, nu_r, alpha_r, tau)
+result <- sim_wrapper(nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
 marks <- result$marks %>%
   mutate(variable = paste0("X", mark))
 mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
@@ -90,7 +89,7 @@ We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
-n_images <- 200
+n_images <- 20
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
 nu_r <- rgamma(n_images, 3, 3)
@@ -98,12 +97,12 @@ alpha_r <- rgamma(n_images, 3, 3)
 nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
 alpha <- rgamma(n_images, 5, 3)
 tau <- rbeta(n_images, 1.5, 1.5)
-lambdas <- runif(n_images * 3, 50, 150) %>%
+lambdas <- runif(n_images * 3, 200, 800) %>%
   matrix(ncol = 3)
 
 # simulate the response
 eps <- 0.1
-X <- cbind(beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau, (lambdas[, 1] - 50) / 100)
+X <- cbind(beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau, (lambdas[, 1] - 50) / 800)
 y <- X %*% c(1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
@@ -136,15 +135,22 @@ algorithm).
 
 ```{r}
 # maybe union instead of list?
-pts <- vector("list", nrow(marks))
+library("sf")
+library("raster")
+library("stars")
 
-for (i in seq_len(nrow(marks))) {
-  pt <- as.numeric(marks[i, c("X1", "X2")])
-  pts[i] <- st_point(pt) %>%
-    st_buffer(marks[i, "size"])
+pts <- vector("list", nlevels(marks$mark))
+for (i in seq_along(pts)) {
+  pts[[i]] <- marks %>%
+    filter(mark == levels(marks$mark)[i]) %>%
+    spatial_df
 }
 
-rasterize(pts[[1]])
+r <- list()
+for (i in seq_along(pts)) {
+  r[[i]] <- raster(pts[[i]], ncols=5000, nrows=5000, ext=extent(c(0, 1, 0, 1)))
+  r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
+}
 
-plot(do.call(rbind, pts))
+writeRaster(stack(r), "data/test2.tiff", overwrite=TRUE)
 ```

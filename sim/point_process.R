@@ -117,3 +117,14 @@ sim_wrapper <- function(nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas) {
   marks <- mark_process(z, probs, tau, lambdas)
   list(intensity = intensity, z = z, probs = probs, marks = marks)
 }
+
+spatial_df <- function(x) {
+  pts <- st_sfc(lapply(seq_along(x), function(x) st_geometrycollection()))
+
+  for (i in seq_len(nrow(x))) {
+    pt <- as.numeric(x[i, c("X1", "X2")])
+    pts[i] <- st_point(pt) %>%
+      st_buffer(x[i, "size"])
+  }
+  st_as_sf(pts)
+}
