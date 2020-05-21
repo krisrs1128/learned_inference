@@ -13,7 +13,7 @@ library("dplyr")
 #' process_df <- matern_process(x, 1, 1)
 #' ggplot(process_df) +
 #'  geom_tile(aes(x = Var1, y = Var2, fill = z))
-matern_process <- function(x, nu, alpha) {
+matern_process <- function(x, nu=1, alpha=1) {
   Sigma <- matern_kernel(x, nu, alpha)
   z <- mvrnorm(1, mu=rep(0, nrow(x)), Sigma)
   data.frame(x, z)
@@ -22,6 +22,7 @@ matern_process <- function(x, nu, alpha) {
 matern_kernel <- function(x, nu, alpha) {
   squared_dist <- dist(x) %>%
     as.matrix()
+  squared_dist <- squared_dist / alpha
 
   Sigma <- (1/((2 ^ (nu - 1)) * gamma(nu))) *
     (squared_dist ^ nu) *
@@ -90,9 +91,10 @@ mark_process <- function(z, probs, tau=1) {
   for (i in seq_len(N)) {
     diffs <- x - t(replicate(nrow(x), z[i, ]))
     ix <- which.min(rowSums(diffs ^ 2))
-    p <- unlist(probs[ix, 2:ncol(probs)])
-    marks[i] <- rbinom(1, K - 1, p) # ignoring weighting for now
+    p <- unlist(probs[ix, 3:ncol(probs)])
+    p <- p ^ tau / sum(p ^ tau)
+    marks[i] <- sample(seq_len(K), 1, prob = p)
   }
 
-  data.frame(z, mark = as.factor(1 + marks))
+  data.frame(z, mark = as.factor(marks))
 }
