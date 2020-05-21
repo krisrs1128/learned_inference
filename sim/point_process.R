@@ -83,22 +83,30 @@ inhomogeneous_process <- function(N0, intensity) {
 }
 
 #' Mark an Inhomogeneous Poisson Process
-mark_process <- function(z, probs, tau=1) {
+mark_process <- function(z, probs, tau=1, lambdas=NULL) {
   N <- nrow(z)
   marks <- vector(length = N)
+  sizes <- vector(length = N)
 
   x <- as.matrix(probs[, 1:2])
   K <- ncol(probs) - 2
 
+  # parameters of gamma size distn
+  if (is.null(lambdas)) {
+    lambdas <- seq(50, 150, length.out = K)
+  }
+
+  # simulate each cell
   for (i in seq_len(N)) {
     diffs <- x - t(replicate(nrow(x), z[i, ]))
     ix <- which.min(rowSums(diffs ^ 2))
     p <- unlist(probs[ix, 3:ncol(probs)])
     p <- p ^ tau / sum(p ^ tau)
     marks[i] <- sample(seq_len(K), 1, prob = p)
+    sizes[i] <- rgamma(1, shape = 5, rate = lambdas[marks[i]])
   }
 
-  data.frame(z, mark = as.factor(marks))
+  data.frame(z, mark = as.factor(marks), size = sizes)
 }
 
 #' Helper to Wrap Simulation

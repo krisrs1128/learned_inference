@@ -35,7 +35,7 @@ marks <- mark_process(z, probs, tau = 1) %>%
   mutate(variable = paste0("X", mark))
 ggplot() +
   geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-  geom_point(aes(x = X1, y = X2, col = mark), marks) +
+  geom_point(aes(x = X1, y = X2, col = mark, size=size), marks) +
   facet_wrap(~ variable) +
   coord_fixed()
 ```
@@ -61,9 +61,10 @@ marks <- result$marks %>%
 mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
 ggplot() +
   geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-  geom_point(aes(x = X1, y = X2, col = mark), marks) +
+  geom_point(aes(x = X1, y = X2, col = mark, size=size), marks) +
   facet_wrap(~ variable) +
-  coord_fixed()
+  coord_fixed() +
+  scale_radius(range = c(.1, 5))
 ```
 
 # Simulating Images
