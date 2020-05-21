@@ -76,16 +76,17 @@ associated with each image "look." We'll make these assumptions,
 * More mixing between cell types is associated with better outcomes
 * Less uniform distribution in cell densities is associated with worse outcomes.
 * More of the first cell type is better for outcomes, more of the other two is bad.
+* larger of the first cell type is better for outcomes
 
 In particular, we'll make up this equation, for some hypothetical outcome y,
 
-y =  (beta_r[1] - beta_r[2] - beta_r[3]) / 3 + (nu_r + alpha_r + nu + alpha) / 4 - tau + noise
+y =  (beta_r[1] - beta_r[2] - beta_r[3]) / 3 + (nu_r + alpha_r + nu + alpha) / 4 - tau + (lambdas[1] - 50) / 100 + noise
 
 so that the signs are in the intuitive direction and so that no one group of
 terms dominates. We'll consider modulating the noise level to gauge the
 sensitivity of different approaches.
 
-We'll generate the parameters according to t and gamma distributions (though
+We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
@@ -97,33 +98,36 @@ alpha_r <- rgamma(n_images, 3, 3)
 nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
 alpha <- rgamma(n_images, 5, 3)
 tau <- rbeta(n_images, 1.5, 1.5)
+lambdas <- runif(n_images * 3, 50, 150) %>%
+  matrix(ncol = 3)
 
 # simulate the response
 eps <- 0.1
-X <- cbind(beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau)
-y <- X %*% c(1, -1, -1, 1, 1, 1, 1, -1) + rnorm(n_images, 0, eps)
+X <- cbind(beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau, (lambdas[, 1] - 50) / 100)
+y <- X %*% c(1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
 ```
 
 Now we can simulate all the images.
 
 ```{r}
 for (i in seq_len(n_images)) {
-  result <- sim_wrapper(
-    nu[i],
-    alpha[i],
-    beta_r[i, ],
-    nu_r[i],
-    alpha_r[i],
-    tau[i]
-  )
+  result <- sim_wrapper(nu[i], alpha[i], beta_r[i, ], nu_r[i], alpha_r[i],
+                        tau[i], lambdas[i, ])
 
   marks <- result$marks %>%
     mutate(variable = paste0("X", mark))
   mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
   ggplot() +
     geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-    geom_point(aes(x = X1, y = X2, col = mark), marks) +
+    geom_point(aes(x = X1, y = X2, col = mark, size = size), marks) +
     facet_wrap(~ variable) +
-    coord_fixed()
+    coord_fixed() +
+    scale_radius(range = c(.1, 5))
 }
 ```
+
+## Extracting Rasters
+
+Now that we have images for any particular simulation configuration, we need to
+extract a multichannel raster (which will be input for the feature extraction
+algorithm).
