@@ -80,7 +80,7 @@ associated with each image "look." We'll make these assumptions,
 
 In particular, we'll make up this equation, for some hypothetical outcome y,
 
-y =  (beta_r[1] - beta_r[2] - beta_r[3]) / 3 + (nu_r + alpha_r + nu + alpha) / 4 - tau + (lambdas[1] - 50) / 100 + noise
+ 1y =  (beta_r[1] - beta_r[2] - beta_r[3]) / 3 + (nu_r + alpha_r + nu + alpha) / 4 - tau + (lambdas[1] - 50) / 100 + noise
 
 so that the signs are in the intuitive direction and so that no one group of
 terms dominates. We'll consider modulating the noise level to gauge the
@@ -105,6 +105,8 @@ lambdas <- runif(n_images * 3, 50, 150) %>%
 eps <- 0.1
 X <- cbind(beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau, (lambdas[, 1] - 50) / 100)
 y <- X %*% c(1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
+
+plot(X[, 8], y)
 ```
 
 Now we can simulate all the images.
@@ -131,3 +133,18 @@ for (i in seq_len(n_images)) {
 Now that we have images for any particular simulation configuration, we need to
 extract a multichannel raster (which will be input for the feature extraction
 algorithm).
+
+```{r}
+# maybe union instead of list?
+pts <- vector("list", nrow(marks))
+
+for (i in seq_len(nrow(marks))) {
+  pt <- as.numeric(marks[i, c("X1", "X2")])
+  pts[i] <- st_point(pt) %>%
+    st_buffer(marks[i, "size"])
+}
+
+rasterize(pts[[1]])
+
+plot(do.call(rbind, pts))
+```
