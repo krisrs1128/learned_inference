@@ -95,7 +95,7 @@ they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
 n_images <- 20
-n_original <- rnegbin(n_images, 5000, 10)
+n_original <- rnegbin(n_images, 2000, 10)
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
 nu_r <- rgamma(n_images, 3, 3)
@@ -141,8 +141,6 @@ extract a multichannel raster (which will be input for the feature extraction
 algorithm).
 
 ```{r}
-all_rasters <- list()
-
 for (j in seq_along(marks)) {
   pts <- vector("list", nlevels(marks[[j]]$mark))
   for (i in seq_along(pts)) {
@@ -157,13 +155,6 @@ for (j in seq_along(marks)) {
     r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
   }
 
-  all_rasters[[j]] <- r
+  writeRaster(stack(r), sprintf("data/image-%s.tiff", j), overwrite=TRUE)
 }
-```
-
-```{r, eval = F}
-for (i in seq_along(r)) {
-  writeRaster(stack(r[[i]]), sprintf("data/image-%s.tiff", i), overwrite=TRUE)
-}
-
 ```
