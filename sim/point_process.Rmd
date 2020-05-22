@@ -4,8 +4,12 @@ title: Data Generation Mechanism
 
 ```{r}
 library("ggplot2")
-theme_set(theme_bw() + theme(panel.grid=element_blank()))
+library("sf")
+library("raster")
+library("stars")
 source("point_process.R")
+
+theme_set(theme_bw() + theme(panel.grid=element_blank()))
 scale_x_continuous <- function(...) {
   ggplot2::scale_x_continuous(..., expand = c(0, 0))
 }
@@ -44,6 +48,7 @@ something like a survival time. This is a specification of all the parameters.
 
 ```{r}
 x <- expand.grid(seq(0.1, 1, 0.1), seq(0.1, 1, 0.1))
+n_original <- 5000 # number of points
 beta_r <- c(-0.5, 0, 0.5)
 nu_r <- 1 # smoothness of the relative intensity functions (higher is smoother)
 alpha_r <- 0.5 # bandwidth of the relative processes (higher is smoother)
@@ -54,7 +59,7 @@ lambdas <- c(200, 400, 800) # rate parameters in gamma controlling size
 ```
 
 ```{r}
-result <- sim_wrapper(nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
+result <- sim_wrapper(n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
 marks <- result$marks %>%
   mutate(variable = paste0("X", mark))
 mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
@@ -79,7 +84,7 @@ associated with each image "look." We'll make these assumptions,
 
 In particular, we'll make up this equation, for some hypothetical outcome y,
 
- 1y =  (beta_r[1] - beta_r[2] - beta_r[3]) / 3 + (nu_r + alpha_r + nu + alpha) / 4 - tau + (lambdas[1] - 50) / 100 + noise
+ y =  (beta_r[1] - beta_r[2] - beta_r[3]) / 3 + (nu_r + alpha_r + nu + alpha) / 4 - tau + (lambdas[1] - 50) / 100 + noise
 
 so that the signs are in the intuitive direction and so that no one group of
 terms dominates. We'll consider modulating the noise level to gauge the
@@ -90,6 +95,7 @@ they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
 n_images <- 20
+n_original <- rnegbin(n_images, 5000, 10)
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
 nu_r <- rgamma(n_images, 3, 3)
@@ -102,8 +108,8 @@ lambdas <- runif(n_images * 3, 200, 800) %>%
 
 # simulate the response
 eps <- 0.1
-X <- cbind(beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau, (lambdas[, 1] - 50) / 800)
-y <- X %*% c(1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
+X <- cbind(n_original / 5000, beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha / 4, tau, (lambdas[, 1] - 50) / 800)
+y <- X %*% c(1, 1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
 ```
@@ -111,16 +117,17 @@ plot(X[, 8], y)
 Now we can simulate all the images.
 
 ```{r}
+marks <- list()
 for (i in seq_len(n_images)) {
-  result <- sim_wrapper(nu[i], alpha[i], beta_r[i, ], nu_r[i], alpha_r[i],
-                        tau[i], lambdas[i, ])
+  result <- sim_wrapper(n_original[i], nu[i], alpha[i], beta_r[i, ], nu_r[i],
+                        alpha_r[i], tau[i], lambdas[i, ])
 
-  marks <- result$marks %>%
+  marks[[i]] <- result$marks %>%
     mutate(variable = paste0("X", mark))
   mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
   ggplot() +
     geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-    geom_point(aes(x = X1, y = X2, col = mark, size = size), marks) +
+    geom_point(aes(x = X1, y = X2, col = mark, size = size), marks[[i]]) +
     facet_wrap(~ variable) +
     coord_fixed() +
     scale_radius(range = c(.1, 5))
@@ -134,23 +141,29 @@ extract a multichannel raster (which will be input for the feature extraction
 algorithm).
 
 ```{r}
-# maybe union instead of list?
-library("sf")
-library("raster")
-library("stars")
+all_rasters <- list()
 
-pts <- vector("list", nlevels(marks$mark))
-for (i in seq_along(pts)) {
-  pts[[i]] <- marks %>%
-    filter(mark == levels(marks$mark)[i]) %>%
-    spatial_df
+for (j in seq_along(marks)) {
+  pts <- vector("list", nlevels(marks[[j]]$mark))
+  for (i in seq_along(pts)) {
+    pts[[i]] <- marks[[j]] %>%
+      filter(mark == levels(marks[[j]]$mark)[i]) %>%
+      spatial_df
+  }
+
+  r <- list()
+  for (i in seq_along(pts)) {
+    r[[i]] <- raster(pts[[i]], ncols=500, nrows=500, ext=extent(c(0, 1, 0, 1)))
+    r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
+  }
+
+  all_rasters[[j]] <- r
+}
+```
+
+```{r, eval = F}
+for (i in seq_along(r)) {
+  writeRaster(stack(r[[i]]), sprintf("data/image-%s.tiff", i), overwrite=TRUE)
 }
 
-r <- list()
-for (i in seq_along(pts)) {
-  r[[i]] <- raster(pts[[i]], ncols=5000, nrows=5000, ext=extent(c(0, 1, 0, 1)))
-  r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
-}
-
-writeRaster(stack(r), "data/test2.tiff", overwrite=TRUE)
 ```

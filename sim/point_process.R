@@ -110,7 +110,7 @@ mark_process <- function(z, probs, tau=1, lambdas=NULL) {
 }
 
 #' Helper to Wrap Simulation
-sim_wrapper <- function(nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas) {
+sim_wrapper <- function(n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas) {
   intensity <- matern_process(x, nu, alpha)
   z <- inhomogeneous_process(n_original, intensity)
   probs <- relative_intensities(x, betas = beta_r, nu = nu_r, alpha = alpha_r)
@@ -128,3 +128,4 @@ spatial_df <- function(x) {
   }
   st_as_sf(pts)
 }
+
