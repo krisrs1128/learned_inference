@@ -112,6 +112,8 @@ X <- cbind(n_original / 5000, beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha /
 y <- X %*% c(1, 1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
+save(X, "data/X.rda")
+save(y, "data/y.rda")
 ```
 
 Now we can simulate all the images.
