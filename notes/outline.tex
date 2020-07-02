@@ -1,0 +1,114 @@
+\documentclass[11pt]{article}
+\usepackage{graphicx,amsmath,amssymb}
+\usepackage{outlines}
+\usepackage{enumitem}
+\setenumerate[1]{label=\Roman*.}
+\setenumerate[2]{label=\Alph*.}
+\setenumerate[3]{label=\roman*.}
+\setenumerate[4]{label=\alph*.}
+
+
+\title{}
+\author{Kris Sankaran}
+\begin{document}
+\maketitle
+
+
+\begin{outline}
+\1 Two concrete examples
+  \2 Collaborator thinks that mixing between cell types might be related to
+  survival in cancer
+  \2 Traditionally: derive features manually
+\1 Associated abstraction
+  \2 Problem definition
+  \2 High-level motivation
+\1 Related literature
+  \2 What have people done
+  \2 How is what we're doing different
+\1 Contributions of this paper
+\end{outline}
+
+\section{Background}
+
+\begin{outline}
+\1 Intro
+  \2 We lean on progress in both adaptive inference and feature learning
+
+\1 Stability
+
+\1 Feature learning
+  \2 Image autoencoders. Will encode on subtiles, and summarize using average
+  position of a random selection of subtiles.
+  \2 CNNs
+  \2 Graph autoencoders
+
+\1 Multiview
+  \2 RV coefficient
+  \2 Multi-CCA
+  \2 Nonlinear procrustes
+\end{outline}
+
+\section{Methodology}
+
+\begin{outline}
+\1 Establish notation
+\1 stability selection of learned features (abstraction)
+  \2 Working with a single feature extractor
+    \3 Referring to response
+      \4 Split the data
+      \4 Learn features using one half
+      \4 Perform stability selection on 
+    \3 Not referring to response
+      \4 Use full data
+      \4 Learn features on all, then perform selection
+  \2 Consolidating multiple feature extractors
+    \3 Limitation of previous approach: No sense of how reproducible the
+    previous feature learner will be
+    \3 Approach to consolidation
+      \4 Create bootstrap samples in advance (possibly after having split, if feature learning refers to all y)
+      \4 Learn feature learners using each of these datasets
+      \4 Consolidate the learned features using one of the multiview methods above
+      \4 Perform stability selection on entire dataset, after encoding using the consolidated features
+\1 Scalable approximations
+  \2 Challenge: learning each feature extractor can be very time consuming
+  \2 Approach using coresets
+  \2 Approach using fine-tuning
+  \2 Question for simulation: What is the computation / inference trade-off?
+\1 Visualization
+  \2 Single encoding
+    \3 Linked brushing to see the raw tiles associated with each type of encoding
+  \2 Consolidated features
+    \3 Project onto the multiview feature space, and look at point clouds. Each
+    cloud is from one sample, across all the bootstrap samples.
+\end{outline}
+
+\section{Simulations}
+
+\begin{outline}
+  \1 Validity (single learner)
+    \2 Data generation
+  \1 Power analysis (single learner)
+    \2 Somewhat complex, since features are not defined in advance
+    \2 How are features correlated with known factors of variation
+  \1 Stability across learners
+    \2 Validity
+    \2 Power
+  \1 Computational approximations
+    \2 How much less diverse are learned encodings?
+  \1 Algorithmic vs. data-driven randomness
+\end{outline}
+
+\section{Data analyses}
+
+
+\section{Discussion and conclusions}
+
+\begin{outline}
+  \1 Future work
+    \2 We usually have more than raw features. Interaction between raw and
+    original features?
+\end{outline}
+
+\bibliographystyle{plain}
+\bibliography{refs.bib}
+\end{document}
