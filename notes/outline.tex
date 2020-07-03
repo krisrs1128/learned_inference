@@ -13,26 +13,92 @@
 \begin{document}
 \maketitle
 
-
 \begin{outline}
 \1 Two concrete examples
   \2 Collaborator thinks that mixing between cell types might be related to
   survival in cancer
+  \2 Epidemiologist things that certain kinds of built environment / pollution
+  are associated with disease
   \2 Traditionally: derive features manually
+    \3 Define tumor invasion scores
+    \3 Label polluted sites
+  \2 Limits of traditional / the current frontier
+    \3 Manually extracting features is a time-consuming process
+    \3 Even if you had the patience to extract features, there is always the
+    potential that you are missing some features that are relevant
 \1 Associated abstraction
   \2 Problem definition
-  \2 High-level motivation
+    \3 We want to perform formal inference on features / encodings that were
+    algorithmically derived, where the encoder is treated as a black box
+      \4 $X \in \mathbb{R}^{n \times p}$ are original features. Likely
+      not meaningful, like the raw pixel values of an image, or vectorized
+      adjacency matrix of a graph.
+      \4 $z\left(\cdot; \hat{\eta}\left(X\right)\right) : \mathbb{R}^{p} \to
+      \mathbb{R}^{k}$ is a learned encoder, with parameters $\eta$. Possible to
+      also learn encoder in a supervised way: $\eta\left(X, y\right)$.
+      \4 Denote $z^{\ast} = z\left(x^{\ast}; \hat{\eta}\left(X\right)\right)$ or
+      $z_{i} = z\left(x_{i}; \hat{\eta}\left(X\right)\right)$ are encodings when
+      you apply to new (or old) data $x^\ast$ or $x_{i}$, respectively.
+      \4 We want something like a variable importance / stability score for the
+      $k^{th}$ coordinate of $z$, with respect to the outcome $y$ accounting for
+      the fact that $z$ was learned in a more complex way
+    \3 We want (something like?) FDR control guarantees: If we collected a new
+    dataset, and derived a new set of features from the blackbox, then the new
+    set of significant learned features should be very related to those learned
+    originally
+      \4 FDR control isn't the correct notion, however, because we can't simply
+      call a feature a false positive or false negative feature.
+      \4 To the extent that there is any signal relating $X$ to $y$, then each
+      of the coordinates of $z$ is likely to exhibit some relationship. As in
+      the PCA analogy, even when all the coordinates are in principle truly
+      related to the response, some of the coordinates are going to be targeted
+      for interpretation (people come up with a story to interpret different PCA
+      axes after the fact). We want to provide information that helps temper or
+      strengthen those downstream interpretations.
+    \3 We want to evaluate the stability of learned features from sample to
+    population
+  \2 Analogy: performing hypothesis tests on SPLS / PCA features derived from a
+  large table.
+    \3 The main difference now is that we'll work with features are derived from
+    more complex data, which are not amenable to linear reductions: images and
+    graphs.
 \1 Related literature
-  \2 What have people done
-  \2 How is what we're doing different
+  \2 What have people done, and how we're different
+    \3 We are linked to literature on interpretability of black box models
+      \4 Both they and us want to leverage newer, less structured in scientific
+      applications
+      \4 More than equipping people with new tools for interacting with
+      encodings, we want to provide mechanisms for inference
+      \4 It's important for us that we provide quantitative guidance about the
+      reproducibility of a (blackbox analysis)
+      \4 Example work: look up references in Raghu and Schmidt section 7
+    \3 We are linked to literature on computational inference in
+    high-dimensional models
+      \4 Our encoders will map raw data into high-dimensional spaces, and we
+      will need to screen lots of candidate features in order to find a few that
+      are really worth following-up on, scientifically
+      \4 Unlike that work, however, we're not going to assume that the features
+      are given to us
+      \4 Example work: stability selection, knockoffs, post-selection inference,
+      split sample inference
 \1 Contributions of this paper
+  \2 Warning vs. reassurance: the features we learn from run to another are
+  similar / different
+    \3 in case different, here are some ways you can consolidate them
+    \3 Quantification of scale of randomness driven by data vs. algorithm
+  \2 Familiarity vs. surprise: features used after trying to optimize some
+  metric aren't / are okay to use in inferential procedures
+  \2 Natural computational speedups, and their validity in this setting
+  (positive or negative result)
+  \2 Conceptual overview of an increasingly common task in statistical
+  analysis, along with implementation for others to follow along
 \end{outline}
 
 \section{Background}
 
 \begin{outline}
 \1 Intro
-  \2 We lean on progress in both adaptive inference and feature learning
+  \2 We lean on progress in both computational inference and feature learning
 
 \1 Stability
 
@@ -54,10 +120,12 @@
 \1 Establish notation
 \1 stability selection of learned features (abstraction)
   \2 Working with a single feature extractor
+    \3 This is not the focus of the paper, but it helps us ramp up to the real
+    problem
     \3 Referring to response
       \4 Split the data
       \4 Learn features using one half
-      \4 Perform stability selection on 
+      \4 In theory, could perform stability selection on 
     \3 Not referring to response
       \4 Use full data
       \4 Learn features on all, then perform selection
@@ -86,27 +154,80 @@
 
 \begin{outline}
   \1 Validity (single learner)
+    \2 Description of goals
     \2 Data generation
+    \2 Mention of which methods are applied, with what parameters
+    \2 Figure summarizing results
+      \3 Axes labels
+      \3 Marks?
+    \2 Takeaways from figure
   \1 Power analysis (single learner)
+    \2 Describe goal for this simulation
     \2 Somewhat complex, since features are not defined in advance
-    \2 How are features correlated with known factors of variation
+    \2 Approach: How are features correlated with known factors of variation
+    \2 Data generation
+    \2 Which methods are applied, with what parameters
+    \2 Figure summarizing results
+      \3 Axes labels
+      \3 Marks?
+      \3 panels?
+    \2 Takeaways from figure
   \1 Stability across learners
-    \2 Validity
-    \2 Power
+    \2 Describe goal for this simulation
+    \2 Simulation setup
+      \3 Explain similarities and differences from previous approach
+      \3 Validity
+      \3 Power
   \1 Computational approximations
-    \2 How much less diverse are learned encodings?
+    \2 Describe goal for this simulation
+    \2 How much less diverse are the learned encodings?
+    \2 Simulation setup
+    \2 Figure explaining results
+    \2 Takeaways from figure
   \1 Algorithmic vs. data-driven randomness
+    \2 Describe goal for this simulation
+    \2 Simulation setup
+    \2 Figure explaining results
+    \2 Takeaways from figure
 \end{outline}
 
 \section{Data analyses}
 
+\begin{outline}
+  \1 Introduction
+    \2 Want to illustrate these ideas on a real problem
+      \3 Link it back ot the illustrative example in the introduction
+    \2 Description of the data
+      \3 MIBI-TOF, or Imaging Cytof data
+  \1 Goal of the study
+    \2 How are spatial features related to survival in breast cancer?
+    \2 Notion of tumor invasion and heterogeneity
+\end{outline}
 
 \section{Discussion and conclusions}
 
 \begin{outline}
+  \1 Main takeaways from this work
+    \2 Warning vs. reassurance: the features we learn from run to another are
+    similar / different
+      \3 in case different, here are some ways you can consolidate them
+      \3 Quantification of scale of randomness driven by data vs. algorithm
+    \2 Familiarity vs. surprise: features used after trying to optimize some
+    metric aren't / are okay to use in inferential procedures
+    \2 Natural computational speedups, and their validity in this setting
+    (positive or negative result)
+    \2 Conceptual overview of an increasingly common task in statistical
+    analysis, along with implementation for others to follow along
   \1 Future work
     \2 We usually have more than raw features. Interaction between raw and
     original features?
+      \3 Example: For each cell, we may have a measure of the amounts of
+      different proteins or transcripts there
+    \2 How can you detect whether the bootstrapped feature extractors would be
+    similar or not, without running so much computation?
+    \2 How to deal with features learned at multiple scales? We can imagine
+    sampling new cells within the same person, new people within the same
+    population, ...
 \end{outline}
 
 \bibliographystyle{plain}
