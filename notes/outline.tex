@@ -98,20 +98,46 @@
 
 \begin{outline}
 \1 Intro
-  \2 We lean on progress in both computational inference and feature learning
+  \2 We draw on ideas from both computational inference and deep feature
+  learning
+  \2 Also leverage methods from multiview data analysis, since we're going to
+  want to measure the similarity of encoding functions across multiple runs
 
 \1 Stability
+  \2 references: Yu's Tukey Lecture, Stability Selection
 
 \1 Feature learning
   \2 Image autoencoders. Will encode on subtiles, and summarize using average
   position of a random selection of subtiles.
+    \3 references:
   \2 CNNs
+    \3 references:
   \2 Graph autoencoders
+    \3 references:
 
 \1 Multiview
+  \2 Why is it necessary?
+    \3 The encoders we learn from one sample to another will exhibit variation
+      \4 In fact, even on the same sample, we may learn different encoders, just
+      from randomness in the initialization
+    \3 Multiview methods give us a way of quantifying the variation across
+    learned functions
+  \2 Transition, these are the methods that we find useful
   \2 RV coefficient
+    \3 A measure of the similarity between two tables
+    \3 Write the formula, (tk this is a random guess)
+    \begin{align}
+      RV\left(X, Y\right) &= \frac{tr\left(X^T Y\right)}{\|X\|_{F}\|Y\|_{F}}
+    \end{align}
+    \3 geometric interpretation: it's the angle between tables, viewed in an
+    inner product space induced by the trace (?)
+    \3 reference: Holmes and Josse
   \2 Multi-CCA
+    \3 RV coefficient gives us a measure of similarity between encodings on a
+    pairwise level, but what can we say when there are many runs to compare?
   \2 Nonlinear procrustes
+    \3 Multi-CCA is nice, but what happens if linear correlation is too
+    restricted?
 \end{outline}
 
 \section{Methodology}
@@ -125,7 +151,7 @@
     \3 Referring to response
       \4 Split the data
       \4 Learn features using one half
-      \4 In theory, could perform stability selection on 
+      \4 In theory, could perform stability selection on
     \3 Not referring to response
       \4 Use full data
       \4 Learn features on all, then perform selection
