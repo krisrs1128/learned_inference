@@ -201,19 +201,19 @@
     \3 geometric interpretation: it's the angle between tables, viewed in an
     inner product space induced by the trace (?)
     \3 reference: Holmes and Josse
-  \2 Multi-CCA (via penalized matric decomposition)
+  \2 Multiple Factor Analysis
     \3 RV coefficient gives us a measure of similarity between encodings on a
     pairwise level, but what can we say when there are many runs to compare?
-    \3 Penalized matrix decomposition optimizes (tk?)
+    \3 Multiple factor analysis is the result of running PCA on
     \begin{align}
-      \arg\max_{u_1, \dots, u_{k}} \sum_{\text{pairs } u_{k}, u_{k^{\prime}}} \|X_{k}u_{k} - X_{k^{\prime}}u_{k^{\prime}}\|_{2}^{2} + \sum_{k = 1}^{K} \|u_{k}\|_{1} + \|u_{k}\|_{2}
+      \left[\frac{1}{\lambda_{1}\left(X^{1}\right)}X^{1} \vert \dots \vert \frac{1}{\lambda_{1}\left(X^{K}\right)}X^{K}\right]
     \end{align}
-    for the set of top scores, and then regresses out $u_{k}$'s from each table
-    and repeats the process to get the next set of scores.
-    \3 Interpretation: If the optimization objective is very low, then there is
-    a combination of features for each table that are all measuring the same
-    thing. It is a measure of (linear redundancy across all the tables.
-    \3 reference: Witten PMD
+    where $\lambda_{1}\left(X^{k}\right)$ is the largest eigenvalue of that table.
+    \3 Interpretation: If the eigenvalues of the MFA decay very quickly, then
+    all the tables are measuring essentially the same thing. Can look at the
+    canonical analysis to see whether any tables are capturing very different
+    tyeps of variation than the others.
+    \3 reference: Pages 2004.
 \end{outline}
 
 \section{Methodology}
@@ -326,7 +326,8 @@
       \begin{align}
         \mathbf{Z}_{1,1}^{\ast}, \dots, \mathbf{Z}_{1,B}^{\ast}
       \end{align}
-      \4 Consolidate the learned features using one of the multiview methods above
+      \4 Consolidate the learned features using MFA. This will give us a joint
+      subspace $V$ onto which we project each of the $Z^{\ast}$'s.
       \4 Perform stability selection on entire dataset, after encoding using the consolidated features
 \1 Algorithm Table
   \2 Inputs:
