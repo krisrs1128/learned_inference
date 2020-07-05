@@ -353,10 +353,38 @@
   \2 Step 1:
   \2 Step 2:
 \1 Scalable approximations
-  \2 Challenge: learning each feature extractor can be very time consuming
+  \2 Challenge: learning each feature extractor can be very time consuming, if
+  you're starting from scratch each time. We'll try to accelerate the bootstrap
+  computations by using an initial learned encodings to provide appropriate
+  hints to subsequent samples.
   \2 Approach using coresets
+    \3 All datasets contain redundant samples. We can potentially accelerate the
+    feature learning process but initially subsampling to a smaller set which
+    maintains the diversity of the original one / discards the redundant samples
+    of the initial one.
+    \3 To do this, we can leverage proposals from the coresets literature. The
+    main parameters are the coreset approximation quality and the coreset sample
+    size. Neither of these choices is obvious at the outset.
+    \3 In theory, we could do this coreset calculation in the raw feature space.
+    However, we expect the encoding space to be much more informative, so we
+    will learn an encoder once, before doing any bootstrapping.
+      \4 This results in $\tilde{\mathcal{D}}_{1}$, which will be much smaller
+      than $\mathcal{D}_{1}$.
+      \4 This is the data from from which the bootstrap samples are drawn.
   \2 Approach using fine-tuning
+    \3 An alternative is to work with the full data, but use fewer steps in
+    training, by initializing intelligently.
+    \3 We will learn an encoder using all the data once. This yields
+    $\hat{\theta}_{0}$.
+    \3 All bootstrap models are then (at least partially) initialized using
+    $\hat{\theta}_{0}$.
+    \3 The main tuning choice here is how much of the original parameter to copy
+    over into each of the bootstrap samples.
   \2 Question for simulation: What is the computation / inference trade-off?
+    \3 The fine-tuning approach in particular will potentially suffer from
+    lower diversity in the types of encodings that are learned. It may not
+    reflect the type of variation we would actually expect when we retrain an
+    encoder on a new dataset.
 \1 Visualization
   \2 Single encoding
     \3 Linked brushing to see the raw tiles associated with each type of encoding
