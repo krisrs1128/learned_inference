@@ -254,6 +254,10 @@
     \end{align}
     \4 In either case, we will often use the shorthand, $z_{i} = T\left(x_{i},
     \hat{\theta}\right)$.
+    \4 Traditionally, the extractor $T$ would have been constructed by hand. It
+    would be the max - min of a small time series (as in the ALS challenge
+    solution), or the amount of mixing between immune cells (as in cancer
+    example). We want to make use of new technology for learning these features.
     \4 Subsampling. It will often be impossible to encode the full object using
     a single convolutional pass. Instead, we will randomly sample subtiles and
     then encode these. Formally, encoder is a composition of patch extractors
@@ -263,22 +267,65 @@
       T\left(x; \theta\right) &= \frac{1}{R}\sum_{r = 1}^{R} G\left(P_{\epsilon_{r}}\left(x\right); \theta\right).
     \end{align}
 \1 stability selection of learned features (abstraction)
+  \2 Transition and overview. There are extensive literatures on learning good
+  mappings $T\left(x, \hat{\theta}\right)$ for all sorts of raw data $x$. Our
+  interest is in characterizing the stability of inferences that we draw from
+  the $T$'s.
+    \3 We'll begin by articulating an approach to drawing inference on learned
+    features that ignores the randomness induced by learning $\hat{\theta}$.
+    \3 With that subroutine defined, we'll propose a way to wrap it that allows
+    us to use stability selection to draw inference that accounts for randomness
+    across learning procedures
   \2 Working with a single feature extractor
-    \3 This is not the focus of the paper, but it helps us ramp up to the real
-    problem
-    \3 Referring to response
-      \4 Split the data
-      \4 Learn features using one half
-      \4 In theory, could perform stability selection on
-    \3 Not referring to response
-      \4 Use full data
-      \4 Learn features on all, then perform selection
+    \3 This are procedures for testing the significance of features learned
+    using a single encoding model.
+    \3 Supervised case: Referring to response
+      \4 Split the data. Defined disjoint union $\mathcal{D} = \mathcal{D}_{1} \cup \mathcal{D}_{2}$.
+      \4 Learn features using one half.
+      $\hat{\theta}\left(\mathbf{D}_{\mathcal{D}_{1}}\right)$. The optimization
+      routine will vary from architecture to architecture.
+      \4 Now evaluate $T\left(x^{\ast};
+      \hat{\theta}\left(\mathbf{X}_{\mathcal{D}_{1}}\right)\right)$ for each
+      $x^{\ast} \in \mathcal{D}_{2}$. Stack the results in to an encodings
+      matrix $\mathbf{Z}_{2} \in \mathbb{R}^{\left|\mathcal{D}_{1}\right| \times
+        K}$.
+      \4 Perform stability selection on $\mathbf{Z}_{2}, \mathbf{y}_{2}$, where
+      $y_{2}$ are the coordinates of $\mathbf{y}$ in $\mathcal{D}_{2}$. That is,
+      compute lasso trajectories for many subsamples and see which columns of
+      $\mathbf{Z}_{2}$ are most heavily correlated with $\mathbf{y}_{2}$.
+      \4 We'll examine in the simulation section what happens when you don't
+      split $\mathcal{D} = \mathcal{D}_{1} \cup \mathcal{D}_{2}$. (do the FDR
+      control properties of stability selection still hold?)
+    \3 Unuspervised case: Not referring to response
+      \4 Use full data. We can just learn $T\left(\cdot;
+      \hat{\theta}\left(\mathbf{X}_{\mathcal{D}}\right)\right)$
+      \4 Analogously, have $\mathbf{Z} \in \mathbb{R}^{\left|\mathcal{D}\right| \times K}$.
+      \4 Then, we perform stability selection on $\mathbf{y}, \mathbf{Z}$.
   \2 Consolidating multiple feature extractors
-    \3 Limitation of previous approach: No sense of how reproducible the
-    previous feature learner will be
-    \3 Approach to consolidation
-      \4 Create bootstrap samples in advance (possibly after having split, if feature learning refers to all y)
-      \4 Learn feature learners using each of these datasets
+    \3 Limitation of previous approach: No sense of how reproducible the feature
+    learner $T$ will be on a new training sample $\mathbf{X}^{\ast}$.
+    \3 Approach to consolidation. We will suppose that the features are learned
+    with reference to the response. This will be helpful for us in the
+    simulations, and it is the most general setup. However, we don't expect it
+    to be as common as the unsupervised case in practice.
+      \4 Split the data into two parts, $\mathcal{D} = \mathcal{D}_{1} \cup \mathcal{D}_{2}$.
+      \4 Create bootstrap samples by resampling from $\mathcal{D}_{1}$. That is,
+      let $\hat{F}_{\mathcal{D}_{1}}$ be the empirical distribution associated
+      with samples in $\mathcal{D}_{1}$, and draw,
+      \begin{align}
+        x_{i}^{b} \overset{i.i.d.}{\sim} \hat{F}_{\mathcal{D}_{1}}
+      \end{align}
+      for $i = 1, \dots, \left|\mathcal{D}_{1}\right|$ and $b = 1, \dots, B$.
+      Call the resulting datasets $\mathcal{D}_{1,1}^{\ast}, \dots,
+      \mathcal{D}_{1, B}^{\ast}$.
+      \4 Learn encoders using each of these datasets,
+      \begin{align}
+        \hat{\theta}^{\ast}\left(\mathbf{X}_{\mathcal{D}_{1,1}^{\ast}}\right), \dots, \hat{\theta}^{\ast}\left(\mathbf{X}_{\mathcal{D}_{1,B}^{\ast}}\right)
+      \end{align},
+      which induce bootstrapped encodings,
+      \begin{align}
+        \mathbf{Z}_{1,1}^{\ast}, \dots, \mathbf{Z}_{1,B}^{\ast}
+      \end{align}
       \4 Consolidate the learned features using one of the multiview methods above
       \4 Perform stability selection on entire dataset, after encoding using the consolidated features
 \1 Algorithm Table
