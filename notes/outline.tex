@@ -98,22 +98,83 @@
 
 \begin{outline}
 \1 Intro
-  \2 We draw on ideas from both computational inference and deep feature
-  learning
+  \2 We draw on ideas from both computational (high-dimensional?) inference and
+  deep feature learning
+    \3 We need methods from deep feature learning to come up with encodings for
+    graphs and images
+    \3 We need inferential methods to provide statistical guarantees for the
+    things we're learning from deep learning models
   \2 Also leverage methods from multiview data analysis, since we're going to
   want to measure the similarity of encoding functions across multiple runs
-
 \1 Stability
-  \2 references: Yu's Tukey Lecture, Stability Selection
-
+  \2 Can start with the Mosteller \& Tukey quote, about when you run an
+  experiment again, you should expect a different result
+  \2 Main algorithm we'll make use of is stability selection
+    \3 summary: method is a way of assigning significance to individual features
+    in a high-dimensional linear model
+    \3 $\lfloor \frac{n}{2} \rfloor$-sized subsamples are generated. For each, a
+    lasso is run across a grid of $\lambda$'s, and the coefficient paths are
+    obtained. Then, for each $\lambda$ and each coefficient, the fraction
+    $\Pi_{j}\left(\lambda\right)$ of subsamples that had nonzero $\beta_{j}$ for
+    that value of $\lambda$ are counted. You can plot these $\Pi_{j}$'s, to get
+    a sense of which coefficients are important.
+    \3 These $\Pi_{j}$'s satisfy certain FDR control properties. (tk, what were
+    they again? I think they're FDR control rates if you select all the
+    variables using that particular value of $\lambda$)
+  \2 references: Second Course in Regression, Yu's Bernoulli paper, Stability Selection
 \1 Feature learning
   \2 Image autoencoders. Will encode on subtiles, and summarize using average
   position of a random selection of subtiles.
-    \3 references:
+    \3 Autoencoder learns a lower-dimensional, nonlinear manifold with the
+    highest density, within the very high-dimensional (but mostly empty) image
+    space
+    \3 The objective function: $\|x - f\left(g\left(x +
+    u\right)\right)\|_{2}^{2}$, where $g : \mathbb{R}^{D} \to \mathbb{R}^{K}$
+    and $f: \mathbb{R}^{K} \to \mathbb{R}^{D}$ are convolutional networks and
+    $u$ is uniform or gaussian noise (with some appropriate scale parameter).
+    \3 $f$ and $g$ are usually only a few layers deep, and the whole system is
+    trained using (adaptive forms of) gradient descent.
+    \3 The added noise prevents the model from learning a simple identify
+    function, and allows the dimension of the latent space $K$ to be larger than
+    $D$ (in theory, though we won't be doing this).
+    \3 Convolution is a restriction over all possible linear layers. It creates
+    an ``inductive bias'' which is natural in image contexts, since you want to
+    be able to recognize particular features within an imagine, no matter where
+    they are situated.
+    \3 Analogy with PCA: If you replace the second term with $VV^{T}x$ and
+    optimize over orthogonal $V$, then this is just PCA.
+    \3 references: Vincent, Bengio, Dauphin's Denoising Autoencoders.
+    Representation learning survey.
   \2 CNNs
-    \3 references:
+    \3 Limits of autoencoders: Like PCA, DAEs are going to try to capture main
+    sources of variation, whether or not they are particularly associated with a
+    response of particular interest. (Can give usual PCA variation picture in a
+    supplement). This makes them suboptimal in situations where we have focused
+    attention on particular variables, like survival time or disease rate, as in
+    our motivating examples.
+    \3 Objective function: $\|y -
+    \sigma\left(f\left(x\right)^{T}\beta\right)\|_{2}^{2}$, where $f$ transforms
+    the raw image to the ``last layer's'' feature maps, and $\beta$ is the
+    regression coefficient for the last layer. $f$ is usually a composition of
+    learnable linear and nonlinear transformations.
+    \3 In the case that these supervised labels are available, convolutional
+    networks can be used to extract features from $x$ that are highly correlated
+    with these responses. A lot of deep learning, CNNs to RNNs, can be thought
+    of as building nonlinear feature extractors that represent the original $x$
+    (images, sequences, ...) in a new feature $z$ that is easily amenable to
+    linear methods in the final layer (logistic regression or svm).
+    \3 references: representation learning survey, deep learning book
   \2 Graph autoencoders
-    \3 references:
+    \3 The above two methods have proven widely useful across domains with
+    image-like data. However, many of the raw data we're interested in are
+    graphs, and it turns out that similar approaches can also be used for graph
+    data.
+    \3 Main conceptual leap is to replace usual image convolutions with graph
+    convolutions. From there, graph autoencoders and convolutional networks are
+    natural extensions.
+    \3 tk write down the objective function, for a particular approach.
+    \3 references: Graph deep learning survey. Diffusion wavelets.
+  \2 Representation space analysis
 
 \1 Multiview
   \2 Why is it necessary?
@@ -132,12 +193,21 @@
     \3 geometric interpretation: it's the angle between tables, viewed in an
     inner product space induced by the trace (?)
     \3 reference: Holmes and Josse
-  \2 Multi-CCA
+  \2 Multi-CCA (via penalized matric decomposition)
     \3 RV coefficient gives us a measure of similarity between encodings on a
     pairwise level, but what can we say when there are many runs to compare?
-  \2 Nonlinear procrustes
-    \3 Multi-CCA is nice, but what happens if linear correlation is too
-    restricted?
+    \3 Penalized matrix decomposition optimizes (tk?)
+    \begin{align}
+      \arg\max_{u_1, \dots, u_{k}} \sum_{\text{pairs } u_{k}, u_{k^{\prime}}} \|X_{k}u_{k} - X_{k^{\prime}}u_{k^{\prime}}\|_{2}^{2} + \sum_{k = 1}^{K} \|u_{k}\|_{1} + \|u_{k}\|_{2}
+    \end{align}
+    for the set of top scores, and then regresses out $u_{k}$'s from each table
+    and repeats the process to get the next set of scores.
+    \3 Interpretation: If the optimization objective is very low, then there is
+    a combination of features for each table that are all measuring the same
+    thing. It is a measure of (linear redundancy across all the tables.
+    \3 reference: Witten PMD
+\1 Visualization
+  \2 We can support interpretation through appropriate interactive visualization
 \end{outline}
 
 \section{Methodology}
@@ -251,6 +321,9 @@
       different proteins or transcripts there
     \2 How can you detect whether the bootstrapped feature extractors would be
     similar or not, without running so much computation?
+    \2 Nonlinear procrustes
+      \3 Multi-CCA is nice, but what happens if linear correlation is too
+      restricted?
     \2 How to deal with features learned at multiple scales? We can imagine
     sampling new cells within the same person, new people within the same
     population, ...
