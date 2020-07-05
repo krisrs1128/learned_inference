@@ -175,6 +175,14 @@
     \3 tk write down the objective function, for a particular approach.
     \3 references: Graph deep learning survey. Diffusion wavelets.
   \2 Representation space analysis
+    \3 We can use the encodings to navigate types of variation in image and
+    graph data
+    \3 A common heuristic is that ``deeper'' encodings represent higher-level
+    variation, across components
+    \3 It's particularly useful to make these encodings interactive, using
+    brushing, because the data (encodings) are high-dimensional. Each point is
+    associated with a high-dimensional object, not a one-dimensional attribute.
+    \3 tk give some reference; maybe Viegas team on tensorflow
 
 \1 Multiview
   \2 Why is it necessary?
@@ -206,14 +214,54 @@
     a combination of features for each table that are all measuring the same
     thing. It is a measure of (linear redundancy across all the tables.
     \3 reference: Witten PMD
-\1 Visualization
-  \2 We can support interpretation through appropriate interactive visualization
 \end{outline}
 
 \section{Methodology}
 
 \begin{outline}
-\1 Establish notation
+\1 Establish notation (tk: update the notation in intro to reflect this)
+  \2 Raw training data: $x_{1}, \dots, x_{n}$. Each $x_{i} \in \mathbb{R}^{D}$.
+  The full sample will be denoted by $\mathbf{X}_{mathcal{D}} \in \mathbb{R}^{n
+    \times D}$.
+    \3 $D$ can be the dimension of the unwrapped full image (2000 x 2000)
+    \3 $D$ can also be the dimension of the unwrapped full adjacency matrix
+  \2 Training response: $y_{1}, \dots, y_{n}$. Each $y_{i} \in \mathbb{R}$. Can
+  be directly extended to categorical $y_{i}$. The full training response will
+  be denoted $\mathbf{y}_{\mathcal{D}} \in \mathbb{R}^{n}$.
+  \2 A new sample of raw features and response will be written $\left(x,
+  y\right)$.
+  \3 Encoders
+    \4 All encoders are mappings of the form,
+      \begin{align}
+        T\left(x; \theta\right): \mathbb{R}^D \to \mathbb{R}^{K},
+      \end{align}
+      where $K$ is the dimension of the embedding space and $\theta$
+      parameterizes the mapping.
+    \4 Unsupervised encoders are learned without reference to $\mathbf{y}_{D}$.
+    Formally, this means that the parameters of the mapping are learned using
+    only $\mathbf{X}_{D}$, which we denote by
+    \begin{align}
+      \hat{\theta}\left(\mathbf{X}_{\mathcal{D}}\right)
+    \end{align},
+    in other words, the learned encoder has the form,
+    \begin{align}
+      T\left(x; \hat{\theta}\left(\mathbf{X}_{\mathcal{D}}\right)\right)
+    \end{align}
+    \4 Conversely, supervised encoders are allowed to refer to
+    $\mathbf{y}_{\mathcal{D}}$ when learning the encoding function,
+    \begin{align}
+      \hat{\theta}\left(\mathbf{X}_{\mathcal{D}}, \mathbf{y}_{\mathcal{D}}\right).
+    \end{align}
+    \4 In either case, we will often use the shorthand, $z_{i} = T\left(x_{i},
+    \hat{\theta}\right)$.
+    \4 Subsampling. It will often be impossible to encode the full object using
+    a single convolutional pass. Instead, we will randomly sample subtiles and
+    then encode these. Formally, encoder is a composition of patch extractors
+    feature extractors. The final encodings result from averaging the encodings on
+    individual subtiles,
+    \begin{align}
+      T\left(x; \theta\right) &= \frac{1}{R}\sum_{r = 1}^{R} G\left(P_{\epsilon_{r}}\left(x\right); \theta\right).
+    \end{align}
 \1 stability selection of learned features (abstraction)
   \2 Working with a single feature extractor
     \3 This is not the focus of the paper, but it helps us ramp up to the real
@@ -233,6 +281,11 @@
       \4 Learn feature learners using each of these datasets
       \4 Consolidate the learned features using one of the multiview methods above
       \4 Perform stability selection on entire dataset, after encoding using the consolidated features
+\1 Algorithm Table
+  \2 Inputs:
+  \2 Outputs:
+  \2 Step 1:
+  \2 Step 2:
 \1 Scalable approximations
   \2 Challenge: learning each feature extractor can be very time consuming
   \2 Approach using coresets
