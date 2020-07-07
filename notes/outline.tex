@@ -320,8 +320,8 @@
       \mathcal{D}_{1, B}^{\ast}$.
       \4 Learn encoders using each of these datasets,
       \begin{align}
-        \hat{\theta}^{\ast}\left(\mathbf{X}_{\mathcal{D}_{1,1}^{\ast}}\right), \dots, \hat{\theta}^{\ast}\left(\mathbf{X}_{\mathcal{D}_{1,B}^{\ast}}\right)
-      \end{align},
+        \hat{\theta}^{\ast}\left(\mathbf{X}_{\mathcal{D}_{1,1}^{\ast}}\right), \dots, \hat{\theta}^{\ast}\left(\mathbf{X}_{\mathcal{D}_{1,B}^{\ast}}\right),
+      \end{align}
       which induce bootstrapped encodings,
       \begin{align}
         \mathbf{Z}_{1,1}^{\ast}, \dots, \mathbf{Z}_{1,B}^{\ast}
@@ -412,6 +412,12 @@
       \3 We generate data that look like cells, but where particular
       characteristics of the cell ecosystem are associated with some
       survival-like response
+      \3 Simulation Parameters
+        \4 n = ? samples. Want to have enough samples to do inference, but not
+        so many that training takes forever
+        \4 image size = ?. Normal samples are ~ 2000 x 2000, but this is just a
+        simulation
+        \4 graph construction = geometric graph with radius = ?, knn with K = ?
       \3 Number of cells is poisson, locations are matern, and sizes are gamma
       distributed
         \4 Approach 1: parameters of these underlying distributions are used to
@@ -424,28 +430,102 @@
         2 is potentially easier to interpret, though, and it helps reinforce the
         analogy that feature learning algorithms are just automatic ways of
         deriving features that we might have constructed by hand
-    \2 Experimental summaries (to answer questions)
+    \2 Experimental measurements
+      \3 validity question
+        \4 Generate survival times completely independently of the simulated
+        images
+        \4 We first run the supervised and unsupervised, single feature extractor
+        protocol, from above, with and without splitting the data
+        \4 Look at the stability selection trajectories, and see whether any
+        seem significant
+      \3 power question
+        \4 Now generate survival times from the generated cell image properties,
+        with a few degrees of signal vs. noise (for ``easiest'' experiment, the
+        survival time is basically deterministic, given image properties).
+        \4 For each snr level, look at the stability selection curves, and see
+        whether any consistently stand out over the rest
+        \4 For each snr level, compute the covariance matrix between known and
+        estimated features. Sort estimated features by their stability selection
+        proportions at some fixed $\lambda$. Are the average / extreme
+        correlations concentrated, or diffuse, among significant variables?
     \2 Figure summarizing results
-      \3 Axes labels
-      \3 Marks?
-    \2 Takeaways from figure
-  \1 Power analysis (single learner)
-    \2 Describe goal for this simulation
-    \2 Somewhat complex, since features are not defined in advance
-    \2 Approach: How are features correlated with known factors of variation
-    \2 Data generation
-    \2 Which methods are applied, with what parameters
-    \2 Figure summarizing results
-      \3 Axes labels
-      \3 Marks?
-      \3 panels?
-    \2 Takeaways from figure
+      \3 Trellis of stability selection curves
+        \4 Bottom panels are when there is no sample splitting
+        \4 Top panels are when there is splitting
+        \4 SNR increases as you go from left panel to right. Leftmost panel
+        tells you how features look when there is no correlation with the
+        response.
+      \3 Trellis of known vs. learned feature covariances
+        \4 Columns (increasing SNR) are as before
+        \4 Each panel summarizes two covariance matrix. Above the diagonal are
+        covariances in the splitting case. Below the diagonal are covariances
+        before splitting.
+    \2 Takeaways from figure (guesses, for now)
+      \3 Some curves will appear significant in the no-splitting, no signal
+      situation, due only to overfitting
+      \3 No single learned feature captures any given known features. The known
+      feature will be reflected in many of the embedding dimensions.
+        \4 random idea, maybe should do some sort of ICA after embedding
+      \3 As SNR increases, more features are stability-selected, and the
+      correlations with known features increases.
   \1 Stability across learners
-    \2 Describe goal for this simulation
+    \2 Questions
+      \3 Do you get very different learned features due to random initialization
+      (same dataset)? Do you get very different learned features across
+      bootstrap samples (different-ish data)?
+      \3 Can we identify features that are learned across all the bootstrap
+      samples, after appropriate alignment? Can we quantify this property just
+      by using the multiCCA + stability band proposed above?
     \2 Simulation setup
-      \3 Explain similarities and differences from previous approach
-      \3 Validity
-      \3 Power
+      \3 Same data generation protocol as above. Maybe just save datasets from
+      above for this part.
+      \3 Experiment
+        \4 Fix datasets for a few SNRs, and rerun the feature learning algos
+        with different initializations (seeds). Otherwise exactly the same.
+        \4 From the same SNRs, bootstrap many datasets, and rerun feature
+        learning across bootstraps.
+        \4 Align the learned feature sets using the multiCCA approach described
+        above. For each of those aligned feature sets $u_{\cdotb}$, compute
+        lasso trajectories. Idea is that if a given aligned feature is not
+        important, it will always be zero for most of the $\lambda$'s.
+      \3 Experiment parameters
+        \4 How many bootstrap samples? Will probably be a lot of compute, so
+        let's start with $\sim 20$, and see whether people complain later
+        \4 How many runs with the same initialization?
+        \4 Which of the SNR levels from above? Probably don't want to do more
+        than ``none, medium, high''
+      \3 Summaries and figures
+        \4 (Repeat for both initialization and bootstrap experiments, maybe as
+        different rows in the same overall figure)
+        \4 Stability selection bands: take the quartiles of the trajectories for
+        each feature, and use that to construct a band. Min and max can be
+        whiskers extending from the band (or something).
+        \4 Whiskers analog of covariance matrices: Each panel is a different
+        aligned feature $u_{j}$. Along rows, give known features. Show the
+        correlation of the current feature across all the known features, for
+        each of the bootstrap samples (the same bootstrap sample can be linked
+        by a long curve, like parallel coordinates). Deliberate choose a few
+        panels that are more or less ``important,'' according to either
+        trajectory or correlation measures.
+        \4 Scatterplots: Pick a couple pairs of important / unimportant aligned
+        dimensions, according to the trajectories above. Arrange these pairs as
+        scatterplot axes in a grid. Create small stars for each sample, where
+        the spokes point to different bootstrap samples (projected into the
+        aligned space).
+      \3 Takeaways
+        \4 Do the bands get much narrower / stars get smaller when you fix the
+        dataset? That would indicate that randomness across datasets is really
+        important, and you learn quite different feature extractors.
+        \4 Are some significant features more stable than others? There are two
+        senses in which this might be the case -- the lasso trajectories might
+        be consistently at the top, or the projection into multiCCA scores might
+        be very tight.
+        \4 Is the correlation between aligned features and known features much
+        worse than the non-aligned features? If so, that motivates more work on
+        the alignment piece.
+        \4 Can we conjecture / guarantee any control properties based on the
+        bands, when there is no signal? Are most of the bands intersecting $y =
+        0$?
   \1 Computational approximations
     \2 Describe goal for this simulation
       \3 Full, coresets, and fine-tuning, which approach is fastest while being
