@@ -396,10 +396,35 @@
 \section{Simulations}
 
 \begin{outline}
-  \1 Validity (single learner)
-    \2 Description of goals
-    \2 Data generation
-    \2 Mention of which methods are applied, with what parameters
+  \1 Approaches with a single feature extractor
+    \2 Questions
+      \3 How bad is the type I error rate when you don't first split the data,
+      before learning the encoding?
+        \4 If very bad, then this is an important warning
+        \4 If not bad, this is surprising behavior, and is worth follow-up
+        investigation, because it could allow us to use more data
+      \3 To what extent do we recover the known sources of variation, and is the
+      recovery much better in supervised approaches?
+        \4 To what extent are the correlations ``spread out'' across many
+        different embedding dimensions? To what extent are separate sources
+        concentrated in a few dimensions?
+    \2 Data generation mechanism
+      \3 We generate data that look like cells, but where particular
+      characteristics of the cell ecosystem are associated with some
+      survival-like response
+      \3 Number of cells is poisson, locations are matern, and sizes are gamma
+      distributed
+        \4 Approach 1: parameters of these underlying distributions are used to
+        simulate survival times
+        \4 Approach 2: new statistics (density, mixing across different scales,
+        moments of cell sizes) are computed from these images, which are then
+        used to simulate survival times
+        \4 Approach 1 is nice because everything that's varying across the
+        images is directly captured by the generative model parameters. Approach
+        2 is potentially easier to interpret, though, and it helps reinforce the
+        analogy that feature learning algorithms are just automatic ways of
+        deriving features that we might have constructed by hand
+    \2 Experimental summaries (to answer questions)
     \2 Figure summarizing results
       \3 Axes labels
       \3 Marks?
