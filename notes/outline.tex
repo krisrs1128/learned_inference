@@ -1,12 +1,12 @@
 \documentclass[11pt]{article}
+\usepackage{fullpage}
 \usepackage{graphicx,amsmath,amssymb}
-\usepackage{outlines}
-\usepackage{enumitem}
+\usepackage{outlines, natbib}
+\usepackage{enumitem, url}
 \setenumerate[1]{label=\Roman*.}
 \setenumerate[2]{label=\Alph*.}
 \setenumerate[3]{label=\roman*.}
 \setenumerate[4]{label=\alph*.}
-
 
 \title{}
 \author{Kris Sankaran}
@@ -27,41 +27,44 @@
     \3 Even if you had the patience to extract features, there is always the
     potential that you are missing some features that are relevant
 \1 Associated abstraction
+  \2 Analogy: performing hypothesis tests on SPLS / PCA features derived from a
+  large table \citep{rao1955estimation, elguero1988confidence}.
+    \3 The main difference now is that we'll work with features are derived from
+    more complex data, which are not amenable to linear reductions: images and
+    graphs.
   \2 Problem definition
     \3 We want to perform formal inference on features / encodings that were
     algorithmically derived, where the encoder is treated as a black box
-      \4 $X \in \mathbb{R}^{n \times p}$ are original features. Likely
+      \4 $\mathbf{X} \in \mathbb{R}^{n \times D}$ are original features. Likely
       not meaningful, like the raw pixel values of an image, or vectorized
       adjacency matrix of a graph.
-      \4 $z\left(\cdot; \hat{\eta}\left(X\right)\right) : \mathbb{R}^{p} \to
-      \mathbb{R}^{k}$ is a learned encoder, with parameters $\eta$. Possible to
-      also learn encoder in a supervised way: $\eta\left(X, y\right)$.
-      \4 Denote $z^{\ast} = z\left(x^{\ast}; \hat{\eta}\left(X\right)\right)$ or
-      $z_{i} = z\left(x_{i}; \hat{\eta}\left(X\right)\right)$ are encodings when
-      you apply to new (or old) data $x^\ast$ or $x_{i}$, respectively.
-      \4 We want something like a variable importance / stability score for the
-      $k^{th}$ coordinate of $z$, with respect to the outcome $y$ accounting for
-      the fact that $z$ was learned in a more complex way
-    \3 We want (something like?) FDR control guarantees: If we collected a new
+      \4 $T\left(\cdot; \hat{\theta}\left(\mathbf{X}\right)\right) :
+      \mathbb{R}^{D} \to \mathbb{R}^{K}$ is a learned encoder, with parameters
+      $\theta$. Possible to also learn encoder in a supervised way:
+      $\theta\left(\mathbf{X}, \mathbf{y}\right)$.
+      \4 Denote $z^{\ast} = T\left(x^{\ast};
+      \hat{\theta}\left(\mathbf{X}\right)\right)$ or $z_{i} = T\left(x_{i};
+      \hat{\theta}\left(\mathbf{X}\right)\right)$ are encodings when you apply
+      to new (or old) data $x^\ast$ or $x_{i}$, respectively.
+      \4 We want an importance + stability score for the $k^{th}$ coordinate of
+      $z$, with respect to the outcome $\mathbf{y}$ accounting for the fact that
+      $z$ was learned in a more complex way
+    \3 We want something like FDR control guarantees: If we collected a new
     dataset, and derived a new set of features from the blackbox, then the new
     set of significant learned features should be very related to those learned
     originally
       \4 FDR control isn't the correct notion, however, because we can't simply
       call a feature a false positive or false negative feature.
-      \4 To the extent that there is any signal relating $X$ to $y$, then each
-      of the coordinates of $z$ is likely to exhibit some relationship. As in
-      the PCA analogy, even when all the coordinates are in principle truly
-      related to the response, some of the coordinates are going to be targeted
-      for interpretation (people come up with a story to interpret different PCA
-      axes after the fact). We want to provide information that helps temper or
-      strengthen those downstream interpretations.
+      \4 To the extent that there is any signal relating $\mathbf{X}$ to
+      $\mathbf{y}$, then each of the coordinates of $z$ is likely to exhibit
+      some relationship. As in the PCA analogy, even when all the coordinates
+      are in principle truly related to the response, some of the coordinates
+      are going to be targeted for interpretation (people come up with a story
+      to interpret different PCA axes after the fact). We want to provide
+      information that helps temper or strengthen those downstream
+      interpretations.
     \3 We want to evaluate the stability of learned features from sample to
     population
-  \2 Analogy: performing hypothesis tests on SPLS / PCA features derived from a
-  large table.
-    \3 The main difference now is that we'll work with features are derived from
-    more complex data, which are not amenable to linear reductions: images and
-    graphs.
 \1 Related literature
   \2 What have people done, and how we're different
     \3 We are linked to literature on interpretability of black box models
@@ -71,7 +74,7 @@
       encodings, we want to provide mechanisms for inference
       \4 It's important for us that we provide quantitative guidance about the
       reproducibility of a (blackbox analysis)
-      \4 Example work: look up references in Raghu and Schmidt section 7
+      \4 Example work: look up references in \citep{raghu2020survey} section 7
     \3 We are linked to literature on computational inference in
     high-dimensional models
       \4 Our encoders will map raw data into high-dimensional spaces, and we
@@ -121,7 +124,7 @@
     \3 These $\Pi_{j}$'s satisfy certain FDR control properties. (tk, what were
     they again? I think they're FDR control rates if you select all the
     variables using that particular value of $\lambda$)
-  \2 references: Second Course in Regression, Yu's Bernoulli paper, Stability Selection
+  \2 references: \citep{mosteller1977data, yu2013stability, meinshausen2010stability}
 \1 Feature learning
   \2 Image autoencoders. Will encode on subtiles, and summarize using average
   position of a random selection of subtiles.
@@ -194,13 +197,13 @@
   \2 Transition, these are the methods that we find useful
   \2 RV coefficient
     \3 A measure of the similarity between two tables
-    \3 Write the formula, (tk this is a random guess)
+    \3 Write the formula,
     \begin{align}
-      RV\left(X, Y\right) &= \frac{tr\left(X^T Y\right)}{\|X\|_{F}\|Y\|_{F}}
+      RV\left(X, Y\right) &= \frac{\text{tr}\left(\Sigma_{XY}\Sigma_{YX}\right)}{\|\Sigma_{X}\|_{F}\|\Sigma_{Y}|_{F}}
     \end{align}
     \3 geometric interpretation: it's the angle between tables, viewed in an
     inner product space induced by the trace (?)
-    \3 reference: Holmes and Josse
+    \3 reference: \citep{josse2016measuring}
   \2 Multi-CCA (via penalized matric decomposition)
     \3 RV coefficient gives us a measure of similarity between encodings on a
     pairwise level, but what can we say when there are many runs to compare?
@@ -213,7 +216,7 @@
     \3 Interpretation: If the optimization objective is very low, then there is
     a combination of features for each table that are all measuring the same
     thing. It is a measure of (linear redundancy across all the tables.
-    \3 reference: Witten PMD
+    \3 reference: \citep{witten2009penalized}
 \end{outline}
 
 \section{Methodology}
@@ -485,7 +488,7 @@
         \4 From the same SNRs, bootstrap many datasets, and rerun feature
         learning across bootstraps.
         \4 Align the learned feature sets using the multiCCA approach described
-        above. For each of those aligned feature sets $u_{\cdotb}$, compute
+        above. For each of those aligned feature sets $u_{\cdot b}$, compute
         lasso trajectories. Idea is that if a given aligned feature is not
         important, it will always be zero for most of the $\lambda$'s.
       \3 Experiment parameters
@@ -527,22 +530,53 @@
         bands, when there is no signal? Are most of the bands intersecting $y =
         0$?
   \1 Computational approximations
-    \2 Describe goal for this simulation
-      \3 Full, coresets, and fine-tuning, which approach is fastest while being
-      faithful to the variation we expect across encoders?
-    \2 How much less diverse are the learned encodings?
+    \2 Questions
+      \3 Between full training, coresets, and fine-tuning -- which approach is
+      fastest while being faithful to the variation we expect across encoders?
+      \3 How much less diverse are the learned encodings, when we use
+      fine-tuning from some initial network or work with a coreset subsample?
+      \3 Can you tell the approximation features apart from those that are
+      learned the ``proper'' full dataset, full training way?
+      \3 What kinds of diminishing returns should we expect? Is initializing the
+      first layer very beneficial, but the last not so important? Is reducing to
+      a coreset 10\% the original size even remotely a good idea? Ideally, would
+      have some order-of-magnitude rules of thumb to share with people wanting
+      to accelerate the bootstrapping process.
     \2 Simulation setup
-    \2 Figure explaining results
-      \3 Plot of time vs. multiCCA agreement across samples
-    \2 Takeaways from figure
-  \1 Algorithmic vs. data-driven randomness
-    \2 Describe goal for this simulation
-    \2 Simulation setup
-    \2 Figure explaining results
-    \2 Takeaways from figure
+      \3 Evaluation of fine-tuning
+        \4 Using the same bootstrap samples\footnote{Or, same original sample +
+          indices into each bootstrap sample, to save some disk space.}, try
+        learning full network / autoencoder once, and then use fine-tuning on
+        all the bootstrap samples
+        \4 Vary across amounts of fine-tuning and signal strengths
+        \4 Specifically: vary the number of layers that are initialized using
+        the fully trained model. We'll see how that affects the downstream
+        diversity of learned features. Signal strengths varied as before.
+        \4 At the end, apply the learned feature extractors to the full data.
+      \3 Evaluation of coresets
+        \4 First compute a coreset of an initial embedding, and then only
+        bootstrap the coreset
+        \4 Vary the size of the coreset
+    \2 Figures
+      \3 MultiCCA objective when aligning bootstrap samples vs. number of
+      fine-tuning layers. Simple dotplot. Color in the dots according to how
+      long it took for differnetly initialized models to converge.
+      \3 Richer version: For a few of the SNR levels, compute the stability
+      bands (or aligned feature scatterplots) using the full and fine-tuned
+      feature extractors.
+      \3 Can make each of those figures also for coresets, where we vary coreset
+      size rather than fine-tuning position.
+    \2 Takeaways from figures
+      \3 If you want faster approximations, should you try fine-tuning, or
+      coresets, or neither, or it depends?
+      \3 To get x\% of the original diversity in bootstrap samples, you should
+      fine-tune to $z$ layers at most or reduce to a coreset of size $n$ at
+      minimum
 \end{outline}
 
 \section{Data analyses}
+
+Definitely -- spatial proteomics data.
 
 \begin{outline}
   \1 Introduction
@@ -550,9 +584,33 @@
       \3 Link it back ot the illustrative example in the introduction
     \2 Description of the data
       \3 MIBI-TOF, or Imaging Cytof data
+      \3 \url{https://github.com/BIRSBiointegration/Hackathon/tree/master/sc-targeted-proteomics}
   \1 Goal of the study
     \2 How are spatial features related to survival in breast cancer?
     \2 Notion of tumor invasion and heterogeneity
+  \1 Apply bootstrap + stability approach
+    \2 Visualize the most important looking features from the graph methods
+    (graph cnn, graph embedding). How do graphs of the samples vary as you move
+    along that feature dimension?
+    \2 Compare a feature that is always important, and one that is important in
+    only some of the bootstrap samples
+    \2 Does this resonate biologically: do we recover something like tumor
+    heterogenity, cell size, ... something that can be backed up by published
+    wet-lab experiment
+\end{outline}
+
+Possibly -- remote sensing for public health data.
+
+\begin{outline}
+  \1 Introduction
+    \2 Want to make the case that this methodology is valuable across a range of
+    applications, not just a quirk of modern genomics.
+    \2 Will let us focus on graph methods in previous one, and image methods in
+    this.
+    \2 Other than that, it's similar (description of data, apply method, relate
+    to existing public health literature)
+    \2 What data to use? Ask Suzanne.
+      \3 Starting points: \url{https://arset.gsfc.nasa.gov/sites/default/files/airquality/Health16/week1_final.pdf}
 \end{outline}
 
 \section{Discussion and conclusions}
@@ -564,7 +622,10 @@
       \3 in case different, here are some ways you can consolidate them
       \3 Quantification of scale of randomness driven by data vs. algorithm
     \2 Familiarity vs. surprise: features used after trying to optimize some
-    metric aren't / are okay to use in inferential procedures
+    metric aren't / are okay to use in inferential procedures. If they are okay,
+    some idea of the how concentrated real phenomena are within a few features.
+    \2 Proposals for measuring the stability of learned features across
+    resampled data: aligning features and plotting bands.
     \2 Natural computational speedups, and their validity in this setting
     (positive or negative result)
     \2 Conceptual overview of an increasingly common task in statistical
