@@ -7,8 +7,7 @@ library("ggplot2")
 library("sf")
 library("raster")
 library("stars")
-source("sim/point_process.R")
-knitr::opts_knit$set(root.dir = Sys.getenv(c("ROOT_DIR")))
+source("point_process.R")
 
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
 scale_x_continuous <- function(...) {
@@ -25,7 +24,7 @@ scale_fill_continuous <- function(...) {
 First, we'll show how to simulate a single image.
 
 ```{r}
-x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
+x <- expand.grid(seq(0.05, 1, 0.05), seq(0.05, 1, 0.05))
 intensity <- matern_process(x)
 z <- inhomogeneous_process(1000, intensity)
 ggplot() +
@@ -48,15 +47,15 @@ Now, let's think about how we want to link the parameters of image generation to
 something like a survival time. This is a specification of all the parameters.
 
 ```{r}
-x <- expand.grid(seq(0.1, 1, 0.1), seq(0.1, 1, 0.1))
-n_original <- 5000 # number of points
+x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
+n_original <- 500 # number of points
 beta_r <- c(-0.5, 0, 0.5)
 nu_r <- 1 # smoothness of the relative intensity functions (higher is smoother)
 alpha_r <- 0.5 # bandwidth of the relative processes (higher is smoother)
 nu <- 2 # smoothness of the overall process
 alpha <- 2 # bandwidth of the overall process
-tau <- 1 # temperature for the marking (0 -> uniform, inf -> hard assignment)
-lambdas <- c(200, 400, 800) # rate parameters in gamma controlling size
+tau <- 1.5 # temperature for the marking (0 -> uniform, inf -> hard assignment)
+lambdas <- c(50, 100, 200) # rate parameters in gamma controlling size
 ```
 
 ```{r}
@@ -99,11 +98,13 @@ n_images <- 250
 n_original <- rnegbin(n_images, 2000, 10)
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
-nu_r <- rgamma(n_images, 3, 3)
-alpha_r <- rgamma(n_images, 3, 3)
+nu_r <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
+nu_r <- sample(nu_r)
+alpha_r <- rgamma(n_images, .5, .5)
 nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
 alpha <- rgamma(n_images, 5, 3)
-tau <- rbeta(n_images, 1.5, 1.5)
+tau <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
+tau <- sample(tau)
 lambdas <- runif(n_images * 3, 200, 800) %>%
   matrix(ncol = 3)
 
@@ -113,8 +114,8 @@ X <- cbind(n_original / 5000, beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha /
 y <- X %*% c(1, 1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
-save(X, file = "data/X.rda")
-save(y, file = "data/y.rda")
+save(X, file = "../data/X.rda")
+save(y, file = "../data/y.rda")
 ```
 
 Now we can simulate all the images.
@@ -128,7 +129,7 @@ for (i in seq_len(n_images)) {
   marks[[i]] <- result$marks %>%
     mutate(variable = paste0("X", mark))
   mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
-  ggplot() +
+  p <- ggplot() +
     geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
     geom_point(aes(x = X1, y = X2, col = mark, size = size), marks[[i]]) +
     facet_wrap(~ variable) +
@@ -158,6 +159,6 @@ for (j in seq_along(marks)) {
     r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
   }
 
-  writeRaster(stack(r), sprintf("data/image-%s.tiff", j), overwrite=TRUE)
+  writeRaster(stack(r), sprintf("../data/image-%s.tiff", j), overwrite=TRUE)
 }
 ```
