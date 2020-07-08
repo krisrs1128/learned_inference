@@ -7,7 +7,8 @@ library("ggplot2")
 library("sf")
 library("raster")
 library("stars")
-source("point_process.R")
+source("sim/point_process.R")
+knitr::opts_knit$set(root.dir = Sys.getenv(c("ROOT_DIR")))
 
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
 scale_x_continuous <- function(...) {
@@ -94,7 +95,7 @@ We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
-n_images <- 20
+n_images <- 250
 n_original <- rnegbin(n_images, 2000, 10)
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
@@ -112,8 +113,8 @@ X <- cbind(n_original / 5000, beta_r / 3, nu_r / 4, alpha_r / 4, nu / 4, alpha /
 y <- X %*% c(1, 1, -1, -1, 1, 1, 1, 1, -1, 1) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
-save(X, "data/X.rda")
-save(y, "data/y.rda")
+save(X, file = "data/X.rda")
+save(y, file = "data/y.rda")
 ```
 
 Now we can simulate all the images.
@@ -153,7 +154,7 @@ for (j in seq_along(marks)) {
 
   r <- list()
   for (i in seq_along(pts)) {
-    r[[i]] <- raster(pts[[i]], ncols=500, nrows=500, ext=extent(c(0, 1, 0, 1)))
+    r[[i]] <- raster(pts[[i]], ncols=512, nrows=512, ext=extent(c(0, 1, 0, 1)))
     r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
   }
 

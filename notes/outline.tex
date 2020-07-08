@@ -416,13 +416,13 @@
       characteristics of the cell ecosystem are associated with some
       survival-like response
       \3 Simulation Parameters
-        \4 n = ? samples. Want to have enough samples to do inference, but not
+        \4 n = 200 samples. Want to have enough samples to do inference, but not
         so many that training takes forever
-        \4 image size = ?. Normal samples are ~ 2000 x 2000, but this is just a
-        simulation
+        \4 image size = 512 x 512. Normal samples are ~ 2000 x 2000, but this is
+        just a simulation
         \4 graph construction = geometric graph with radius = ?, knn with K = ?
-      \3 Number of cells is poisson, locations are matern, and sizes are gamma
-      distributed
+      \3 Number of cells is poisson, types / locations are marked matern, and
+      sizes are gamma distributed
         \4 Approach 1: parameters of these underlying distributions are used to
         simulate survival times
         \4 Approach 2: new statistics (density, mixing across different scales,
@@ -433,6 +433,14 @@
         2 is potentially easier to interpret, though, and it helps reinforce the
         analogy that feature learning algorithms are just automatic ways of
         deriving features that we might have constructed by hand
+        \4 Reminders: matern process is gaussian process with matern covariance
+        function,
+        \begin{align}
+          C_{\nu}(\|x - y\|)=\sigma^{2} \frac{2^{1-\nu}}{\Gamma(\nu)}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\rho}\right)^{\nu} K_{\nu}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\rho}\right),
+        \end{align}
+        so $\rho$ acts like a bandwidth parameter, and $\nu$ controls the
+        roughness. We additionally have relative intensity functions to control
+        how much mixing happens between classes -- this is described in...
     \2 Experimental measurements
       \3 validity question
         \4 Generate survival times completely independently of the simulated
@@ -573,6 +581,14 @@
       fine-tune to $z$ layers at most or reduce to a coreset of size $n$ at
       minimum
 \end{outline}
+
+\begin{figure}
+  \includegraphics[width=0.8\textwidth]{figure/simulation_example}
+  \caption{Three random images selected from the simulation. Each cell is one
+    circle, and there are three classes (colors). The sizes, densities, class
+    proportions, and degree of mixing between cells is what determines
+    survival.}
+\end{figure}
 
 \section{Data analyses}
 
