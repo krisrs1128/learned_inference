@@ -10,6 +10,8 @@ from torch.utils.data import Dataset
 from joblib import Parallel, delayed
 import rasterio
 import numpy as np
+from PIL import Image
+
 
 def tiff_to_numpy(input_path, output_path):
     """
@@ -29,6 +31,18 @@ def convert_dir_numpy(input_dir, output_dir):
         print(f"converting {path}\t{i}/{len(paths)}")
         out_name = pathlib.Path(path).stem + ".npy"
         tiff_to_numpy(path, pathlib.Path(output_dir, out_name))
+
+
+def save_pngs(input_dir, output_dir):
+    """
+    Save arrays as pngs, for easier viewing
+    """
+    paths = list(pathlib.Path(input_dir).glob("*.npy"))
+    for i, path in enumerate(paths):
+        print(f"converting {path}\t{i}/{len(paths)}")
+        out_name = pathlib.Path(path).stem + ".png"
+        im = Image.fromarray((255 * np.load(path)).astype(np.uint8))
+        im.save(pathlib.Path(output_dir, out_name))
 
 
 def random_split(ids, split_ratio):
@@ -125,7 +139,8 @@ class RandomCrop():
 
 if __name__ == '__main__':
     data_dir = pathlib.Path(os.environ["ROOT_DIR"], "data")
-    # convert_dir_numpy(data_dir / "tiffs", data_dir / "npys")
+    convert_dir_numpy(data_dir / "tiffs", data_dir / "npys")
+    save_pngs(data_dir / "npys", data_dir / "pngs")
     paths = list((data_dir / "npys").glob("*.npy"))
     splits = random_split(paths, [0.8, .1, .1])
     reshuffle(splits, data_dir)
