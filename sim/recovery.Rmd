@@ -1,0 +1,37 @@
+---
+title: Recovery ability
+---
+
+```{r}
+library("ggplot2")
+library("readr")
+library("dplyr")
+library("stringr")
+```
+
+
+```{r}
+data_dir <- file.path("..", "data")
+z <- read_csv(file.path(data_dir, "features", "vae_100", "features.csv")) %>%
+  select(-X1) %>%
+  select(path, everything())
+y <- get(load(file.path(data_dir, "y.rda")))
+
+z <- z %>%
+  tidyr::drop_na() %>%
+  mutate(im_id = as.integer(str_match(z$path, "[0-9]+")))
+y_df <- y %>%
+  as.data.frame() %>%
+  rename(y = V1) %>%
+  mutate(im_id = row_number())
+
+zy <- z %>%
+  inner_join(y_df)
+
+hist(cor(as.matrix(zy[, 2:101]), zy$y), 20)
+
+
+library("glmnet")
+cv_res <- cv.glmnet(as.matrix(zy[, 2:101]), zy$y)
+plot(cv_res)
+```
