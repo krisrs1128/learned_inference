@@ -1,5 +1,8 @@
 """
 Train VAE on multichannel cell tiffs
+
+
+python3 -m sim.vae -c conf/train.yaml
 """
 import argparse
 import pathlib
@@ -10,7 +13,7 @@ from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
 from models.vae import VariationalAutoencoder
-import sim.data as dt
+from sim.data import RandomCrop, CellDataset
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -59,7 +62,7 @@ def losses(model, loader):
     """
     epoch_losses = []
 
-    for x in loader:
+    for x, _, _ in loader:
         x = x.to(device)
         with torch.no_grad():
             z_mean, z_log_var, _, decoded = model(x)
@@ -80,6 +83,6 @@ if __name__ == '__main__':
     # training
     model = VariationalAutoencoder(n_latent=opts.n_latent)
     optim = torch.optim.Adam(model.parameters(), lr=opts.lr)
-    cell_data = dt.CellDataset(opts.train_dir, dt.RandomCrop(96))
+    cell_data = CellDataset(opts.train_dir, pathlib.Path(opts.xy), RandomCrop(96))
     train_loader = DataLoader(cell_data, batch_size=opts.batch_size)
     train(model, optim, train_loader, opts)
