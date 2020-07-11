@@ -1,0 +1,7 @@
+n_epochs: 200
+n_latent: 100
+out_dir: "data/runs/vae_100/"
+train_dir: "data/train"
+save_every: 5
+batch_size: 64
+lr: 0.0001
