@@ -129,8 +129,8 @@ spatial_df <- function(x) {
   st_as_sf(pts)
 }
 
-save_raster <- function(marks, out_name) {
-  pts <- vector("list", nlevels(marks$mark))
+save_raster <- function(marks, out_name, n_channels=3) {
+  pts <- vector("list", n_channels)
   for (i in seq_along(pts)) {
     pts[[i]] <- marks %>%
       filter(mark == levels(marks$mark)[i]) %>%

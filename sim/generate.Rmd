@@ -10,6 +10,7 @@ library("readr")
 library("sf")
 library("stars")
 source("point_process.R")
+set.seed(123)
 
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
 scale_x_continuous <- function(...) {
