@@ -21,7 +21,7 @@ def save_encodings(loader, model, out_path):
     os.makedirs(out_path.stem, exist_ok=True)
 
     i = 0
-    for x in loader:
+    for x, y, img_path in loader:
         batch_size = len(x)
         mode = "w" if i == 0 else "a"
 
@@ -29,10 +29,11 @@ def save_encodings(loader, model, out_path):
             z_mean, _, _ = model.encode(x)
             z_mean = np.array(z_mean)
             z_df = pd.DataFrame(z_mean)
-            z_df["path"] = loader.dataset.img_files[i:(i + batch_size)]
+            z_df["path"] = img_path
+            y_df["y"] = y
             z_df.to_csv(out_path, mode=mode, header=(i == 0))
 
-        i += batch_size
+        i += 1
 
 
 if __name__ == '__main__':

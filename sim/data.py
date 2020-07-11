@@ -9,9 +9,10 @@ import torch
 from torch.utils.data import Dataset
 from joblib import Parallel, delayed
 import rasterio
+import pandas as pd
 import numpy as np
 from PIL import Image
-
+import pandas as pd
 
 def tiff_to_numpy(input_path, output_path):
     """
@@ -96,9 +97,15 @@ class CellDataset(Dataset):
     Dataset for working with tiffs of cells
     """
 
-    def __init__(self, input_dir, transform=None):
+    def __init__(self, input_dir, xy_path=None, transform=None):
         """Initialize dataset."""
         self.img_files = list(pathlib.Path(input_dir).glob("*npy"))
+
+        if xy_path:
+            self.xy = pd.read_csv(xy_path)
+        else:
+            self.xy = {"y": np.zeros(len(img_files))}
+
         self.transform = transform
 
     def __len__(self):
@@ -106,10 +113,12 @@ class CellDataset(Dataset):
 
     def __getitem__(self, i):
         img = np.load(self.img_files[i])
+        y = self.xy["y"][i]
+
         if self.transform:
             img = self.transform(img)
 
-        return torch.Tensor(img.transpose(2, 0, 1))
+        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), self.img_files[i]
 
 
 
