@@ -15,7 +15,7 @@ import os
 from torch.utils.data import DataLoader
 from models.vae import VariationalAutoencoder
 import sim.data as dt
-import pdb
+
 
 def save_encodings(loader, model, out_path):
     os.makedirs(out_path.stem, exist_ok=True)
@@ -30,7 +30,7 @@ def save_encodings(loader, model, out_path):
             z_mean = np.array(z_mean)
             z_df = pd.DataFrame(z_mean)
             z_df["path"] = loader.dataset.img_files[i:(i + batch_size)]
-            z_df.to_csv(out_path, mode=mode)
+            z_df.to_csv(out_path, mode=mode, header=(i == 0))
 
         i += batch_size
 
