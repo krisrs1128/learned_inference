@@ -4,6 +4,9 @@ Utilities for working with multichannel Tiffs
 import torch
 from torch.utils.data import Dataset
 import pathlib
+from joblib import Parallel, delayed
+from shutil import copyfile
+import random
 import rasterio
 import numpy as np
 import os
@@ -13,6 +16,7 @@ def tiff_to_numpy(input_path, output_path):
     img = imgf.read().transpose(1, 2, 0)
     np.save(str(output_path), img)
 
+
 def convert_dir_numpy(input_dir, output_dir):
     paths = list(pathlib.Path(input_dir).glob("*.tif"))
 
@@ -20,6 +24,53 @@ def convert_dir_numpy(input_dir, output_dir):
         print(f"converting {path}\t{i}/{len(paths)}")
         out_name = pathlib.Path(path).stem + ".npy"
         tiff_to_numpy(path, pathlib.Path(output_dir, out_name))
+
+
+def random_split(ids, split_ratio, **kwargs):
+    """
+    Randomly split a list of paths into train / dev / test
+    """
+    random.shuffle(ids)
+    sizes = len(ids) * np.array(split_ratio)
+    ix = [int(s) for s in np.cumsum(sizes)]
+    return {
+        "train": ids[: ix[0]],
+        "dev": ids[ix[0] : ix[1]],
+        "test": ids[ix[1] : ix[2]],
+    }
+
+
+def reshuffle(split_ids, output_dir="output/", n_cpu=3):
+    """
+    Reshuffle Data for Training
+
+    Given a dictionary specifying train / dev / test split, copy into train /
+    dev / test folders.
+    """
+    for split_type in split_ids:
+        path = pathlib.Path(output_dir, split_type)
+        os.makedirs(path, exist_ok=True)
+
+    target_locs = {}
+    for split_type in split_ids:
+        n_ids = len(split_ids[split_type])
+
+        def wrapper(i):
+            cur_locs = {}
+            print(f"shuffling image {i}")
+            source = split_ids[split_type][i]
+            target = pathlib.Path(
+                output_dir, split_type, os.path.basename(source)
+            ).resolve()
+            copyfile(source, target)
+            return target
+
+        para = Parallel(n_jobs=n_cpu)
+        target_locs[split_type] = para(delayed(wrapper)(i) for i in range(n_ids))
+        target_locs[split_type] = sum([], target_locs[split_type])
+
+    return target_locs
+
 
 
 class CellDataset(Dataset):
@@ -69,8 +120,8 @@ class RandomCrop(object):
 
 
 if __name__ == '__main__':
-    tiff_dir = pathlib.Path(os.environ["ROOT_DIR"], "data", "tiffs")
-    npy_dir = pathlib.Path(os.environ["ROOT_DIR"], "data", "npys")
-    convert_dir_numpy(tiff_dir, npy_dir)
-    data = CellDataset(npy_dir, dt.RandomCrop(64))
-    data[0]
+    data_dir = pathlib.Path(os.environ["ROOT_DIR"], "data")
+    # convert_dir_numpy(data_dir / "tiffs", data_dir / "npys")
+    paths = list((data_dir / "npys").glob("*.npy"))
+    splits = random_split(paths, [0.8, .1, .1])
+    reshuffle(splits, data_dir)
