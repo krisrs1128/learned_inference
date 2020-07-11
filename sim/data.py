@@ -1,32 +1,37 @@
 """
 Utilities for working with multichannel Tiffs
 """
+import pathlib
+import random
+import os
+from shutil import copyfile
 import torch
 from torch.utils.data import Dataset
-import pathlib
 from joblib import Parallel, delayed
-from shutil import copyfile
-import random
 import rasterio
 import numpy as np
-import os
 
 def tiff_to_numpy(input_path, output_path):
+    """
+    Save a tiff image as a numpy array
+    """
     imgf = rasterio.open(input_path)
     img = imgf.read().transpose(1, 2, 0)
     np.save(str(output_path), img)
 
 
 def convert_dir_numpy(input_dir, output_dir):
+    """
+    Wrap tiff_to_numpy over an entire directory
+    """
     paths = list(pathlib.Path(input_dir).glob("*.tif"))
-
     for i, path in enumerate(paths):
         print(f"converting {path}\t{i}/{len(paths)}")
         out_name = pathlib.Path(path).stem + ".npy"
         tiff_to_numpy(path, pathlib.Path(output_dir, out_name))
 
 
-def random_split(ids, split_ratio, **kwargs):
+def random_split(ids, split_ratio):
     """
     Randomly split a list of paths into train / dev / test
     """
@@ -56,7 +61,6 @@ def reshuffle(split_ids, output_dir="output/", n_cpu=3):
         n_ids = len(split_ids[split_type])
 
         def wrapper(i):
-            cur_locs = {}
             print(f"shuffling image {i}")
             source = split_ids[split_type][i]
             target = pathlib.Path(
@@ -95,7 +99,7 @@ class CellDataset(Dataset):
 
 
 
-class RandomCrop(object):
+class RandomCrop():
     """Crop randomly the image in a sample.
 
     Args:

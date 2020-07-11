@@ -3,19 +3,22 @@
 
 mostly copied from: https://github.com/rasbt/deeplearning-models/blob/master/pytorch_ipynb/autoencoder/ae-var.ipynb
 """
-import torch
-from torch import nn
-import pathlib
 import os
-import sim.data as dt
+import pathlib
+from torch import nn
 from torch.utils.data import DataLoader
+import torch
+import sim.data as dt
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class VariationalAutoencoder(torch.nn.Module):
+    """
+    Convolutional VAE, designed for 96 x 96 inputs
+    """
     def __init__(self, n_latent=100, negative_slope=0.0001):
         super(VariationalAutoencoder, self).__init__()
 
-        ### ENCODER
+        # encoder
         self.encoder = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=32, kernel_size=1, stride=1, padding=0),
             nn.LeakyReLU(negative_slope=negative_slope),
@@ -30,7 +33,7 @@ class VariationalAutoencoder(torch.nn.Module):
         self.z_mean = nn.Linear(256 * 6 * 6, n_latent)
         self.z_log_var = nn.Linear(256 * 6 * 6, n_latent)
 
-        ### DECODER
+        # decoder
         self.dec_linear = nn.Linear(n_latent, 256 * 6 * 6)
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=1, stride=1),
@@ -72,7 +75,6 @@ class VariationalAutoencoder(torch.nn.Module):
 if __name__ == '__main__':
     npy_dir = pathlib.Path(os.environ["ROOT_DIR"], "data", "npys")
     data = dt.CellDataset(npy_dir, dt.RandomCrop(96))
-
     vae = VariationalAutoencoder()
 
     loader = DataLoader(data, batch_size=32)
