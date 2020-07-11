@@ -1,8 +1,9 @@
 n_epochs: 150
 n_latent: 100
-out_dir: "data/runs/vae_100/"
+out_dir: "data/runs/vae_20200711/"
 train_dir: "data/train"
-features_dir: "data/features/vae_100/features.csv"
-save_every: 5
+features_dir: "data/features/vae_2020711/features.csv"
+xy: "data/Xy.csv"
+save_every: 10
 batch_size: 32
 lr: 0.001
