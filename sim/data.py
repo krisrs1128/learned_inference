@@ -1,5 +1,7 @@
 """
 Utilities for working with multichannel Tiffs
+
+python3 -m sim.data
 """
 import pathlib
 import random
@@ -20,6 +22,9 @@ def tiff_to_numpy(input_path, output_path):
     """
     imgf = rasterio.open(input_path)
     img = imgf.read().transpose(1, 2, 0)
+    if img.shape[2] != 3:
+        import pdb
+        pdb.set_trace()
     np.save(str(output_path), img)
 
 
@@ -118,8 +123,7 @@ class CellDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), self.img_files[i]
-
+        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), [str(self.img_files[i])]
 
 
 class RandomCrop():

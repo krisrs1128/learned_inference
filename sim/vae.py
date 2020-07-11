@@ -39,7 +39,7 @@ def train_epoch(model, loader, optim):
     Train model for a single epoch
     """
     epoch_loss = 0
-    for x in loader:
+    for x, _, _ in loader:
         # get loss
         x = x.to(device)
         z_mean, z_log_var, _, decoded = model(x)
