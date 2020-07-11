@@ -50,14 +50,14 @@ something like a survival time. This is a specification of all the parameters.
 
 ```{r}
 x <- expand.grid(seq(0.1, 1, 0.05), seq(0.1, 1, 0.05))
-n_original <- 150 # number of points
+n_original <- 100 # number of points
 beta_r <- c(-0.5, 0, 0.5)
 nu_r <- 1 # smoothness of the relative intensity functions (higher is smoother)
 alpha_r <- 0.5 # bandwidth of the relative processes (higher is smoother)
 nu <- 2 # smoothness of the overall process
 alpha <- 2 # bandwidth of the overall process
 tau <- 1.5 # temperature for the marking (0 -> uniform, inf -> hard assignment)
-lambdas <- c(50, 100, 200) # rate parameters in gamma controlling size
+lambdas <- c(20, 50, 100) # rate parameters in gamma controlling size
 ```
 
 ```{r}
@@ -96,8 +96,8 @@ We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
-n_images <- 1000
-n_original <- rnegbin(n_images, 1500, 3)
+n_images <- 100
+n_original <- rnegbin(n_images, 500, 5)
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
 nu_r <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
@@ -107,7 +107,7 @@ nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
 alpha <- rgamma(n_images, 5, 3)
 tau <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
 tau <- sample(tau)
-lambdas <- runif(n_images * 3, 100, 700) %>%
+lambdas <- runif(n_images * 3, 250, 800) %>%
   matrix(ncol = 3)
 
 # simulate the response
@@ -123,45 +123,15 @@ write_csv(data.frame(X = X, y = y), "../data/Xy.csv")
 Now we can simulate all the images.
 
 ```{r}
-marks <- list()
 for (i in seq_len(n_images)) {
   result <- sim_wrapper(n_original[i], nu[i], alpha[i], beta_r[i, ], nu_r[i],
                         alpha_r[i], tau[i], lambdas[i, ])
 
-  message(sprintf("simulating %s/%s", i, n_images))
-  marks[[i]] <- result$marks %>%
+  message(sprintf("saving %s/%s", i, n_images))
+  marks <- result$marks %>%
     mutate(variable = paste0("X", mark))
-  mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
-  p <- ggplot() +
-    geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-    geom_point(aes(x = X1, y = X2, col = mark, size = size), marks[[i]]) +
-    facet_wrap(~ variable) +
-    coord_fixed() +
-    scale_radius(range = c(.1, 5))
-}
-```
 
-## Extracting Rasters
-
-Now that we have images for any particular simulation configuration, we need to
-extract a multichannel raster (which will be input for the feature extraction
-algorithm).
-
-```{r}
-for (j in seq_along(marks)) {
-  pts <- vector("list", nlevels(marks[[j]]$mark))
-  for (i in seq_along(pts)) {
-    pts[[i]] <- marks[[j]] %>%
-      filter(mark == levels(marks[[j]]$mark)[i]) %>%
-      spatial_df
-  }
-
-  r <- list()
-  for (i in seq_along(pts)) {
-    r[[i]] <- raster(pts[[i]], ncols=256, nrows=256, ext=extent(c(0, 1, 0, 1)))
-    r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
-  }
-  message(sprintf("saving %s/%s", j, length(marks)))
-  writeRaster(stack(r), sprintf("../data/tiffs/image-%s.tiff", str_pad(j, 4, "left", 0)), overwrite=TRUE)
+  out_name <- sprintf("../data/tiffs/image-%s.tiff", str_pad(i, 4, "left", 0))
+  save_raster(marks, out_name)
 }
 ```
