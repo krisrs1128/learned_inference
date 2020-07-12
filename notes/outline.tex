@@ -13,6 +13,27 @@
 \begin{document}
 \maketitle
 
+\begin{abstract}
+Many modern datasets don't fit neatly into n x p matrices, but most techniques
+for measuring statistical stability expect rectangular data. This talk describes
+ways to adapt techniques from statistical stability to the regime where features
+must be learned. We are specifically motivated by recent practices in earth
+observation science and spatial genomics, where (1) it is beneficial to use
+automated feature extractors and (2) these learned features are subject to
+scientific scrutiny.
+
+We propose approaches using stability selection and the RV coefficient, applied
+to the full feature learning workflow. We design controlled simulations to
+characterize the power and practicality of competing ideas. A key challenge is
+the amount of computation required by stability selection. To this end, we
+propose shortcuts, using fine-tuning and coresets, and gather experimental data
+that sheds light on the computation-inference tradeoffs at play.
+
+Finally, we describe case studies from earth observation and genomics data
+analyses, where the tools of machine learning can augment the scientist's
+workflow, but where guarantees of statistical reproducibility are still central.
+\end{abstract}
+
 \begin{outline}
 \1 Two concrete examples
   \2 Collaborator thinks that mixing between cell types might be related to
