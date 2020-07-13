@@ -12,7 +12,9 @@ from addict import Dict
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
-from models.vae import VariationalAutoencoder
+import time
+from torchvision.utils import save_image
+from models.vae import VAE, loss_fn
 from sim.data import RandomCrop, CellDataset
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,7 +24,7 @@ def train(model, optim, loader, opts):
     Wrap all training for a model
     """
     for epoch in range(opts.n_epochs):
-        model, optim, losses = train_epoch(model, loader, optim)
+        model, optim, losses = train_epoch(model, loader, optim, epoch)
         print(f"epoch {epoch}: {losses}")
 
         if epoch % opts.save_every == 0:
@@ -34,24 +36,28 @@ def train(model, optim, loader, opts):
     return losses
 
 
-def train_epoch(model, loader, optim):
+def train_epoch(model, loader, optim, epoch=0):
     """
     Train model for a single epoch
     """
     epoch_loss = 0
+    i = 0
     for x, _, _ in loader:
         # get loss
         x = x.to(device)
-        z_mean, z_log_var, _, decoded = model(x)
-        kl_divergence = (0.5 * (z_mean ** 2 + torch.exp(z_log_var) - z_log_var - 1)).sum()
-        pixelwise_bce = F.binary_cross_entropy(decoded, x, reduction="sum")
-        loss = kl_divergence + pixelwise_bce
+
+        x_hat, mu, logvar = model(x)
+        loss, bce, kld = loss_fn(x_hat, x, mu, logvar)
 
         # update
         optim.zero_grad()
         loss.backward()
         optim.step()
         epoch_loss += loss.item()
+
+        if i < 1:
+            save_image(x_hat[:16], f"data/decodings/decoded_{str(i)}_{epoch}.png")
+        i += 1
 
     return model, optim, epoch_loss / len(loader)
 
@@ -81,8 +87,8 @@ if __name__ == '__main__':
     os.makedirs(opts.out_dir, exist_ok=True)
 
     # training
-    model = VariationalAutoencoder(n_latent=opts.n_latent)
+    model = VAE(z_dim=opts.z_dim)
     optim = torch.optim.Adam(model.parameters(), lr=opts.lr)
-    cell_data = CellDataset(opts.train_dir, pathlib.Path(opts.xy), RandomCrop(96))
+    cell_data = CellDataset(opts.train_dir, pathlib.Path(opts.xy), RandomCrop(64))
     train_loader = DataLoader(cell_data, batch_size=opts.batch_size)
     train(model, optim, train_loader, opts)
