@@ -18,7 +18,7 @@ import sim.data as dt
 
 
 def save_encodings(loader, model, out_path):
-    os.makedirs(out_path.stem, exist_ok=True)
+    os.makedirs(out_path.parent, exist_ok=True)
 
     i = 0
     for x, y, img_path in loader:
@@ -29,8 +29,8 @@ def save_encodings(loader, model, out_path):
             z_mean, _, _ = model.encode(x)
             z_mean = np.array(z_mean)
             z_df = pd.DataFrame(z_mean)
-            z_df["path"] = img_path
-            y_df["y"] = y
+            z_df["path"] = img_path[0]
+            z_df["y"] = np.array(y)
             z_df.to_csv(out_path, mode=mode, header=(i == 0))
 
         i += 1
@@ -46,6 +46,6 @@ if __name__ == '__main__':
     model = VariationalAutoencoder(n_latent=opts.n_latent)
     model.load_state_dict(torch.load(args.model_path))
 
-    cell_data = dt.CellDataset(opts.train_dir, dt.RandomCrop(96))
+    cell_data = dt.CellDataset(opts.train_dir, Path(opts.xy), dt.RandomCrop(96))
     train_loader = DataLoader(cell_data, batch_size=opts.batch_size)
     save_encodings(train_loader, model, Path(opts.features_dir))
