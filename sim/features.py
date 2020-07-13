@@ -13,7 +13,7 @@ from addict import Dict
 import torch
 import os
 from torch.utils.data import DataLoader
-from models.vae import VariationalAutoencoder
+from models.vae import VAE
 import sim.data as dt
 
 
@@ -43,9 +43,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     opts = Dict(yaml.safe_load(open(args.conf)))
 
-    model = VariationalAutoencoder(n_latent=opts.n_latent)
+    model = VAE(z_dim=opts.z_dim)
     model.load_state_dict(torch.load(args.model_path))
 
-    cell_data = dt.CellDataset(opts.train_dir, Path(opts.xy), dt.RandomCrop(96))
+    cell_data = dt.CellDataset(opts.train_dir, Path(opts.xy), dt.RandomCrop(64))
     train_loader = DataLoader(cell_data, batch_size=opts.batch_size)
     save_encodings(train_loader, model, Path(opts.features_dir))

@@ -22,9 +22,6 @@ def tiff_to_numpy(input_path, output_path):
     """
     imgf = rasterio.open(input_path)
     img = imgf.read().transpose(1, 2, 0)
-    if img.shape[2] != 3:
-        import pdb
-        pdb.set_trace()
     np.save(str(output_path), img)
 
 
