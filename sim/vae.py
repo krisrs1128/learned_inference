@@ -12,7 +12,6 @@ from addict import Dict
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
-import time
 from torchvision.utils import save_image
 from models.vae import VAE, loss_fn
 from sim.data import RandomCrop, CellDataset
