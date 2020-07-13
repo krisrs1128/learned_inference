@@ -14,11 +14,11 @@ library("glmnet")
 
 ```{r}
 data_dir <- file.path("..", "data")
-z <- read_csv(file.path(data_dir, "features", "vae_2020711", "features.csv")) %>%
+z <- read_csv(file.path(data_dir, "features", "vae_20200713", "features.csv")) %>%
   select(-X1) %>%
   select(path, everything())
 y <- z$y
-x <- z[, 2:101]
+x <- z[, 2:32]
 
 plot(z[[13]], y)
 hist(cor(x, y), 20)
@@ -29,7 +29,7 @@ plot(cv_res)
 
 fit <- glmnet(as.matrix(x), y)
 plot(fit)
-plot(y, predict(fit, newx=as.matrix(x))[, 100], asp = 1, ylab="y_hat")
+plot(y, predict(fit, newx=as.matrix(x))[, 30], asp = 1, ylab="y_hat")
 ```
 
 ```{r}
@@ -71,5 +71,4 @@ for (i in seq_len(nrow(xgrid))){
     interpolate = FALSE
   )
 }
-
 ```

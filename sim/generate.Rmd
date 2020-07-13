@@ -97,8 +97,8 @@ We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
-n_images <- 1000
-n_original <- rnegbin(n_images, 500, 5)
+n_images <- 3000
+n_original <- rnegbin(n_images, 250, 5)
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
 nu_r <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
@@ -108,7 +108,7 @@ nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
 alpha <- rgamma(n_images, 5, 3)
 tau <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
 tau <- sample(tau)
-lambdas <- runif(n_images * 3, 250, 800) %>%
+lambdas <- runif(n_images * 3, 75, 400) %>%
   matrix(ncol = 3)
 
 # simulate the response
