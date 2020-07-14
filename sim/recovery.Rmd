@@ -11,14 +11,21 @@ library("png")
 library("glmnet")
 ```
 
-
+Load the previously extracted features.
 ```{r}
-data_dir <- file.path("..", "data")
-z <- read_csv(file.path(data_dir, "features", "vae_20200713", "features.csv")) %>%
+conf <- yaml.load_file("../conf/train.yaml")
+conf$features_dir <- paste0("../", conf$features_dir)
+
+z <- read_csv(conf$features_dir) %>%
   select(-X1) %>%
-  select(path, everything())
+  select(path, y, everything())
+z$ix <- str_extract(z$path, "[0-9]+") %>%
+  as.integer()
+
 y <- z$y
-x <- z[, 2:32]
+x <- z %>%
+  select(matches("[0-9]+")) %>%
+  as.matrix()
 
 plot(z[[13]], y)
 hist(cor(x, y), 20)
@@ -29,9 +36,10 @@ plot(cv_res)
 
 fit <- glmnet(as.matrix(x), y)
 plot(fit)
-plot(y, predict(fit, newx=as.matrix(x))[, 30], asp = 1, ylab="y_hat")
+plot(y, predict(fit, newx = as.matrix(x))[, 30], asp = 1, ylab="y_hat")
 ```
 
+Get paths to all the original images, and build an MDS from the learned features.
 ```{r}
 png_paths <- gsub("npy", "png", z$path)
 png_paths <- gsub("train", "pngs", png_paths)
@@ -42,18 +50,24 @@ coords <- cmdscale(dist(x))
 plot(coords)
 ```
 
-
+Plot images along the MDS coordinates.
 ```{r}
-xgrid <- seq(-4, 6, by=0.5)
+xgrid <- seq(-4, 4.5, by=0.5)
 xgrid <- expand.grid(xgrid, xgrid)
 
 plot_data <- list()
 for (i in seq_len(nrow(xgrid))) {
-  min_ix <- which.min(proxy::dist(xgrid[i, ], coords))
+  cur_dist <- proxy::dist(xgrid[i, ], coords)
+  if (min(cur_dist) < 0.2) {
+    im <- ims[[which.min(cur_dist)]]
+  } else {
+    im <- NULL
+  }
+
   plot_data[[i]] <- list(
     x = xgrid[i, 1],
     y = xgrid[i, 2],
-    ims = ims[[min_ix]]
+    im = im
   )
 }
 
@@ -62,8 +76,10 @@ width <- 2.4
 
 plot(xgrid, t="n", asp = 1)
 for (i in seq_len(nrow(xgrid))){
+  if (is.null(plot_data[[i]]$im)) next
+
   rasterImage(
-    ims[[i]],
+    plot_data[[i]]$im,
     xleft = plot_data[[i]]$x - 0.1 * width,
     ybottom = plot_data[[i]]$y - 0.1 * height,
     xright = plot_data[[i]]$x + 0.1 * width,

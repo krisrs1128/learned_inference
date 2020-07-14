@@ -108,7 +108,7 @@ nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
 alpha <- rgamma(n_images, 5, 3)
 tau <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
 tau <- sample(tau)
-lambdas <- runif(n_images * 3, 75, 400) %>%
+lambdas <- runif(n_images * 3, 150, 400) %>%
   matrix(ncol = 3)
 
 # simulate the response
