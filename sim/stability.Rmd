@@ -1,0 +1,29 @@
+---
+title: Stability study
+---
+
+
+```{r}
+library("ggplot2")
+library("readr")
+library("dplyr")
+library("stringr")
+library("yaml")
+```
+
+```{r}
+conf <- yaml.load_file("../conf/train.yaml")
+conf$features_dir <- paste0("../", conf$features_dir)
+
+z <- read_csv(conf$features_dir) %>%
+  select(-X1) %>%
+  select(path, y, everything())
+z$ix <- str_extract(z$path, "[0-9]+") %>%
+  as.integer()
+
+Xy <- read_csv(file.path(data_dir, "Xy.csv"))
+
+heatmap(cor(Xy[z$ix, ], z[, 3:65]))
+hist(cor(z$y, z[, 3:65]), 20)
+plot(Xy$y[z$ix], z$y)
+```
