@@ -1,8 +1,8 @@
-n_epochs: 150
-z_dim: 32
+n_epochs: 75
+z_dim: 64
 out_dir: "data/runs/vae_20200711/"
 train_dir: "data/train"
-features_dir: "data/features/vae_20200713/features.csv"
+features_dir: "data/features/vae_20200714/features.csv"
 xy: "data/Xy.csv"
 save_every: 10
 batch_size: 32

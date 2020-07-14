@@ -23,7 +23,13 @@ def train(model, optim, loader, opts):
     Wrap all training for a model
     """
     for epoch in range(opts.n_epochs):
-        model, optim, losses = train_epoch(model, loader, optim, epoch)
+        model, optim, losses = train_epoch(
+            model,
+            loader,
+            optim,
+            epoch,
+            pathlib.Path(opts.out_dir, "decodings")
+        )
         print(f"epoch {epoch}: {losses}")
 
         if epoch % opts.save_every == 0:
@@ -35,16 +41,16 @@ def train(model, optim, loader, opts):
     return losses
 
 
-def train_epoch(model, loader, optim, epoch=0):
+def train_epoch(model, loader, optim, epoch=0, im_dir=pathlib.Path(".")):
     """
     Train model for a single epoch
     """
-    epoch_loss = 0
-    i = 0
+    os.makedirs(im_dir, exist_ok=True)
+    epoch_loss, i = 0, 0
+
     for x, _, _ in loader:
         # get loss
         x = x.to(device)
-
         x_hat, mu, logvar = model(x)
         loss, bce, kld = loss_fn(x_hat, x, mu, logvar)
 
@@ -55,7 +61,7 @@ def train_epoch(model, loader, optim, epoch=0):
         epoch_loss += loss.item()
 
         if i < 1:
-            save_image(x_hat[:16], f"data/decodings/decoded_{str(i)}_{epoch}.png")
+            save_image(x_hat, im_dir / f"decoded_{str(i)}_{epoch}.png")
         i += 1
 
     return model, optim, epoch_loss / len(loader)
