@@ -12,8 +12,7 @@ library("yaml")
 ```
 
 ```{r}
-conf <- yaml.load_file("../conf/train.yaml")
-conf$features_dir <- paste0("../", conf$features_dir)
+conf <- yaml.load_file("conf/train.yaml")
 
 z <- read_csv(conf$features_dir) %>%
   select(-X1) %>%
@@ -21,9 +20,8 @@ z <- read_csv(conf$features_dir) %>%
 z$ix <- str_extract(z$path, "[0-9]+") %>%
   as.integer()
 
-Xy <- read_csv(file.path(data_dir, "Xy.csv"))
+Xy <- read_csv(conf$xy)
 
 heatmap(cor(Xy[z$ix, ], z[, 3:65]))
 hist(cor(z$y, z[, 3:65]), 20)
-plot(Xy$y[z$ix], z$y)
 ```

@@ -13,8 +13,7 @@ library("glmnet")
 
 Load the previously extracted features.
 ```{r}
-conf <- yaml.load_file("../conf/train.yaml")
-conf$features_dir <- paste0("../", conf$features_dir)
+conf <- yaml.load_file("conf/train.yaml")
 
 z <- read_csv(conf$features_dir) %>%
   select(-X1) %>%
@@ -30,13 +29,16 @@ x <- z %>%
 plot(z[[13]], y)
 hist(cor(x, y), 20)
 
-y[y > 6] <- 6
-cv_res <- cv.glmnet(as.matrix(x), y)
+cv_res <- cv.glmnet(as.matrix(x), scale(y))
 plot(cv_res)
 
-fit <- glmnet(as.matrix(x), y)
+fit <- glmnet(as.matrix(x), scale(y))
 plot(fit)
-plot(y, predict(fit, newx = as.matrix(x))[, 30], asp = 1, ylab="y_hat")
+image(coef(fit))
+
+plot(y, predict(fit, newx = as.matrix(x))[, 73], asp = 1, ylab="y_hat")
+order(coef(fit)[, 10], decreasing = TRUE)
+plot(x[, 40], y, asp = 1)
 ```
 
 Get paths to all the original images, and build an MDS from the learned features.
