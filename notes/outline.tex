@@ -147,7 +147,11 @@ workflow, but where guarantees of statistical reproducibility are still central.
     variables using that particular value of $\lambda$)
   \2 references: \citep{mosteller1977data, yu2013stability, meinshausen2010stability}
 \1 Feature learning
-  \2 Image autoencoders. Will encode on subtiles, and summarize using average
+  \2 Note: We are now using variational autoencoders, since this gives a
+  vectorial representation (unlike image autoencoders, which give compressed 2D
+  representations)
+  \2 Image autoencoders. Will encode on subtiles, and summarize
+  using average
   position of a random selection of subtiles.
     \3 Autoencoder learns a lower-dimensional, nonlinear manifold with the
     highest density, within the very high-dimensional (but mostly empty) image
