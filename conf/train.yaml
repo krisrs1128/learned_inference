@@ -1,9 +1,14 @@
-n_epochs: 75
-z_dim: 64
-out_dir: "data/runs/vae_20200711/"
-train_dir: "data/train"
-features_dir: "data/features/vae_20200714/features.csv"
-xy: "data/Xy.csv"
-save_every: 10
-batch_size: 32
-lr: 0.001
+organization:
+  features_dir: "data/features/vae_20200714/features.csv"
+  out_dir: "data/runs/vae_20200711/"
+  train_dir: "data/train"
+  xy: "data/Xy.csv"
+train:
+  batch_size: 32
+  lr: 0.001
+  n_epochs: 75
+  save_every: 10
+  z_dim: 64
+bootstrap:
+  file: null
+  index: null

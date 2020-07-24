@@ -33,8 +33,8 @@ def train(model, optim, loader, opts):
         print(f"epoch {epoch}: {losses}")
 
         if epoch % opts.save_every == 0:
-            model_path = pathlib.Path(opts.out_dir, f"model_{epoch}.pt")
-            optim_path = pathlib.Path(opts.out_dir, f"optim_{epoch}.pt")
+            model_path = pathlib.Path(opts.organization.out_dir, f"model_{epoch}.pt")
+            optim_path = pathlib.Path(opts.organization.out_dir, f"optim_{epoch}.pt")
             torch.save(model.state_dict(), model_path)
             torch.save(optim.state_dict(), optim_path)
 
@@ -89,11 +89,11 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--conf", type=str, help="configuration file")
     args = parser.parse_args()
     opts = Dict(yaml.safe_load(open(args.conf)))
-    os.makedirs(opts.out_dir, exist_ok=True)
+    os.makedirs(opts.organization.out_dir, exist_ok=True)
 
     # training
-    model = VAE(z_dim=opts.z_dim)
-    optim = torch.optim.Adam(model.parameters(), lr=opts.lr)
-    cell_data = CellDataset(opts.train_dir, pathlib.Path(opts.xy), RandomCrop(64))
-    train_loader = DataLoader(cell_data, batch_size=opts.batch_size)
+    model = VAE(z_dim=opts.train.z_dim)
+    optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
+    cell_data = CellDataset(opts.organization.train_dir, pathlib.Path(opts.organization.xy), RandomCrop(64))
+    train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
     train(model, optim, train_loader, opts)
