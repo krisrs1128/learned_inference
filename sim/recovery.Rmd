@@ -9,12 +9,14 @@ library("dplyr")
 library("stringr")
 library("png")
 library("glmnet")
+library("yaml")
 ```
 
 Load the previously extracted features.
-```{r}
-conf <- yaml.load_file("conf/train.yaml")
 
+```{r}
+setwd(Sys.getenv("ROOT_DIR"))
+conf <- yaml.load_file("conf/train.yaml")
 z <- read_csv(conf$features_dir) %>%
   select(-X1) %>%
   select(path, y, everything())
@@ -26,26 +28,14 @@ x <- z %>%
   select(matches("[0-9]+")) %>%
   as.matrix()
 
-plot(z[[13]], y)
-hist(cor(x, y), 20)
-
 cv_res <- cv.glmnet(as.matrix(x), scale(y))
 plot(cv_res)
-
-fit <- glmnet(as.matrix(x), scale(y))
-plot(fit)
-image(coef(fit))
-
-plot(y, predict(fit, newx = as.matrix(x))[, 73], asp = 1, ylab="y_hat")
-order(coef(fit)[, 10], decreasing = TRUE)
-plot(x[, 40], y, asp = 1)
 ```
 
 Get paths to all the original images, and build an MDS from the learned features.
 ```{r}
 png_paths <- gsub("npy", "png", z$path)
 png_paths <- gsub("train", "pngs", png_paths)
-png_paths <- paste0("../", png_paths)
 
 ims <- lapply(png_paths, readPNG)
 coords <- cmdscale(dist(x))
@@ -73,20 +63,63 @@ for (i in seq_len(nrow(xgrid))) {
   )
 }
 
-height <- 2.4
-width <- 2.4
-
 plot(xgrid, t="n", asp = 1)
-for (i in seq_len(nrow(xgrid))){
+for (i in seq_len(nrow(xgrid))) {
   if (is.null(plot_data[[i]]$im)) next
 
   rasterImage(
     plot_data[[i]]$im,
-    xleft = plot_data[[i]]$x - 0.1 * width,
-    ybottom = plot_data[[i]]$y - 0.1 * height,
-    xright = plot_data[[i]]$x + 0.1 * width,
-    ytop = plot_data[[i]]$y + 0.1 * height,
+    xleft = plot_data[[i]]$x - 0.24,
+    ybottom = plot_data[[i]]$y - 0.24,
+    xright = plot_data[[i]]$x + 0.24,
+    ytop = plot_data[[i]]$y + 0.24,
     interpolate = FALSE
   )
 }
 ```
+
+Next, we'll look into which of the learned features are correlated with known
+source generating features.
+
+```{r}
+joined_features <- read_csv(conf$xy) %>%
+  mutate(ix = row_number()) %>%
+  left_join(z, by = "ix")
+
+features <- list(
+  "x" = joined_features %>%
+    select(starts_with("X")),
+  "y" = joined_features$y.x,
+  "z" = joined_features %>%
+    select(matches("^[0-9]+"))
+)
+
+R <- cor(cbind(features$x, features$y), features$z, use = "complete")
+mR <- melt(R, varnames = c("x", "z"), value.name =  "corr") %>%
+  mutate(z = factor(z, levels = hclust(dist(t(R)))$order - 1))
+
+ggplot(mR) +
+  geom_tile(aes(x = x, y = z, fill = corr)) +
+  scale_fill_gradient2() +
+  theme(
+    axis.text.x = element_text(angle = 90),
+    legend.position = "bottom"
+  )
+```
+
+It looks like about 25 features are positive or negatively correlated with $N$
+(number of cells), $\nu$ (overall smoothness), and $\alpha_r$ (bandwidth of
+relative process) simultaneously. A different set of features seems to reflect
+$\lambda$, which are the sizes of individual cells. Some overall takeaways, so
+far,
+
+* The generative mechanisms are clearly picked up by the learned features, but
+  only in a diffuse way. Every learned feature seems to be somewhat correlated
+  with all the known generative mechanisms, we are far from the ICA-style
+  independent learned features regime.
+* The relative fequency features are less strongly correlated with the learned
+  features than the size and smoothness features.
+* The features that were deliberately chosen to be from heavier-tailed mixture
+  distributions are possibly more challenging to recover.
+* The correlation with the response $y$ is weaker than with the generating
+  mechanisms $X$.
