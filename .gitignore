@@ -2,3 +2,5 @@
 *.log
 *.bbl
 *.blg
+learning/venv
+data
