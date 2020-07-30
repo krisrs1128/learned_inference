@@ -1,10 +1,15 @@
 """
 Organize and Launch many VAE runs
 
-python3 -m sim.bootstrap -c conf/bootstrap.yaml
+python3 -m learning.bootstrap -c conf/train.yaml
 """
 import pandas as pd
 import numpy as np
+import argparse
+import pathlib
+import os
+from addict import Dict
+import yaml
 
 # read the configuration file specifying number of bootstraps and folder to save everything
 # generate bootstrap indices, and save them to a csv that can be read by tibble
@@ -15,14 +20,15 @@ import numpy as np
 # make sure to specify which of the bootstrap indices the sbatched model will be using
 # save the results to some directory
 
-def bootstrap_indices(N, B=30, out_path):
-    pass
+def bootstrap_indices(N, B=30, out_path="./"):
+    result = np.zeros((B, N))
+    for b in range(B):
+        result[b, :] = np.random.choice(range(N), N)
 
-def write_sbatch(index, config, out_dir):
-    pass
-
-def launch_jobs(path):
-    pass
+    os.makedirs(out_path.parent, exist_ok=True)
+    result = result.astype(int)
+    pd.DataFrame(result).to_csv(out_path)
+    return result
 
 
 if __name__ == '__main__':
@@ -30,3 +36,8 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--conf", type=str, help="configuration file")
     args = parser.parse_args()
     opts = Dict(yaml.safe_load(open(args.conf)))
+
+    data_dir = pathlib.Path(os.environ["DATA_DIR"])
+    Xy = pd.read_csv(data_dir / opts.organization.xy)
+    out_path = pathlib.Path(data_dir / opts.bootstrap.path)
+    bootstrap_indices(len(Xy), opts.bootstrap.B, out_path)

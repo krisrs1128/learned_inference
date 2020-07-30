@@ -12,5 +12,14 @@ License: `use_mit_license()`, `use_gpl3_license()` or friends to
     pick a license
 Encoding: UTF-8
 LazyData: true
+Imports:
+  MASS,
+  dplyr,
+  raster,
+  sf
+Suggests:
+  ggplot2,
+  dplyr,
+  reshape2
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1

@@ -3,13 +3,16 @@ title: Data Generation Mechanism
 ---
 
 ```{r}
+library("MASS")
+library("dplyr")
 library("ggplot2")
-library("stringr")
+library("inference")
 library("raster")
 library("readr")
+library("reshape2")
 library("sf")
 library("stars")
-source("point_process.R")
+library("stringr")
 set.seed(123)
 
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
@@ -118,12 +121,16 @@ colnames(X) <- c("N", paste0("beta_", 1:ncol(beta_r)), "nu_r", "alpha_r", "nu", 
 y <- X %*% c(1 / 5000, 1/3, -1/3, -1/3, 1/4, 1/4, 1/4, 1/4, 1, 1/800) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
-write_csv(data.frame(X = X, y = y), "../data/Xy.csv")
+out_dir <- Sys.getenv("DATA_DIR")
+dir.create(out_dir)
+write_csv(data.frame(X = X, y = y), file.path(out_dir, "Xy.csv"))
 ```
 
 Now we can simulate all the images.
 
 ```{r}
+dir.create(file.path(out_dir, "tiffs"))
+
 for (i in seq_len(n_images)) {
   result <- sim_wrapper(n_original[i], nu[i], alpha[i], beta_r[i, ], nu_r[i],
                         alpha_r[i], tau[i], lambdas[i, ])
@@ -132,7 +139,7 @@ for (i in seq_len(n_images)) {
   marks <- result$marks %>%
     mutate(variable = paste0("X", mark))
 
-  out_name <- sprintf("../data/tiffs/image-%s.tiff", str_pad(i, 4, "left", 0))
+  out_name <- sprintf(file.path(out_dir, "tiffs", "image-%s.tiff"), str_pad(i, 4, "left", 0))
   save_raster(marks, out_name)
 }
 ```

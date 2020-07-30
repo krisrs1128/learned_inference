@@ -1,7 +1,7 @@
 """
 Utilities for working with multichannel Tiffs
 
-python3 -m sim.data
+python3 -m data
 """
 import pathlib
 import random
@@ -9,13 +9,19 @@ import os
 from shutil import copyfile
 import torch
 from torch.utils.data import Dataset
-from joblib import Parallel, delayed
 import rasterio
 import re
 import pandas as pd
 import numpy as np
 from PIL import Image
 import pandas as pd
+
+
+def parse_env(D):
+    data_dir = pathlib.Path(os.environ["DATA_DIR"])
+    for k, v in D.items():
+        D[k] = data_dir / pathlib.Path(v)
+    return D
 
 
 def tiff_to_numpy(input_path, output_path):
@@ -78,19 +84,14 @@ def reshuffle(split_ids, output_dir="output/", n_cpu=3):
     target_locs = {}
     for split_type in split_ids:
         n_ids = len(split_ids[split_type])
-
-        def wrapper(i):
+        for i in range(n_ids):
             print(f"shuffling image {i}")
             source = split_ids[split_type][i]
             target = pathlib.Path(
                 output_dir, split_type, os.path.basename(source)
             ).resolve()
             copyfile(source, target)
-            return target
-
-        para = Parallel(n_jobs=n_cpu)
-        target_locs[split_type] = para(delayed(wrapper)(i) for i in range(n_ids))
-        target_locs[split_type] = sum([], target_locs[split_type])
+            target_locs[split_type].append(target)
 
     return target_locs
 
@@ -101,31 +102,43 @@ class CellDataset(Dataset):
     Dataset for working with tiffs of cells
     """
 
-    def __init__(self, input_dir, xy_path=None, transform=None):
+    def __init__(self, input_dir, xy_path=None, transform=None, boot=None):
         """Initialize dataset."""
         self.img_files = list(pathlib.Path(input_dir).glob("*npy"))
         img_ids = [str(s) for s in self.img_files]
         img_ids = [re.search("[0-9]+", s).group() for s in img_ids]
         self.img_ids = [int(s) for s in img_ids]
 
+        # default xy and bootstrap paths
         if xy_path:
             self.xy = pd.read_csv(xy_path)
         else:
-            self.xy = {"y": np.zeros(len(img_files))}
+            self.xy = {"y": np.zeros(len(img_ids))}
 
+        if boot:
+            self.resample_ix = boot
+        else:
+            self.resample_ix = np.arange(len(img_ids))
+
+        # transforms, like crops and rotations
         self.transform = transform
 
     def __len__(self):
-        return len(self.img_files)
+        import pdb
+        pdb.set_trace()
+        return len(self.img_ids)
 
     def __getitem__(self, i):
-        img = np.load(self.img_files[i])
-        y = self.xy["y"][self.img_ids[i] - 1]
+        ix = self.resample_ix[i]
+        import pdb
+        pdb.set_trace()
+        img = np.load(self.img_ids[ix])
+        y = self.xy["y"][self.img_ids[ix] - 1]
 
         if self.transform:
             img = self.transform(img)
 
-        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), [str(self.img_files[i])]
+        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), [str(self.img_ids[ix])]
 
 
 class RandomCrop():

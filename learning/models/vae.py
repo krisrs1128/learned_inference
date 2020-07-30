@@ -1,7 +1,5 @@
 """
-
-
-mostly copied from: https://github.com/rasbt/deeplearning-models/blob/master/pytorch_ipynb/autoencoder/ae-var.ipynb
+Don't-be-a-Hero VAE Model
 """
 import os
 import pathlib
@@ -9,7 +7,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import torch
-import sim.data as dt
+import data as dt
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Flatten(nn.Module):
@@ -91,7 +89,7 @@ def loss_fn(recon_x, x, mu, logvar):
 
 
 if __name__ == '__main__':
-    npy_dir = pathlib.Path(os.environ["ROOT_DIR"], "data", "npys")
+    npy_dir = pathlib.Path(os.environ["DATA_DIR"], "npys")
     data = dt.CellDataset(npy_dir, pathlib.Path("data", "Xy.csv"), dt.RandomCrop(64))
     vae = VariationalAutoencoder()
 

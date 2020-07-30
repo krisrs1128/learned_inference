@@ -2,11 +2,13 @@
 % Please edit documentation in R/point_process.R
 \name{matern_process}
 \alias{matern_process}
-\title{Simulate from a Matern Process}
+\title{Functions for Simulating Image Parameters
+Simulate from a Matern Process}
 \usage{
 matern_process(x, nu = 1, alpha = 1)
 }
 \description{
+Functions for Simulating Image Parameters
 Simulate from a Matern Process
 }
 \examples{
