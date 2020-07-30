@@ -1,8 +1,9 @@
 FROM ubuntu:18.04
 WORKDIR /home/kris
+COPY . /home/kris/
 
 RUN apt-get update
-RUN apt-get install -y libglpk-dev
+RUN apt-get install -y libglpk-dev libudunits2-dev
 RUN apt-get install -y libgdal-dev libproj-dev
 RUN apt-get install -y software-properties-common
 
@@ -14,6 +15,9 @@ RUN apt-get install -y libpython3.7-dev
 RUN apt-get install -y python3-pip
 RUN apt-get install -y python3-venv python3-virtualenv
 
+WORKDIR /home/kris/learning/
+RUN pip3 install -r requirements.txt
+
 # install R
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y install tzdata
@@ -24,8 +28,10 @@ RUN apt install -y r-base
 
 # setup R package
 WORKDIR /home/kris/inference/
+RUN echo $(ls -1 /home/)
+RUN echo $(ls -1 /home/kris/)
+RUN echo $(ls -1 /home/kris/inference/)
 RUN Rscript -e "install.packages('remotes')"
 RUN Rscript -e "remotes::install_deps(dependencies = TRUE)"
 
 WORKDIR /home/kris/learning/
-RUN pip3 install -r requirements.txt
