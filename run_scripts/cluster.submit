@@ -6,10 +6,10 @@ log = job_$(Cluster).log
 error = job_$(Cluster)_$(Process).err
 output = job_$(Cluster)_$(Process).out
 docker_image = krisrs1128/learned_inference:latest
-interactive = True
+# interactive = True
 
-executable = bootstrap.sh
-arguments = $(Process)
+executable = train.py
+arguments = -c ../conf/train.yaml -b $(Process)
 
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
