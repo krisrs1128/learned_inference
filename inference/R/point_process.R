@@ -8,6 +8,7 @@
 #' process_df <- matern_process(x, 1, 1)
 #' ggplot(process_df) +
 #'  geom_tile(aes(x = Var1, y = Var2, fill = z))
+#' @export
 matern_process <- function(x, nu=1, alpha=1) {
   Sigma <- matern_kernel(x, nu, alpha)
   z <- mvrnorm(1, mu=rep(0, nrow(x)), Sigma)
@@ -17,6 +18,7 @@ matern_process <- function(x, nu=1, alpha=1) {
 #' Build Matern Kernel
 #'
 #' @importFrom dplyr %>%
+#' @export
 matern_kernel <- function(x, nu, alpha) {
   squared_dist <- dist(x) %>%
     as.matrix()
@@ -37,6 +39,7 @@ matern_kernel <- function(x, nu, alpha) {
 #' probs <- relative_intensities(x, nu = 1)
 #' @details #' See page 551 in SPATIAL AND SPATIO-TEMPORAL LOG-GAUSSIAN COX
 #'   PROCESSES
+#' @export
 relative_intensities <- function(x, K = 4, betas = NULL, ...) {
   if (is.null(betas)) {
     betas <- rnorm(K, 0, 0.5)
@@ -62,6 +65,7 @@ relative_intensities <- function(x, K = 4, betas = NULL, ...) {
 #' Simulate an Inhomogeneous Poisson Process
 #'
 #' We just thin out an ordinary poisson process.
+#' @export
 inhomogeneous_process <- function(N0, intensity) {
   z <- matrix(runif(2 * N0), N0, 2)
   x <- as.matrix(intensity[, 1:2])
@@ -81,6 +85,7 @@ inhomogeneous_process <- function(N0, intensity) {
 }
 
 #' Mark an Inhomogeneous Poisson Process
+#' @export
 mark_process <- function(z, probs, tau=1, lambdas=NULL) {
   N <- nrow(z)
   marks <- vector(length = N)
@@ -108,6 +113,7 @@ mark_process <- function(z, probs, tau=1, lambdas=NULL) {
 }
 
 #' Helper to Wrap Simulation
+#' @export
 sim_wrapper <- function(n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas) {
   intensity <- matern_process(x, nu, alpha)
   z <- inhomogeneous_process(n_original, intensity)
@@ -120,6 +126,7 @@ sim_wrapper <- function(n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambd
 #'
 #' @importFrom dplyr %>%
 #' @importFrom sf st_point st_buffer st_as_sf st_geometrycollection st_sfc
+#' @export
 spatial_df <- function(x) {
   pts <- st_sfc(lapply(seq_along(x), function(x) st_geometrycollection()))
 
@@ -134,6 +141,7 @@ spatial_df <- function(x) {
 #' @importFrom dplyr %>%
 #' @importFrom sf st_dimension
 #' @importFrom raster raster rasterize writeRaster stack
+#' @export
 save_raster <- function(marks, out_name, n_channels=3) {
   pts <- vector("list", n_channels)
   for (i in seq_along(pts)) {
