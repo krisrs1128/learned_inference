@@ -38,6 +38,6 @@ if __name__ == '__main__':
     opts = Dict(yaml.safe_load(open(args.conf)))
 
     data_dir = pathlib.Path(os.environ["DATA_DIR"])
-    Xy = pd.read_csv(data_dir / opts.organization.xy)
     out_path = pathlib.Path(data_dir / opts.bootstrap.path)
-    bootstrap_indices(len(Xy), opts.bootstrap.B, out_path)
+    train_imgs = list(pathlib.Path(data_dir / opts.organization.train_dir).glob("*npy"))
+    bootstrap_indices(len(train_imgs), opts.bootstrap.B, out_path)

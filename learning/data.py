@@ -17,13 +17,6 @@ from PIL import Image
 import pandas as pd
 
 
-def parse_env(D):
-    data_dir = pathlib.Path(os.environ["DATA_DIR"])
-    for k, v in D.items():
-        D[k] = data_dir / pathlib.Path(v)
-    return D
-
-
 def tiff_to_numpy(input_path, output_path):
     """
     Save a tiff image as a numpy array
@@ -37,6 +30,7 @@ def convert_dir_numpy(input_dir, output_dir):
     """
     Wrap tiff_to_numpy over an entire directory
     """
+    os.makedirs(output_dir, exist_ok=True)
     paths = list(pathlib.Path(input_dir).glob("*.tif"))
     for i, path in enumerate(paths):
         print(f"converting {path}\t{i}/{len(paths)}")
@@ -48,6 +42,7 @@ def save_pngs(input_dir, output_dir):
     """
     Save arrays as pngs, for easier viewing
     """
+    os.makedirs(output_dir, exist_ok=True)
     paths = list(pathlib.Path(input_dir).glob("*.npy"))
     for i, path in enumerate(paths):
         print(f"converting {path}\t{i}/{len(paths)}")
@@ -83,10 +78,9 @@ def reshuffle(split_ids, output_dir="output/", n_cpu=3):
 
     target_locs = {}
     for split_type in split_ids:
-        n_ids = len(split_ids[split_type])
-        for i in range(n_ids):
-            print(f"shuffling image {i}")
-            source = split_ids[split_type][i]
+        target_locs[split_type] = []
+
+        for source in split_ids[split_type]:
             target = pathlib.Path(
                 output_dir, split_type, os.path.basename(source)
             ).resolve()
@@ -94,7 +88,6 @@ def reshuffle(split_ids, output_dir="output/", n_cpu=3):
             target_locs[split_type].append(target)
 
     return target_locs
-
 
 
 class CellDataset(Dataset):
@@ -115,7 +108,7 @@ class CellDataset(Dataset):
         else:
             self.xy = {"y": np.zeros(len(img_ids))}
 
-        if boot:
+        if boot is not None:
             self.resample_ix = boot
         else:
             self.resample_ix = np.arange(len(img_ids))
@@ -124,16 +117,12 @@ class CellDataset(Dataset):
         self.transform = transform
 
     def __len__(self):
-        import pdb
-        pdb.set_trace()
         return len(self.img_ids)
 
     def __getitem__(self, i):
         ix = self.resample_ix[i]
-        import pdb
-        pdb.set_trace()
-        img = np.load(self.img_ids[ix])
-        y = self.xy["y"][self.img_ids[ix] - 1]
+        img = np.load(self.img_files[ix])
+        y = self.xy["y"][self.img_ids[ix] - 1] # numpy's are 1-indexed
 
         if self.transform:
             img = self.transform(img)
@@ -166,7 +155,7 @@ class RandomCrop():
 
 
 if __name__ == '__main__':
-    data_dir = pathlib.Path(os.environ["ROOT_DIR"], "data")
+    data_dir = pathlib.Path(os.environ["DATA_DIR"])
     convert_dir_numpy(data_dir / "tiffs", data_dir / "npys")
     save_pngs(data_dir / "npys", data_dir / "pngs")
     paths = list((data_dir / "npys").glob("*.npy"))
