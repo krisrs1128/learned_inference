@@ -102,15 +102,18 @@ if __name__ == '__main__':
     writer = SummaryWriter(out_dir / "logs")
     writer.add_text("conf", json.dumps(opts))
 
-    # training
+    # Setup model
     model = VAE(z_dim=opts.train.z_dim)
     optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
+    model.load_checkpoint(opts.train.checkpoint)
 
+    # find indices to bootstrap on
     if args.boot is not None:
         resample_ix = pd.read_csv(data_dir / opts.bootstrap.path).iloc[args.boot].values
     else:
         resample_ix = None
 
+    # train
     cell_data = CellDataset(
         data_dir / opts.organization.train_dir,
         data_dir / opts.organization.xy,

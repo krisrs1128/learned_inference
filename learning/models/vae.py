@@ -51,9 +51,18 @@ class VAE(nn.Module):
             nn.Sigmoid(),
         )
 
+    def load_checkpoint(self, path):
+        if path is None:
+            return
+
+        if torch.cuda.is_available():
+            state = torch.load(path)
+        else:
+            state = torch.load(path, map_location=torch.device("cpu"))
+        self.load_state_dict(state)
+
     def reparameterize(self, mu, logvar):
         std = logvar.mul(0.5).exp_()
-        # return torch.normal(mu, std)
         eps = torch.randn(*mu.size())
         return mu + std * eps
 
@@ -84,7 +93,6 @@ def loss_fn(recon_x, x, mu, logvar):
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-
     return BCE + KLD, BCE, KLD
 
 
