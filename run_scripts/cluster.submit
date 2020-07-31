@@ -2,8 +2,8 @@
 # starter submit file for CHTC jobs
 
 universe = docker
-log = /home/kris/logs/job_$(Cluster).log
-error = /home/kris/logs/job_$(Cluster)_$(Process).err
+log = /home/ksankaran/logs/job_$(Cluster).log
+error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err
 output = job_$(Cluster)_$(Process).out
 docker_image = krisrs1128/learned_inference:latest
 environment=ROOT_DIR=/home/ksankaran/learned_inference;DATA_DIR=/home/ksankaran/data
