@@ -75,7 +75,8 @@ appear correlated (because, of course, we optimized that).
 
 ```{r}
 library("PMA")
-cca_res <- PMA::MultiCCA(features_list, ncomponents = 10)
+n_comp <- 10
+cca_res <- PMA::MultiCCA(features_list, ncomponents = n_comp)
 
 scores <- list()
 for (b in seq_len(B)) {
@@ -85,4 +86,34 @@ for (b in seq_len(B)) {
 rvs_aligned <- pairwise_rv(scores)
 image(rvs_aligned)
 hist(rvs_aligned, 20)
+```
+
+We can also try some dummy stability selection. This will depend on the scores.
+
+```{r}
+y <- rnorm(n)
+library("glmnet")
+
+fits <- list()
+coefs <- list()
+i <- 1
+for (b in seq_len(B)) {
+  fits[[b]] <- glmnet(scores[[b]], y)
+  for (j in seq_len(n_comp + 1)) {
+    coefs[[i]] <- data.frame(
+      lambda = fits[[b]]$lambda,
+      j = j,
+      beta_j = coef(fits[[b]])[j, ]
+    )
+    i <- i + 1
+  }
+}
+
+coefs <- bind_rows(coefs, .id = "b")
+rownames(coefs) <- NULL
+
+ggplot(coefs) +
+  geom_line(aes(x = lambda, y = beta_j, group = b)) +
+  facet_wrap(~ j) +
+  ggtitle("Projected Coefs. across Bootstraps")
 ```
