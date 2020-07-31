@@ -9,12 +9,19 @@ library("readr")
 library("dplyr")
 library("stringr")
 library("yaml")
+library("FactoMineR")
 ```
 
-```{r}
-conf <- yaml.load_file("conf/train.yaml")
+We'll have to work out the paths for all these... maybe the confs should be
+absolute paths to everything.
 
-z <- read_csv(conf$features_dir) %>%
+```{r}
+## data_dir <- Sys.getenv("DATA_DIR")
+data_dir <- "../../../../data/"
+conf <- yaml.load_file("../../conf/train.yaml")
+features_path <- file.path(data_dir, conf$organization$features_dir)
+
+z <- read_csv(features_path) %>%
   select(-X1) %>%
   select(path, y, everything())
 z$ix <- str_extract(z$path, "[0-9]+") %>%
@@ -24,4 +31,58 @@ Xy <- read_csv(conf$xy)
 
 heatmap(cor(Xy[z$ix, ], z[, 3:65]))
 hist(cor(z$y, z[, 3:65]), 20)
+```
+
+Simulate data that will look like the features.
+
+```{r}
+B <- 20
+n <- 100
+K <- 64
+
+features_list <- list()
+for (b in seq_len(B)) {
+  features_list[[b]] <- matrix(rnorm(n * K), n, K)
+}
+```
+
+First, calculate the RV coefficients between unprojected pairs. I'm not sure if
+this is supposed to have any meaning if the columns are not exactly aligned.
+It's just a measure of the overall information content shared between the pairs,
+regardless of the column that is the source.
+
+```{r}
+pairwise_rv <- function(x_list) {
+  B <- length(x_list)
+
+  rv_mat <- matrix(0, nrow = B, ncol = B)
+  for (i in seq_len(B)) {
+    for (j in seq_len(i - 1)) {
+      rv_mat[i, j] <- coeffRV(x_list[[i]], x_list[[j]])$rv
+    }
+  }
+  rv_mat + t(rv_mat)
+}
+
+rvs <- pairwise_rv(features_list)
+image(rvs)
+hist(rvs, 20)
+```
+
+Calculate pairwise RV coefficients between the projected pairs. Note an
+interesting fact: when we ust multicca on noise, the projected scores will
+appear correlated (because, of course, we optimized that).
+
+```{r}
+library("PMA")
+cca_res <- PMA::MultiCCA(features_list, ncomponents = 10)
+
+scores <- list()
+for (b in seq_len(B)) {
+  scores[[b]] <- features_list[[b]] %*% cca_res$ws[[b]]
+}
+
+rvs_aligned <- pairwise_rv(scores)
+image(rvs_aligned)
+hist(rvs_aligned, 20)
 ```
