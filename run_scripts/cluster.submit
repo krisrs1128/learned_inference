@@ -6,7 +6,6 @@ log = /home/ksankaran/logs/job_$(Cluster).log
 error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err
 output = job_$(Cluster)_$(Process).out
 docker_image = krisrs1128/learned_inference:latest
-environment=ROOT_DIR=/home/ksankaran/learned_inference;DATA_DIR=/home/ksankaran/data
 # interactive = True
 
 executable = train.sh
@@ -16,7 +15,7 @@ should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 
 request_cpus = 1
-request_memory = 1GB
+request_memory = 500MB
 request_disk = 500MB
 
 
