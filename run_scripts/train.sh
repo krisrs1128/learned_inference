@@ -1,6 +1,7 @@
 #!/bin/bash
 echo ${0}
 echo ${1}
+tar -zxvf $_CONDOR_SCRATCH_DIR/data.tar.gz
 cd /home/kris/
 source .env
 cd learning

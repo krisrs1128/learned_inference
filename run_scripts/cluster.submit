@@ -6,7 +6,7 @@ log = /home/ksankaran/logs/job_$(Cluster).log
 error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err
 output = job_$(Cluster)_$(Process).out
 docker_image = krisrs1128/learned_inference_dev:latest
-# interactive = True
+input = data.tar.gz
 
 executable = train.sh
 arguments = $(Process)
