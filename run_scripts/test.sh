@@ -5,6 +5,7 @@ mkdir $DATA_DIR
 touch $DATA_DIR/test1.out
 echo ${1}
 echo $ROOT_DIR
+echo $DATA_DIR
 cd $ROOT_DIR/run_scripts/
 ls
 python3 test_condor.py -b 10
