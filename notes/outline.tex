@@ -57,7 +57,7 @@ workflow, but where guarantees of statistical reproducibility are still central.
   \2 Problem definition
     \3 We want to perform formal inference on features / encodings that were
     algorithmically derived, where the encoder is treated as a black box
-      \4 $\mathbf{X} \in \mathbb{R}^{n \times D}$ are original features. Likely
+      \4 $\mathbf{X}_ \in \mathbb{R}^{n \times D}$ are original features. Likely
       not meaningful, like the raw pixel values of an image, or vectorized
       adjacency matrix of a graph.
       \4 $T\left(\cdot; \hat{\theta}\left(\mathbf{X}\right)\right) :
@@ -250,7 +250,7 @@ workflow, but where guarantees of statistical reproducibility are still central.
 \section{Methodology}
 
 \begin{outline}
-\1 Establish notation (tk: update the notation in intro to reflect this)
+\1 Establish notation
   \2 Raw training data: $x_{1}, \dots, x_{n}$. Each $x_{i} \in \mathbb{R}^{D}$.
   The full sample will be denoted by $\mathbf{X}_{mathcal{D}} \in \mathbb{R}^{n
     \times D}$.
@@ -357,6 +357,10 @@ workflow, but where guarantees of statistical reproducibility are still central.
       \begin{align}
         \mathbf{Z}_{1,1}^{\ast}, \dots, \mathbf{Z}_{1,B}^{\ast}
       \end{align}
+      when you apply the ensemble of encoding functions on the original dataset
+      $\mathcal{D}_{1}$. Note that you cannot simply use the encodings on the
+      bootstrap samples themselves, because they there is no easy way to align
+      the separate datasets (the rows must correspond).
       \4 Perform multiCCA on the induced encodings. This results in a first
       consolidated feature, across all the tables,
       \begin{align}
@@ -423,6 +427,11 @@ workflow, but where guarantees of statistical reproducibility are still central.
   \2 Consolidated features
     \3 Project onto the multiview feature space, and look at point clouds. Each
     cloud is from one sample, across all the bootstrap samples.
+    \3 You could create a bootstrap visualization that considers the $n$
+    original samples are corners on a polygon. The original sample is at the
+    center, and differently weighted samples occur within the polygon, closest
+    to the samples that it has large fractions of. This can be used for brushed
+    selection.
 \end{outline}
 
 \section{Simulations}
