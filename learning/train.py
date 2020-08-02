@@ -99,9 +99,7 @@ if __name__ == '__main__':
     opts = Dict(yaml.safe_load(open(args.conf)))
 
     data_dir = pathlib.Path(os.environ["DATA_DIR"])
-    print(data_dir)
     out_dir = data_dir / opts.organization.out_dir / str(args.boot)
-    print(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     writer = SummaryWriter(out_dir / "logs")
     writer.add_text("conf", json.dumps(opts))

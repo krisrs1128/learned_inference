@@ -1,6 +1,6 @@
 
 source ../.env
-source ~/.virtualenvs/learned_inference/activate
+source ~/.virtualenvs/learned_inference/bin/activate
 cd $ROOT_DIR/inference/
 Rscript -e "rmarkdown::render('vignettes/generate.Rmd')"
 cd $ROOT_DIR/learning/

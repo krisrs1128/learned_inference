@@ -1,14 +1,14 @@
 organization: # all relative to $DATA_DIR
   features_dir: "features/vae_20200802/features.csv"
-  out_dir: "runs/vae_20200801/"
+  out_dir: "runs/vae_20200802/"
   train_dir: "train"
   xy: "Xy.csv"
 train:
   checkpoint: null
   batch_size: 32
   lr: 0.001
-  n_epochs: 2
-  save_every: 1
+  n_epochs: 75
+  save_every: 5
   z_dim: 64
 bootstrap:
   path: "bootstraps/vae_20200802/bootstraps.csv"

@@ -12,6 +12,10 @@ transfer_output_files = data/,data_output.tar.gz
 executable = train.sh
 arguments = $(Process)
 
+request_gpus = 1
++WantGPULab = true
++GPUJobLength = "short" 
+
 request_cpus = 1
 request_memory = 8GB
 request_disk = 10GB
