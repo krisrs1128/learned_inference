@@ -8,9 +8,9 @@ echo $ROOT_DIR
 cd $ROOT_DIR/run_scripts/
 ls
 python3 test_condor.py -b 10
-python3 $ROOT_DIR/run_scripts/test_condor.py -b 10
+python3 $ROOT_DIR/run_scripts/test_condor.py -b 10 -f $DATA_DIR
 touch ${DATA_DIR}/pt1.out
-python3 -m test_condor -b 10
+python3 -m test_condor -b 10 -f $DATA_DIR
 touch ${DATA_DIR}/pt2.out
-python3 -m test_condor -b ${1}
+python3 -m test_condor -b ${1} -f $DATA_DIR
 touch ${DATA_DIR}/pt3.out

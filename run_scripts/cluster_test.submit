@@ -5,7 +5,7 @@ universe = docker
 log = /home/ksankaran/logs/job_$(Cluster).log
 error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err
 output = /home/ksankaran/logs/job_$(Cluster)_$(Process).out
-docker_image = krisrs1128/li_test:latest
+docker_image = krisrs1128/li_test0:latest
 input = data.tar.gz
 
 executable = test.sh
