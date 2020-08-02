@@ -13,3 +13,4 @@ python3 -m test_condor -b 10 -f $DATA_DIR
 touch ${DATA_DIR}/pt2.out
 python3 -m test_condor -b ${1} -f $DATA_DIR
 touch ${DATA_DIR}/pt3.out
+tar -zcvf data_small.tar.gz ${DATA_DIR}
