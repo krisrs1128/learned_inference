@@ -7,8 +7,8 @@ echo ${1}
 echo $ROOT_DIR
 cd $ROOT_DIR/learning/
 python3 test_condor.py -b 10
-touch pt1.out
+touch ${DATA_DIR}/pt1.out
 python3 -m test_condor -b 10
-touch pt2.out
+touch ${DATA_DIR}/pt2.out
 python3 -m test_condor -b ${1}
-touch pt3.out
+touch ${DATA_DIR}/pt3.out
