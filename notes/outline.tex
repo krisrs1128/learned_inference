@@ -226,7 +226,7 @@ workflow, but where guarantees of statistical reproducibility are still central.
   \2 Multi-CCA (via penalized matric decomposition)
     \3 RV coefficient gives us a measure of similarity between encodings on a
     pairwise level, but what can we say when there are many runs to compare?
-    \3 Penalized matrix decomposition optimizes (tk?)
+    \3 Penalized matrix decomposition optimizes
     \begin{align}
       \arg\max_{u_1, \dots, u_{k}} \sum_{\text{pairs } u_{k}, u_{k^{\prime}}} \|X_{k}u_{k} - X_{k^{\prime}}u_{k^{\prime}}\|_{2}^{2} + \sum_{k = 1}^{K} \|u_{k}\|_{1} + \|u_{k}\|_{2}
     \end{align}
@@ -236,6 +236,16 @@ workflow, but where guarantees of statistical reproducibility are still central.
     a combination of features for each table that are all measuring the same
     thing. It is a measure of (linear redundancy across all the tables.
     \3 reference: \citep{witten2009penalized}
+  \2 Nonlinear redundancy \citep{donnat2018tracking}
+    \3 A limitation of the rv-coefficient and multicca approaches is that they
+    only consider linear redundancy. This is probably sufficient, since deep
+    models should be transforming data to a form that is more or less gaussian
+    in the encoding space, but it still may be possible to do better.
+    \3 As an alternative, consider the induced graphs created by each
+    bootstrapped encoding functions. These graphs can be compared using any sort
+    of graph distance.
+    \3 If all the induced graphs are similar, we can consider the analysis
+    stable.
 \end{outline}
 
 \section{Methodology}
