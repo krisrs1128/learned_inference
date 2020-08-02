@@ -6,7 +6,9 @@ touch $DATA_DIR/test1.out
 echo ${1}
 echo $ROOT_DIR
 cd $ROOT_DIR/run_scripts/
+ls
 python3 test_condor.py -b 10
+python3 $ROOT_DIR/run_scripts/test_condor.py -b 10
 touch ${DATA_DIR}/pt1.out
 python3 -m test_condor -b 10
 touch ${DATA_DIR}/pt2.out
