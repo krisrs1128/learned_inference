@@ -11,15 +11,6 @@ import os
 from addict import Dict
 import yaml
 
-# read the configuration file specifying number of bootstraps and folder to save everything
-# generate bootstrap indices, and save them to a csv that can be read by tibble
-# for i in 1 to n_bootstraps
-# define the configuration file for the i^th training run
-# define the sbatch script for training on that sample
-# make sure to specify the directory structure where the outputs will be saved
-# make sure to specify which of the bootstrap indices the sbatched model will be using
-# save the results to some directory
-
 def bootstrap_indices(N, B=30, out_path="./"):
     result = np.zeros((B, N))
     for b in range(B):
