@@ -19,4 +19,4 @@ request_memory = 50MB
 request_disk = 100MB
 
 
-queue 1
+queue 20

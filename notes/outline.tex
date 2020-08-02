@@ -2,6 +2,7 @@
 \usepackage{fullpage}
 \usepackage{graphicx,amsmath,amssymb}
 \usepackage{outlines, natbib}
+\usepackage{palatino}
 \usepackage{enumitem, url}
 \setenumerate[1]{label=\Roman*.}
 \setenumerate[2]{label=\Alph*.}
@@ -14,13 +15,13 @@
 \maketitle
 
 \begin{abstract}
-Many modern datasets don't fit neatly into n x p matrices, but most techniques
-for measuring statistical stability expect rectangular data. This talk describes
-ways to adapt techniques from statistical stability to the regime where features
-must be learned. We are specifically motivated by recent practices in earth
-observation science and spatial genomics, where (1) it is beneficial to use
-automated feature extractors and (2) these learned features are subject to
-scientific scrutiny.
+Many modern datasets don't fit neatly into $n \times p$ matrices, but most
+techniques for measuring statistical stability expect rectangular data. This
+talk describes ways to adapt techniques from statistical stability to the regime
+where features must be learned. We are specifically motivated by recent
+practices in earth observation science and spatial genomics, where (1) it is
+beneficial to use automated feature extractors and (2) these learned features
+are subject to scientific scrutiny.
 
 We propose approaches using stability selection and the RV coefficient, applied
 to the full feature learning workflow. We design controlled simulations to
@@ -147,12 +148,8 @@ workflow, but where guarantees of statistical reproducibility are still central.
     variables using that particular value of $\lambda$)
   \2 references: \citep{mosteller1977data, yu2013stability, meinshausen2010stability}
 \1 Feature learning
-  \2 Note: We are now using variational autoencoders, since this gives a
-  vectorial representation (unlike image autoencoders, which give compressed 2D
-  representations)
-  \2 Image autoencoders. Will encode on subtiles, and summarize
-  using average
-  position of a random selection of subtiles.
+  \2 VAE's: We encode images into $K$ (usually 64) dimensional vectors. This
+  gives a vectorial representation of the original image.
     \3 Autoencoder learns a lower-dimensional, nonlinear manifold with the
     highest density, within the very high-dimensional (but mostly empty) image
     space
@@ -162,16 +159,13 @@ workflow, but where guarantees of statistical reproducibility are still central.
     $u$ is uniform or gaussian noise (with some appropriate scale parameter).
     \3 $f$ and $g$ are usually only a few layers deep, and the whole system is
     trained using (adaptive forms of) gradient descent.
-    \3 The added noise prevents the model from learning a simple identify
-    function, and allows the dimension of the latent space $K$ to be larger than
-    $D$ (in theory, though we won't be doing this).
     \3 Convolution is a restriction over all possible linear layers. It creates
     an ``inductive bias'' which is natural in image contexts, since you want to
     be able to recognize particular features within an imagine, no matter where
     they are situated.
     \3 Analogy with PCA: If you replace the second term with $VV^{T}x$ and
     optimize over orthogonal $V$, then this is just PCA.
-    \3 references: Vincent, Bengio, Dauphin's Denoising Autoencoders.
+    \3 references: Stochastic Backpropagation, AE Variational Bayes,
     Representation learning survey.
   \2 CNNs
     \3 Limits of autoencoders: Like PCA, DAEs are going to try to capture main
