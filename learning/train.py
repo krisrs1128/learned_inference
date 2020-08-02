@@ -31,6 +31,8 @@ def log_epoch(epoch, loss, loader, writer, stage="train"):
 
 
 def save_model(model, optim, epoch, out_dir):
+    print("in save model")
+    print(out_dir)
     model_path = pathlib.Path(out_dir) / f"model_{epoch}.pt"
     optim_path = pathlib.Path(out_dir) / f"optim_{epoch}.pt"
     torch.save(model.state_dict(), model_path)
@@ -97,7 +99,9 @@ if __name__ == '__main__':
     opts = Dict(yaml.safe_load(open(args.conf)))
 
     data_dir = pathlib.Path(os.environ["DATA_DIR"])
+    print(data_dir)
     out_dir = data_dir / opts.organization.out_dir / str(args.boot)
+    print(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     writer = SummaryWriter(out_dir / "logs")
     writer.add_text("conf", json.dumps(opts))
