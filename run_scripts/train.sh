@@ -6,4 +6,4 @@ cd learning
 python3 -m bootstrap -c ../conf/train.yaml
 python3 -m train -c ../conf/train.yaml -b ${1}
 cd $_CONDOR_SCRATCH_DIR/
-tar -zcvf data_output_${2}_${1}.tar.gz $DATA_DIR
+tar -zcvf data_output_${2}_${1}.tar.gz $DATA_DIR/runs/

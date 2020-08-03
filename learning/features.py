@@ -2,7 +2,7 @@
 Save features from trained model
 
 Usage:
-python3 -m sim.features -c conf/train.yaml -m data/runs/vae_100/model_190.pt
+python3 -m features -c ../conf/train.yaml
 """
 import pandas as pd
 import numpy as np
@@ -14,7 +14,7 @@ import torch
 import os
 from torch.utils.data import DataLoader
 from models.vae import VAE
-import sim.data as dt
+import data as dt
 
 
 def save_encodings(loader, model, out_path):
@@ -35,17 +35,36 @@ def save_encodings(loader, model, out_path):
 
         i += 1
 
+def save_wrapper(loader, model, model_paths, out_dir):
+    for model_path in model_paths:
+        print(f"Saving features for {model_path}")
+        model.load_state_dict(torch.load(model_path))
+        out_path = out_dir / Path(f"features_{model_path.parts[-2]}.csv")
+        save_encodings(loader, model, out_path)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--conf", type=str, help="configuration file")
-    parser.add_argument("-m", "--model_path", type=str, help="path to saved model")
+    parser.add_argument("-m", "--models_dir", type=str, help="directory containing model")
     args = parser.parse_args()
     opts = Dict(yaml.safe_load(open(args.conf)))
 
-    model = VAE(z_dim=opts.z_dim)
-    model.load_state_dict(torch.load(args.model_path))
+    model = VAE(z_dim=opts.train.z_dim)
+    data_dir = Path(os.environ["DATA_DIR"])
+    cell_data = dt.CellDataset(
+        data_dir / opts.organization.train_dir,
+        data_dir / Path(opts.organization.xy),
+        dt.RandomCrop(64)
+    )
+    train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
 
-    cell_data = dt.CellDataset(opts.train_dir, Path(opts.xy), dt.RandomCrop(64))
-    train_loader = DataLoader(cell_data, batch_size=opts.batch_size)
-    save_encodings(train_loader, model, Path(opts.features_dir))
+    model_paths = [data_dir / opts.organization.out_dir / str(b) / "model_70.pt" for b in range(opts.bootstrap.B)]
+    print(model_paths)
+
+    save_wrapper(
+        train_loader,
+        model,
+        model_paths,
+        data_dir / opts.organization.features_dir
+    )
