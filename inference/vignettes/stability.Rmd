@@ -39,7 +39,7 @@ Xy <- read_csv(file.path(data_dir, conf$organization$xy))
 
 z <- lapply(features_list, function(z) as.matrix(z[, 3:66]))
 heatmap(cor(Xy[features_list[[1]]$ix, ], z[[1]]))
-hist(cor(features_list[[1]]$y, z[[1]]), 20)
+hist(cor(features_list[[1]]$y, z[[1]]), 30)
 ```
 
 For our first summary, we'll calculate the RV coefficients between unprojected
@@ -59,7 +59,7 @@ appear correlated (because, of course, we optimized that).
 
 ```{r}
 n_comp <- 10
-cca_res <- PMA::MultiCCA(z, ncomponents = n_comp)
+cca_res <- MultiCCA(z, ncomponents = n_comp)
 
 scores <- list()
 for (b in seq_len(B)) {
@@ -68,10 +68,12 @@ for (b in seq_len(B)) {
 
 rvs_aligned <- pairwise_rv(scores)
 heatmap(rvs_aligned)
-hist(rvs_aligned, 20)
+hist(rvs_aligned, 30)
 ```
 
-We can also try some dummy stability selection. This will depend on the scores.
+We can now try stability selection. This will depend on the scores. To see why
+it's important to first align the feature sets, try running `fits[[b]] <-
+glmnet(z[[b]], y)` instead of the regression onto `scores[[b]]`.
 
 ```{r}
 y <- Xy[features_list[[1]]$ix, ] %>% .[["y"]]
@@ -98,4 +100,15 @@ ggplot(coefs %>% filter(j != 1)) +
   geom_line(aes(x = lambda, y = beta_j, group = b), alpha = 0.5) +
   facet_wrap(~ j) +
   ggtitle("Projected Coefs. across Bootstraps")
+```
+
+The features seem relatively stable. Note that the prediction performance is
+quite weak, though. Perhaps this isn't too surprising, since we trained an
+unsupervised feature extractor.
+
+```{r}
+for (b in seq_len(B)) {
+  y_hat <- predict(fits[[b]], newx=scores[[b]])
+  plot(y, y_hat[, dim(y_hat)[2]], xlim = c(1, 9), ylim = c(2, 4), col = rgb(0, 0, 0, 0.5), cex = 0.1, main = round(fits[[b]]$lambda[dim(y_hat)[2]], 6))
+}
 ```
