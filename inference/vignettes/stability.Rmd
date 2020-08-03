@@ -4,68 +4,50 @@ title: Stability study
 
 
 ```{r}
+library("FactoMineR")
+library("PMA")
+library("dplyr")
 library("ggplot2")
 library("readr")
-library("dplyr")
 library("stringr")
 library("yaml")
-library("FactoMineR")
+library("inference")
 ```
 
-We'll have to work out the paths for all these... maybe the confs should be
-absolute paths to everything.
+Let's read in all the bootstrapped learned features. We save the full feature
+data frame in `features_list` and the purely numerical component in `z`.
 
 ```{r}
-## data_dir <- Sys.getenv("DATA_DIR")
-data_dir <- "../../../../data/"
-conf <- yaml.load_file("../../conf/train.yaml")
-features_path <- file.path(data_dir, conf$organization$features_dir)
-
-z <- read_csv(features_path) %>%
-  select(-X1) %>%
-  select(path, y, everything())
-z$ix <- str_extract(z$path, "[0-9]+") %>%
-  as.integer()
-
-Xy <- read_csv(conf$xy)
-
-heatmap(cor(Xy[z$ix, ], z[, 3:65]))
-hist(cor(z$y, z[, 3:65]), 20)
-```
-
-Simulate data that will look like the features.
-
-```{r}
-B <- 20
-n <- 100
-K <- 64
+data_dir <- file.path("~/Desktop", "data")
+root_dir <- file.path("..", "..")
+conf <- yaml.load_file(file.path(root_dir, "conf", "train.yaml"))
+features_dir <- file.path(data_dir, conf$organization$features_dir)
+features_paths <- list.files(features_dir, full.names = TRUE)
 
 features_list <- list()
-for (b in seq_len(B)) {
-  features_list[[b]] <- matrix(rnorm(n * K), n, K)
+for (p in features_paths) {
+  features_list[[p]] <- read_csv(p) %>%
+    select(-X1) %>%
+    select(path, y, everything())
+  features_list[[p]]$ix <- str_extract(features_list[[p]]$path, "[0-9]+") %>%
+    as.integer()
 }
+
+Xy <- read_csv(file.path(data_dir, conf$organization$xy))
+
+z <- lapply(features_list, function(z) as.matrix(z[, 3:66]))
+heatmap(cor(Xy[features_list[[1]]$ix, ], z[[1]]))
+hist(cor(features_list[[1]]$y, z[[1]]), 20)
 ```
 
-First, calculate the RV coefficients between unprojected pairs. I'm not sure if
-this is supposed to have any meaning if the columns are not exactly aligned.
-It's just a measure of the overall information content shared between the pairs,
-regardless of the column that is the source.
+For our first summary, we'll calculate the RV coefficients between unprojected
+pairs. I'm not sure if this is supposed to have any meaning if the columns are
+not exactly aligned. It's just a measure of the overall information content
+shared between the pairs, regardless of the column that is the source.
 
 ```{r}
-pairwise_rv <- function(x_list) {
-  B <- length(x_list)
-
-  rv_mat <- matrix(0, nrow = B, ncol = B)
-  for (i in seq_len(B)) {
-    for (j in seq_len(i - 1)) {
-      rv_mat[i, j] <- coeffRV(x_list[[i]], x_list[[j]])$rv
-    }
-  }
-  rv_mat + t(rv_mat)
-}
-
-rvs <- pairwise_rv(features_list)
-image(rvs)
+rvs <- pairwise_rv(z)
+heatmap(rvs)
 hist(rvs, 20)
 ```
 
@@ -74,7 +56,6 @@ interesting fact: when we ust multicca on noise, the projected scores will
 appear correlated (because, of course, we optimized that).
 
 ```{r}
-library("PMA")
 n_comp <- 10
 cca_res <- PMA::MultiCCA(features_list, ncomponents = n_comp)
 
