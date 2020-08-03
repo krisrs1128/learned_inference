@@ -31,8 +31,6 @@ def log_epoch(epoch, loss, loader, writer, stage="train"):
 
 
 def save_model(model, optim, epoch, out_dir):
-    print("in save model")
-    print(out_dir)
     model_path = pathlib.Path(out_dir) / f"model_{epoch}.pt"
     optim_path = pathlib.Path(out_dir) / f"optim_{epoch}.pt"
     torch.save(model.state_dict(), model_path)
