@@ -4,7 +4,7 @@ organization: # all relative to $DATA_DIR
   train_dir: "train"
   xy: "Xy.csv"
 train:
-  checkpoint: "runs/vae_no_boot/model_45.pt"
+  checkpoint: "runs/vae_no_boot/None/model_45.pt"
   batch_size: 32
   lr: 0.001
   n_epochs: 35
