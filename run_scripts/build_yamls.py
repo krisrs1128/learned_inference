@@ -8,7 +8,7 @@ import yaml
 def fine_tune_yaml(original_yaml, out_dir, start_epoch=0):
     conf = yaml.safe_load(open(original_yaml, "r"))
     conf["organization"]["out_dir"] = str(pathlib.Path("runs", f"vae_tune_{start_epoch}"))
-    conf["train"]["checkpoint"] = str(pathlib.Path("runs", "vae_no_boot", "None", "model_{start_epoch}.pt"))
+    conf["train"]["checkpoint"] = str(pathlib.Path("runs", "vae_no_boot", "None", f"model_{start_epoch}.pt"))
     conf["train"]["n_epochs"] = conf["train"]["n_epochs"] - start_epoch - 1
 
     with open(pathlib.Path(out_dir, f"start_{start_epoch}.yaml"), "w") as f:
