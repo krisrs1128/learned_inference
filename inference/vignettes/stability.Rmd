@@ -112,3 +112,18 @@ for (b in seq_len(B)) {
   plot(y, y_hat[, dim(y_hat)[2]], xlim = c(1, 9), ylim = c(2, 4), col = rgb(0, 0, 0, 0.5), cex = 0.1, main = round(fits[[b]]$lambda[dim(y_hat)[2]], 6))
 }
 ```
+
+What do the bootstrapped scores look like?
+
+```{r}
+scores_df <- list()
+for (b in seq_len(B)) {
+  scores_df[[b]] <- as.data.frame(scores[[b]]) %>%
+    mutate(ix = row_number())
+}
+
+scores_df <- bind_rows(scores_df, .id = "b")
+
+ggplot(scores_df %>% filter(ix < 10)) +
+  geom_point(aes(x = V1, y = V2, col = as.factor(ix)), alpha = 0.5)
+```

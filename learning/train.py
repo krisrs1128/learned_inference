@@ -1,9 +1,7 @@
 """
 Train VAE on multichannel cell tiffs
 
-
-python3 -m sim.vae -c conf/train.yaml
-python3 -m sim.vae -c conf/train.yaml
+python3 -m train -c ../conf/train.yaml
 """
 import argparse
 import pathlib
