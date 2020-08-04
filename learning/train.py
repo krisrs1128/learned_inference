@@ -103,7 +103,7 @@ if __name__ == '__main__':
     # Setup model
     model = VAE(z_dim=opts.train.z_dim)
     optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
-    model.load_checkpoint(opts.train.checkpoint)
+    model.load_checkpoint(data_dir / opts.train.checkpoint)
 
     # find indices to bootstrap on
     if args.boot is not None:
