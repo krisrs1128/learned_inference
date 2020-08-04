@@ -21,6 +21,7 @@ def fine_tune_sh(out_dir, start_epoch):
              "cd /home/kris/",
              "source .env",
              "cd learning",
+             f"python3 -m bootstrap -c ../conf/fine_tuning/start_{start_epoch}.yaml",
              f"python3 -m train -c ../conf/fine_tuning/start_{start_epoch}.yaml -b ${{1}}",
              "cd $_CONDOR_SCRATCH_DIR/",
              "tar -zcvf data_output_${2}_${1}.tar.gz $DATA_DIR/runs/"]
