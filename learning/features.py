@@ -59,8 +59,10 @@ if __name__ == '__main__':
     )
     train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
 
-    model_paths = [data_dir / opts.organization.out_dir / str(b) / "model_70.pt" for b in range(opts.bootstrap.B)]
-    print(model_paths)
+    if opts.bootstrap.B is None:
+        model_paths = [data_dir / opts.organization.out_dir / "None" / "model_70.pt"]
+    else:
+        model_paths = [data_dir / opts.organization.out_dir / str(b) / "model_70.pt" for b in range(opts.bootstrap.B)]
 
     save_wrapper(
         train_loader,
