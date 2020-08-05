@@ -1,0 +1,49 @@
+---
+title: Coreset Construction
+---
+
+```{r}
+library("stream")
+library("dplyr")
+library("ggplot2")
+library("readr")
+library("yaml")
+library("stringr")
+```
+
+```{r}
+data_dir <- file.path("~/Desktop", "data")
+root_dir <- file.path("..", "..")
+conf <- yaml.load_file(file.path(root_dir, "conf", "train_no_boot.yaml"))
+
+features_dir <- file.path(data_dir, conf$organization$features_dir)
+features_paths <- list.files(features_dir, full.names = TRUE)
+features <- read_csv(features_paths) %>%
+  select(-X1) %>%
+  select(path, y, everything())
+features$ix <- str_extract(features$path, "[0-9]+") %>%
+  as.integer()
+
+z <- as.matrix(features[, 3:66])
+stream <- DSD_Memory(z)
+bico <- DSC_BICO(k = 5, p = 10, space = 100, iterations = 10)
+update(bico, stream, n = 500)
+
+z0 <- get_centers(bico) # the coreset
+w <- get_weights(bico)
+coreset <- data.frame(z0, w=w)
+
+ggplot(coreset) +
+  geom_point(
+    aes(x = X1, y = X2, size=w)
+  )
+
+```
+
+Let's find the closest samples to these coreset points
+```{r}
+D <- dist(z0, z)
+min_ix <- apply(D, 1, which.min)
+
+
+```
