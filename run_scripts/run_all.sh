@@ -7,4 +7,4 @@ cd $ROOT_DIR/learning/
 python3 -m data
 python3 -m bootstrap -c ../conf/train.yaml
 python3 -m train -c ../conf/train.yaml -b 19
-python3 -m features -c ../conf/train.yaml -m $DATA_DIR/runs/vae_20200711/model_40.pt
+python3 -m features -c ../conf/train_no_boot.yaml -m $DATA_DIR/runs/vae_no_boot/

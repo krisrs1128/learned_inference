@@ -127,7 +127,7 @@ class CellDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), [str(self.img_ids[ix])]
+        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), [str(self.img_ids[ix])], [str(self.img_files[ix])]
 
 
 class RandomCrop():

@@ -1,5 +1,10 @@
 ---
 title: Coreset Construction
+params:
+  data_dir: "/Users/kris/Desktop/data"
+  out_dir: "coresets/"
+  space: 100
+  root_dir: "/Users/kris/Desktop/conceptual/learned_inference"
 ---
 
 ```{r}
@@ -9,14 +14,17 @@ library("ggplot2")
 library("readr")
 library("yaml")
 library("stringr")
+theme_set(theme_bw() + theme(panel.grid = element_blank()))
 ```
 
-```{r}
-data_dir <- file.path("~/Desktop", "data")
-root_dir <- file.path("..", "..")
-conf <- yaml.load_file(file.path(root_dir, "conf", "train_no_boot.yaml"))
+First, we extract the original features from the non-bootstrapped model. The
+path to those features is in the original experiment's yaml (though it only
+appears after running `features.py`.
 
-features_dir <- file.path(data_dir, conf$organization$features_dir)
+```{r}
+conf <- yaml.load_file(file.path(params$root_dir, "conf", "train_no_boot.yaml"))
+
+features_dir <- file.path(params$data_dir, conf$organization$features_dir)
 features_paths <- list.files(features_dir, full.names = TRUE)
 features <- read_csv(features_paths) %>%
   select(-X1) %>%
@@ -24,26 +32,53 @@ features <- read_csv(features_paths) %>%
 features$ix <- str_extract(features$path, "[0-9]+") %>%
   as.integer()
 
-z <- as.matrix(features[, 3:66])
+z <- as.matrix(features[, 3:(conf$train$z_dim + 2)])
 stream <- DSD_Memory(z)
-bico <- DSC_BICO(k = 5, p = 10, space = 100, iterations = 10)
+bico <- DSC_BICO(k = 5, p = 10, space = params$space, iterations = 10)
 update(bico, stream, n = 500)
 
 z0 <- get_centers(bico) # the coreset
 w <- get_weights(bico)
 coreset <- data.frame(z0, w=w)
 
-ggplot(coreset) +
-  geom_point(
-    aes(x = X1, y = X2, size=w)
-  )
-
+ggplot() +
+  geom_point(data = data.frame(z), aes(x = X0, y = X1), alpha = 0.1) +
+  geom_point(data = coreset, aes(x = X1, y = X2, size=w), col = "red")
 ```
 
-Let's find the closest samples to these coreset points
+Let's find the closest samples to these coreset points. Since there are
+duplicates, we will sum their weights. We'll also match the feature indices to
+the original images
+
 ```{r}
 D <- dist(z0, z)
 min_ix <- apply(D, 1, which.min)
+coreset_meta <- data.frame(
+  ix = min_ix,
+  path = features$path[min_ix],
+  img_id = features$ix[min_ix],
+  weight = w
+) %>%
+  group_by(ix, path, img_id) %>%
+  summarise(weight = sum(weight), occurrences = n())
 
+plot(runif(nrow(coreset_meta), 0, 0.5) + coreset_meta$occurrences, coreset_meta$weight)
+coreset_meta$weight[coreset_meta$weight > 30] <- 30
+plot(runif(nrow(coreset_meta), 0, 0.5) + coreset_meta$occurrences, coreset_meta$weight)
+```
 
+* Copy original images to the coreset directory
+
+```{r}
+out_dir <- file.path(params$data_dir, params$out_dir, params$space)
+dir.create(out_dir, recursive = TRUE)
+for (i in seq_len(nrow(coreset_meta))) {
+  file.copy(coreset_meta$path[i], out_dir)
+}
+```
+
+* Write the weights in the coreset directory
+
+```{r}
+write_csv(coreset_meta, file.path(out_dir, "weights.csv"))
 ```

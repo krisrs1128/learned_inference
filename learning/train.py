@@ -23,7 +23,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def log_epoch(epoch, loss, loader, writer, stage="train"):
     writer.add_scalar(f"{stage}/loss", loss, epoch)
-    x, _, _ = next(iter(loader))
+    x, _, _, _ = next(iter(loader))
     x_hat, _, _ = model(x.to(device))
     writer.add_image("{stage}/x_hat", make_grid(x_hat), epoch)
 
@@ -55,7 +55,7 @@ def train_epoch(model, loader, optim, epoch=0):
     """
     epoch_loss, i = 0, 0
 
-    for x, _, _ in loader:
+    for x, _, _, _ in loader:
         # get loss
         x = x.to(device)
         x_hat, mu, logvar = model(x)
@@ -76,7 +76,7 @@ def losses(model, loader):
     """
     epoch_losses = []
 
-    for x, _, _ in loader:
+    for x, _, _, _ in loader:
         x = x.to(device)
         with torch.no_grad():
             z_mean, z_log_var, _, decoded = model(x)
