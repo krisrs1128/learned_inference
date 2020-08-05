@@ -1,0 +1,19 @@
+---
+title: Acceleration Strategies
+---
+
+This vignette describes the computation vs. inference tradeoffs associated with
+using fine-tuning and coresets while bootstrapping.
+
+```{r}
+library("dplyr")
+library("ggplot2")
+library("readr")
+```
+
+
+* Get directories to all the fine-tuned features starting at epoch T
+* Get pairwise RVs for features at that level
+* Put into a list element
+* Repeat for all epochs
+* Melt into appropriate data frame and look at histogram
