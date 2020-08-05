@@ -113,6 +113,12 @@ class CellDataset(Dataset):
         else:
             self.resample_ix = np.arange(len(img_ids))
 
+        weights_path = pathlib.Path(input_dir).glob("weights.csv")
+        if weights_path.exists:
+            self.weights = pd.read_csv(weights_path)["weight"].values
+        else:
+            self.weights = np.ones(len(img_ids))
+
         # transforms, like crops and rotations
         self.transform = transform
 
@@ -127,7 +133,11 @@ class CellDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y]), [str(self.img_ids[ix])], [str(self.img_files[ix])]
+        return torch.Tensor(img.transpose(2, 0, 1)), \\
+            torch.Tensor([y]), \\
+            [str(self.img_ids[ix])], \\
+            [str(self.img_files[ix])] \\
+            torch.Tensor(self.weights[ix])
 
 
 class RandomCrop():

@@ -55,11 +55,12 @@ def train_epoch(model, loader, optim, epoch=0):
     """
     epoch_loss, i = 0, 0
 
-    for x, _, _, _ in loader:
+    for x, _, _, _, weights in loader:
         # get loss
         x = x.to(device)
         x_hat, mu, logvar = model(x)
         loss, _, _ = loss_fn(x_hat, x, mu, logvar)
+        loss *= weights
 
         # update
         optim.zero_grad()
@@ -76,13 +77,12 @@ def losses(model, loader):
     """
     epoch_losses = []
 
-    for x, _, _, _ in loader:
+    for x, _, _, _, weights in loader:
         x = x.to(device)
         with torch.no_grad():
             z_mean, z_log_var, _, decoded = model(x)
-            kl_divergence = (0.5 * (z_mean ** 2 + torch.exp(z_log_var) - z_log_var - 1)).sum()
-            pixelwise_bce = F.binary_cross_entropy(decoded, x, reduction="sum")
-            epoch_losses.append((kl_divergence + pixelwise_bce).item())
+            loss = weights * (loss_fn(x_hat, x, z_mean, z_var)[0])
+            epoch_losses.append(loss.item())
 
     return epoch_losses
 
