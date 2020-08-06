@@ -29,7 +29,7 @@ def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit"):
              f"arguments = {conf_path} $(Process) $(Cluster)",
              "request_gpus = 1",
              "+WantGPULab = true",
-             "+GPUJobLength = 'short'",
+             '+GPUJobLength = "short"',
              "request_cpus = 1",
              "request_memory = 500MB",
              "request_disk = 5GB",
