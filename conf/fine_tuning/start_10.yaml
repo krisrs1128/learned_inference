@@ -3,7 +3,7 @@ bootstrap:
   index: null
   path: bootstraps/vae_20200802/bootstraps.csv
 organization:
-  features_dir: features/vae_20200802/
+  features_dir: features/vae_tune_10
   out_dir: runs/vae_tune_10
   train_dir: train
   xy: Xy.csv
