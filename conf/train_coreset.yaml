@@ -1,0 +1,15 @@
+organization: # all relative to $DATA_DIR
+  features_dir: "features/coresets/500"
+  out_dir: "runs/coreset/500/"
+  train_dir: "coresets/500"
+  xy: "Xy.csv"
+train:
+  checkpoint: null
+  batch_size: 32
+  lr: 0.001
+  n_epochs: 200
+  save_every: 5
+  z_dim: 64
+bootstrap:
+  path: null
+  B: null
