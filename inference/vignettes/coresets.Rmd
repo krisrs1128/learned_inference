@@ -3,7 +3,7 @@ title: Coreset Construction
 params:
   data_dir: "/Users/kris/Desktop/data"
   out_dir: "coresets/"
-  space: 500
+  space: 400
   root_dir: "/Users/kris/Desktop/conceptual/learned_inference"
 ---
 
@@ -35,7 +35,7 @@ features$ix <- str_extract(features$path, "[0-9]+") %>%
 z <- as.matrix(features[, 3:(conf$train$z_dim + 2)])
 stream <- DSD_Memory(z)
 bico <- DSC_BICO(k = 5, p = 10, space = params$space, iterations = 10)
-update(bico, stream, n = 500)
+update(bico, stream, n = params$space / 5)
 
 z0 <- get_centers(bico) # the coreset
 w <- get_weights(bico)
@@ -61,10 +61,6 @@ coreset_meta <- data.frame(
 ) %>%
   group_by(ix, path, img_id) %>%
   summarise(weight = sum(weight), occurrences = n())
-
-plot(runif(nrow(coreset_meta), 0, 0.5) + coreset_meta$occurrences, coreset_meta$weight)
-coreset_meta$weight[coreset_meta$weight > 30] <- 30
-plot(runif(nrow(coreset_meta), 0, 0.5) + coreset_meta$occurrences, coreset_meta$weight)
 ```
 
 * Copy original images to the coreset directory
