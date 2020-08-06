@@ -55,12 +55,11 @@ def train_epoch(model, loader, optim, epoch=0):
     """
     epoch_loss, i = 0, 0
 
-    for x, _, _, _, weights in loader:
+    for x, _, _, _ in loader:
         # get loss
         x = x.to(device)
         x_hat, mu, logvar = model(x)
         loss, _, _ = loss_fn(x_hat, x, mu, logvar)
-        loss *= weights
 
         # update
         optim.zero_grad()
@@ -77,11 +76,11 @@ def losses(model, loader):
     """
     epoch_losses = []
 
-    for x, _, _, _, weights in loader:
+    for x, _, _, _ in loader:
         x = x.to(device)
         with torch.no_grad():
             z_mean, z_log_var, _, decoded = model(x)
-            loss = weights * (loss_fn(x_hat, x, z_mean, z_var)[0])
+            loss = loss_fn(x_hat, x, z_mean, z_var)[0]
             epoch_losses.append(loss.item())
 
     return epoch_losses
@@ -103,7 +102,8 @@ if __name__ == '__main__':
     # Setup model
     model = VAE(z_dim=opts.train.z_dim)
     optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
-    model.load_checkpoint(data_dir / opts.train.checkpoint)
+    if opts.train.checkpoint is not None:
+        model.load_checkpoint(data_dir / opts.train.checkpoint)
 
     # find indices to bootstrap on
     if args.boot is not None:

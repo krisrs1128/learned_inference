@@ -3,7 +3,7 @@ title: Coreset Construction
 params:
   data_dir: "/Users/kris/Desktop/data"
   out_dir: "coresets/"
-  space: 100
+  space: 500
   root_dir: "/Users/kris/Desktop/conceptual/learned_inference"
 ---
 
