@@ -10,7 +10,7 @@ def fine_tune_yaml(original_yaml, out_dir, start_epoch=0):
     conf["organization"]["out_dir"] = str(pathlib.Path("runs", f"vae_tune_{start_epoch}"))
     conf["organization"]["features_dir"] = str(pathlib.Path("features", f"vae_tune_{start_epoch}"))
     conf["train"]["checkpoint"] = str(pathlib.Path("runs", "vae_no_boot", "None", f"model_{start_epoch}.pt"))
-    conf["train"]["n_epochs"] = conf["train"]["n_epochs"] - start_epoch - 1
+    conf["train"]["n_epochs"] = max(conf["train"]["n_epochs"] - start_epoch - 1, 1)
 
     pathlib.Path(out_dir).mkdir(exist_ok=True)
     with open(pathlib.Path(out_dir, f"start_{start_epoch}.yaml"), "w") as f:
