@@ -37,6 +37,7 @@ def save_encodings(loader, model, model_path, out_path):
 
         i += 1
 
+
 def save_wrapper(loader, model, model_paths, out_dir):
     for model_path in model_paths:
         print(f"Saving features for {model_path}")

@@ -8,7 +8,7 @@ input = data.tar.gz
 transfer_output_files = data_output_$(Cluster)_$(Process).tar.gz
 
 executable = train.sh
-arguments = ${1} $(Process) $(Cluster)
+arguments = ../conf/train_no_boot.yaml $(Process) $(Cluster)
 
 request_gpus = 1
 +WantGPULab = true

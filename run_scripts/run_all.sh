@@ -11,7 +11,7 @@ bash cluster.submit ../conf/fine_tuning/start_10.yaml
 python3 -m train -c ../conf/train_no_boot.yaml
 python3 -m features -c ../conf/train_no_boot.yaml -m $DATA_DIR/runs/vae_no_boot/
 
-python3 -m bootstrap -c ../conf/train.yaml
+python3 -m bootstrap -c ../conf/train_boot.yaml
 python3 -m train -c ../conf/train_boot.yaml -b 1
 python3 -m train -c ../conf/train_boot.yaml -b 2
 python3 -m train -c ../conf/train_boot.yaml -b 10
