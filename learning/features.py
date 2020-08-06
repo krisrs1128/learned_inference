@@ -61,7 +61,7 @@ if __name__ == '__main__':
         dt.RandomCrop(64)
     )
     train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
-    model_paths = list(Path(args.models_dir).glob(f"**/model*{args.epoch}*.pt"))
+    model_paths = list(Path(args.models_dir).glob(f"**/model*{final}*.pt"))
 
     save_wrapper(
         train_loader,
