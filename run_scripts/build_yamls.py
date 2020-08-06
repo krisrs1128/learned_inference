@@ -16,29 +16,30 @@ def fine_tune_yaml(original_yaml, out_dir, start_epoch=0):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def fine_tune_sh(out_dir, start_epoch):
+def cluster_submit(out_dir, conf_path="train"):
     lines = ["#!/bin/bash",
-             "tar -zxvf $_CONDOR_SCRATCH_DIR/data.tar.gz",
-             "cd /home/kris/",
-             "source .env",
-             "cd learning",
-             f"python3 -m bootstrap -c ../conf/fine_tuning/start_{start_epoch}.yaml",
-             f"python3 -m train -c ../conf/fine_tuning/start_{start_epoch}.yaml -b ${{1}}",
-             "cd $_CONDOR_SCRATCH_DIR/",
-             "python3 -m features -c ../conf/start_{start_epoch}.yaml -m $DATA_DIR/features/",
-             "tar -zcvf data_output_${2}_${1}.tar.gz $DATA_DIR/features/"]
+             "universe = docker",
+             "log = /home/ksankaran/logs/job_$(Cluster).log",
+             "error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err",
+             "output = /home/ksankaran/logs/job_$(Cluster)_$(Process).out",
+             "docker_image = krisrs1128/learned_inference_dev:latest",
+             "input = data.tar.gz",
+             "transfer_output_files = data_output_$(Cluster)_$(Process).tar.gz",
+             "executable = train.sh",
+             f"arguments = {conf_path} $(Process) $(Cluster)",
+             "request_gpus = 1",
+             "+WantGPULab = true",
+             "+GPUJobLength = 'short'",
+             "request_cpus = 1",
+             "request_memory = 500MB",
+             "request_disk = 5GB",
+             "queue 1"]
 
-    with open(pathlib.Path(out_dir, f"train_{start_epoch}.sh"), "w") as f:
+    with open(pathlib.Path(out_dir, f"cluster_{start_epoch}.submit"), "w") as f:
         f.write('\n'.join(lines))
-
-def coreset_yaml():
-    pass
-
-def coreset_sh():
-    pass
 
 
 if __name__ == '__main__':
         for epoch in range(0, 60, 10):
             fine_tune_yaml("../conf/train_boot.yaml", "../conf/fine_tuning/", epoch)
-            fine_tune_sh("../run_scripts/fine_tuning", epoch)
+            cluster_submit_sh("../run_scripts/", f"../conf/fine_tuning/start_{epoch}.yaml")
