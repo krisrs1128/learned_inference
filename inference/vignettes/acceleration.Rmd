@@ -1,5 +1,8 @@
 ---
 title: Acceleration Strategies
+params:
+  data_dir: "/Users/kris/Desktop/data"
+  root_dir: "/Users/kris/Desktop/learned_inference"
 ---
 
 This vignette describes the computation vs. inference tradeoffs associated with
@@ -9,11 +12,59 @@ using fine-tuning and coresets while bootstrapping.
 library("dplyr")
 library("ggplot2")
 library("readr")
+library("inference")
+theme_set(theme_bw() + theme(panel.grid = element_blank()))
+params <- list(
+  data_dir = "/Users/kris/Desktop/data",
+  root_dir = "/Users/kris/Desktop/learned_inference"
+)
 ```
 
-
 * Get directories to all the fine-tuned features starting at epoch T
-* Get pairwise RVs for features at that level
+
+```{r}
+features_dirs <- list(
+  "bootstraps" = file.path(data_dir, "features", "vae_20200802"),
+  "start_10" = file.path(data_dir, "features", "vae_tune_10"),
+  "start_50" = file.path(data_dir, "features", "vae_tune_50")
+)
+
+features_list <- list()
+for (i in seq_along(features_dirs)) {
+  cur_dir <- names(features_dirs)[i]
+  print(cur_dir)
+
+  features_paths <- list.files(features_dirs[[i]], full.names = TRUE)
+  features_list[[cur_dir]] <- list()
+  print(i)
+
+  for (p in features_paths) {
+    features_list[[cur_dir]][[p]] <- read_csv(p) %>%
+      select(-X1) %>%
+      select(path, model, img_id, ix, y, everything())
+    features_list[[cur_dir]][[p]]$ix <- str_extract(features_list[[cur_dir]][[p]]$path, "[0-9]+") %>%
+      as.integer()
+  }
+}
+```
+
+* filter bootstrap features
+
+```{r}
+tune_features <- setdiff(names(features_dirs), "bootstraps")
+
+for (i in seq_along(tune_features)) {
+  ft <- tune_features[i]
+  for (j in seq_along(features_list[[ft]])) {
+    features_list[[ft]][[j]] %>%
+      filter(grepl("boot", model))
+  }
+}
+
+features_list$start_10 %>%head()
+
+```
+
+* Get pairwise RVs for features at each epoch level
 * Put into a list element
-* Repeat for all epochs
 * Melt into appropriate data frame and look at histogram
