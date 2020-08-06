@@ -8,10 +8,7 @@ input = data.tar.gz
 transfer_output_files = data_output_$(Cluster)_$(Process).tar.gz
 executable = train.sh
 arguments = ../conf/fine_tuning/start_20.yaml $(Process) $(Cluster)
-request_gpus = 1
-+WantGPULab = true
-+GPUJobLength = "short"
 request_cpus = 1
-request_memory = 500MB
-request_disk = 5GB
+request_memory = 100MB
+request_disk = 1GB
 queue 1

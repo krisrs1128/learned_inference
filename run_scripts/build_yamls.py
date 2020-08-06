@@ -44,8 +44,8 @@ def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit"):
              # "+WantGPULab = true",
              # '+GPUJobLength = "short"',
              "request_cpus = 1",
-             "request_memory = 500MB",
-             "request_disk = 5GB",
+             "request_memory = 100MB",
+             "request_disk = 1GB",
              "queue 1"]
 
     with open(pathlib.Path(out_dir, output_name), "w") as f:
