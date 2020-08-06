@@ -17,11 +17,11 @@ from models.vae import VAE
 import data as dt
 
 
-def save_encodings(loader, model, out_path):
+def save_encodings(loader, model, model_path, out_path):
     os.makedirs(out_path.parent, exist_ok=True)
 
     i = 0
-    for x, y, img_id, img_path, weight in loader:
+    for x, y, img_id, img_path in loader:
         batch_size = len(x)
         mode = "w" if i == 0 else "a"
 
@@ -29,9 +29,9 @@ def save_encodings(loader, model, out_path):
             z_mean, _, _ = model.encode(x)
             z_mean = np.array(z_mean)
             z_df = pd.DataFrame(z_mean)
+            z_df["model"] = model_path
             z_df["img_id"] = img_id[0]
             z_df["path"] = img_path[0]
-            z_df["weight"] = np.array(weight)
             z_df["y"] = np.array(y)
             z_df.to_csv(out_path, mode=mode, header=(i == 0))
 
@@ -42,7 +42,7 @@ def save_wrapper(loader, model, model_paths, out_dir):
         print(f"Saving features for {model_path}")
         model.load_state_dict(torch.load(model_path))
         out_path = out_dir / Path(f"features_{model_path.parts[-2]}.csv")
-        save_encodings(loader, model, out_path)
+        save_encodings(loader, model, model_path, out_path)
 
 
 if __name__ == '__main__':
