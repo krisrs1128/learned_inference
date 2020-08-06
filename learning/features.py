@@ -48,8 +48,7 @@ def save_wrapper(loader, model, model_paths, out_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--conf", type=str, help="configuration file")
-    parser.add_argument("-m", "--models_dir", type=str, help="directory containing models")
-    parser.add_argument("-e", "--epoch", type=int, default=70, help="Epoch to extract features for")
+    parser.add_argument("-m", "--model_path", default="**/model*final*pt", statetype=str, help="model path")
     args = parser.parse_args()
     opts = Dict(yaml.safe_load(open(args.conf)))
 
@@ -61,7 +60,7 @@ if __name__ == '__main__':
         dt.RandomCrop(64)
     )
     train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
-    model_paths = list(Path(args.models_dir).glob(f"**/model*{final}*.pt"))
+    model_paths = list(Path(opts.organization.out_dir).glob(args.model_path))
 
     save_wrapper(
         train_loader,
