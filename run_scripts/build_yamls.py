@@ -16,7 +16,7 @@ def fine_tune_yaml(original_yaml, out_dir, start_epoch=0):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def cluster_submit(out_dir, conf_path="train"):
+def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit"):
     lines = ["#!/bin/bash",
              "universe = docker",
              "log = /home/ksankaran/logs/job_$(Cluster).log",
@@ -35,11 +35,11 @@ def cluster_submit(out_dir, conf_path="train"):
              "request_disk = 5GB",
              "queue 1"]
 
-    with open(pathlib.Path(out_dir, f"cluster_{start_epoch}.submit"), "w") as f:
+    with open(pathlib.Path(out_dir, output_name), "w") as f:
         f.write('\n'.join(lines))
 
 
 if __name__ == '__main__':
         for epoch in range(0, 60, 10):
             fine_tune_yaml("../conf/train_boot.yaml", "../conf/fine_tuning/", epoch)
-            cluster_submit_sh("../run_scripts/", f"../conf/fine_tuning/start_{epoch}.yaml")
+            cluster_submit("../run_scripts/", f"../conf/fine_tuning/start_{epoch}.yaml", f"cluster_{epoch}.submit")

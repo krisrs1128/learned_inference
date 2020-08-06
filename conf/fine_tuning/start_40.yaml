@@ -1,9 +1,8 @@
 bootstrap:
-  B: 20
-  index: null
-  path: bootstraps/vae_20200802/bootstraps.csv
+  B: 5
+  path: bootstraps/vae_boot/bootstraps.csv
 organization:
-  features_dir: features/vae_20200802/
+  features_dir: features/vae_tune_40
   out_dir: runs/vae_tune_40
   train_dir: train
   xy: Xy.csv
@@ -11,6 +10,6 @@ train:
   batch_size: 32
   checkpoint: runs/vae_no_boot/None/model_40.pt
   lr: 0.001
-  n_epochs: 35
-  save_every: 5
+  n_epochs: -39
+  save_every: 1000
   z_dim: 64
