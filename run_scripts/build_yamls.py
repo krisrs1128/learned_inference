@@ -25,7 +25,8 @@ def fine_tune_sh(out_dir, start_epoch):
              f"python3 -m bootstrap -c ../conf/fine_tuning/start_{start_epoch}.yaml",
              f"python3 -m train -c ../conf/fine_tuning/start_{start_epoch}.yaml -b ${{1}}",
              "cd $_CONDOR_SCRATCH_DIR/",
-             "tar -zcvf data_output_${2}_${1}.tar.gz $DATA_DIR/runs/"]
+             "python3 -m features -c ../conf/start_{start_epoch}.yaml -m $DATA_DIR/features/",
+             "tar -zcvf data_output_${2}_${1}.tar.gz $DATA_DIR/features/"]
 
     with open(pathlib.Path(out_dir, f"train_{start_epoch}.sh"), "w") as f:
         f.write('\n'.join(lines))
@@ -39,5 +40,5 @@ def coreset_sh():
 
 if __name__ == '__main__':
         for epoch in range(0, 60, 10):
-            fine_tune_yaml("../conf/train.yaml", "../conf/fine_tuning/", epoch)
+            fine_tune_yaml("../conf/train_boot.yaml", "../conf/fine_tuning/", epoch)
             fine_tune_sh("../run_scripts/fine_tuning", epoch)

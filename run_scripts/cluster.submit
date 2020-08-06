@@ -1,6 +1,4 @@
-# Test bootstrap submission
-# starter submit file for CHTC jobs
-
+#!/bin/bash
 universe = docker
 log = /home/ksankaran/logs/job_$(Cluster).log
 error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err
@@ -10,7 +8,7 @@ input = data.tar.gz
 transfer_output_files = data_output_$(Cluster)_$(Process).tar.gz
 
 executable = train.sh
-arguments = $(Process) $(Cluster)
+arguments = ${1} $(Process) $(Cluster)
 
 request_gpus = 1
 +WantGPULab = true

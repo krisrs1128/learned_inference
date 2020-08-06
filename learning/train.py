@@ -28,11 +28,13 @@ def log_epoch(epoch, loss, loader, writer, stage="train"):
     writer.add_image("{stage}/x_hat", make_grid(x_hat), epoch)
 
 
-def save_model(model, optim, epoch, out_dir):
+def save_model(model, optim, epoch, out_dir, save_optim=False):
     model_path = pathlib.Path(out_dir) / f"model_{epoch}.pt"
-    optim_path = pathlib.Path(out_dir) / f"optim_{epoch}.pt"
     torch.save(model.state_dict(), model_path)
-    torch.save(optim.state_dict(), optim_path)
+
+    if save_optim:
+        optim_path = pathlib.Path(out_dir) / f"optim_{epoch}.pt"
+        torch.save(optim.state_dict(), optim_path)
 
 
 def train(model, optim, loader, opts, out_dir, writer):
@@ -46,6 +48,7 @@ def train(model, optim, loader, opts, out_dir, writer):
         if epoch % opts.train.save_every == 0:
             save_model(model, optim, epoch, out_dir)
 
+    save_model(model, optim, "final", out_dir)
     return losses
 
 

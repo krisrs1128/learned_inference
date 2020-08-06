@@ -12,6 +12,7 @@ using fine-tuning and coresets while bootstrapping.
 library("dplyr")
 library("ggplot2")
 library("readr")
+library("stringr")
 library("inference")
 theme_set(theme_bw() + theme(panel.grid = element_blank()))
 params <- list(
@@ -22,11 +23,14 @@ params <- list(
 
 * Get directories to all the fine-tuned features starting at epoch T
 
+The outer loop here goes over different tuning levels. The inner loop gives
+different bootstrap results, per tuning level.
+
 ```{r}
 features_dirs <- list(
-  "bootstraps" = file.path(data_dir, "features", "vae_20200802"),
-  "start_10" = file.path(data_dir, "features", "vae_tune_10"),
-  "start_50" = file.path(data_dir, "features", "vae_tune_50")
+  "bootstraps" = file.path(params$data_dir, "features", "vae_no_boot"),
+  "start_10" = file.path(params$data_dir, "features", "vae_tune_10"),
+  "start_50" = file.path(params$data_dir, "features", "vae_tune_50")
 )
 
 features_list <- list()
@@ -41,7 +45,7 @@ for (i in seq_along(features_dirs)) {
   for (p in features_paths) {
     features_list[[cur_dir]][[p]] <- read_csv(p) %>%
       select(-X1) %>%
-      select(path, model, img_id, ix, y, everything())
+      select(path, model, img_id, y, everything())
     features_list[[cur_dir]][[p]]$ix <- str_extract(features_list[[cur_dir]][[p]]$path, "[0-9]+") %>%
       as.integer()
   }
@@ -56,13 +60,16 @@ tune_features <- setdiff(names(features_dirs), "bootstraps")
 for (i in seq_along(tune_features)) {
   ft <- tune_features[i]
   for (j in seq_along(features_list[[ft]])) {
-    features_list[[ft]][[j]] %>%
-      filter(grepl("boot", model))
+    features_list[[ft]][[j]] <- features_list[[ft]][[j]] %>%
+      filter(!grepl("boot", model))
   }
+
+  ## features_list[[ft]] <- bind_rows(features_list[[ft]], id. = "boot")
 }
 
 features_list$start_10 %>%head()
-
+features_list$start_10$"/Users/kris/Desktop/data/features/vae_tune_10/features_None.csv" %>%
+  .[["model"]]
 ```
 
 * Get pairwise RVs for features at each epoch level
