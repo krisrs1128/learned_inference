@@ -7,7 +7,7 @@ train:
   checkpoint: null
   batch_size: 32
   lr: 0.001
-  n_epochs: 75
+  n_epochs: 5
   save_every: 10
   z_dim: 64
 bootstrap:

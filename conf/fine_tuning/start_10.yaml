@@ -10,6 +10,6 @@ train:
   batch_size: 32
   checkpoint: runs/vae_no_boot/None/model_10.pt
   lr: 0.001
-  n_epochs: 64
+  n_epochs: 1
   save_every: 1000
   z_dim: 64
