@@ -1,5 +1,5 @@
 bootstrap:
-  B: 5
+  B: 20
   path: bootstraps/vae_boot/bootstraps.csv
 organization:
   features_dir: features/vae_tune_30
