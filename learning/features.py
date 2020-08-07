@@ -62,8 +62,11 @@ if __name__ == '__main__':
         dt.RandomCrop(64)
     )
     train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
+    print("in features")
     print(args.model_path)
-    model_paths = list(data_dir / Path(opts.organization.out_dir).glob(args.model_path))
+    print(data_dir / Path(opts.organization.out_dir))
+    print(data_dir / opts.organization.out_dir)
+    model_paths = list((data_dir / opts.organization.out_dir).glob(args.model_path))
     print(model_paths)
     print(opts.organization)
 
