@@ -1,5 +1,7 @@
 ---
 title: Data Generation Mechanism
+params:
+  out_dir: /Users/kris/Desktop/data
 ---
 
 ```{r}
@@ -121,15 +123,14 @@ colnames(X) <- c("N", paste0("beta_", 1:ncol(beta_r)), "nu_r", "alpha_r", "nu", 
 y <- X %*% c(1 / 5000, 1/3, -1/3, -1/3, 1/4, 1/4, 1/4, 1/4, 1, 1/800) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
-out_dir <- Sys.getenv("DATA_DIR")
-dir.create(out_dir)
-write_csv(data.frame(X = X, y = y), file.path(out_dir, "Xy.csv"))
+dir.create(params$out_dir)
+write_csv(data.frame(X = X, y = y), file.path(params$out_dir, "Xy.csv"))
 ```
 
 Now we can simulate all the images.
 
 ```{r}
-dir.create(file.path(out_dir, "tiffs"))
+dir.create(file.path(params$out_dir, "tiffs"))
 
 for (i in seq_len(n_images)) {
   result <- sim_wrapper(n_original[i], nu[i], alpha[i], beta_r[i, ], nu_r[i],
@@ -139,7 +140,15 @@ for (i in seq_len(n_images)) {
   marks <- result$marks %>%
     mutate(variable = paste0("X", mark))
 
-  out_name <- sprintf(file.path(out_dir, "tiffs", "image-%s.tiff"), str_pad(i, 4, "left", 0))
+  out_name <- sprintf(file.path(params$out_dir, "tiffs", "image-%s.tiff"), str_pad(i, 4, "left", 0))
   save_raster(marks, out_name)
 }
+```
+
+Let's make a nice display of all the images, and how they vary with different
+simulation parameters.
+
+```{r, eval = FALSE}
+library("png")
+readPNG(file.path(params$out_dir, "pngs", "img-000.png"))
 ```

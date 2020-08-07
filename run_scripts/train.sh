@@ -1,4 +1,5 @@
 #!/bin/bash
+tar -zxvf $_CONDOR_SCRATCH_DIR/data.tar.gz
 cd $HOME
 source .env
 cd $ROOT_DIR/learning
