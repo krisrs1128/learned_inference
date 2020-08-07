@@ -1,6 +1,10 @@
 #!/bin/bash
+ls $HOME
 cd $HOME
+pwd
 source .env
+ls $ROOT_DIR
+ls $DATA_DIR
 cd $ROOT_DIR/learning
 ls
 pwd
