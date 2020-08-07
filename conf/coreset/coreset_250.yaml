@@ -8,7 +8,7 @@ organization:
   xy: Xy.csv
 train:
   batch_size: 32
-  checkpoint: runs/vae_no_boot/None/model_70.pt
+  checkpoint: runs/vae_no_boot/None/model_final.pt
   lr: 0.001
   n_epochs: 1000
   save_every: 1000

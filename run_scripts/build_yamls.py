@@ -21,7 +21,7 @@ def coreset_yaml(original_yaml, out_dir, size=100, n_epochs=1000):
     conf = yaml.safe_load(open(original_yaml, "r"))
     conf["organization"]["out_dir"] = str(pathlib.Path("runs", f"vae_coreset_{size}"))
     conf["organization"]["features_dir"] = str(pathlib.Path("features", f"vae_coreset_{size}"))
-    conf["train"]["checkpoint"] = str(pathlib.Path("runs", "vae_no_boot", "None", f"model_70.pt"))
+    conf["train"]["checkpoint"] = str(pathlib.Path("runs", "vae_no_boot", "None", f"model_final.pt"))
     conf["train"]["n_epochs"] = n_epochs
 
     pathlib.Path(out_dir).mkdir(exist_ok=True)
