@@ -11,5 +11,5 @@ train:
   checkpoint: runs/vae_no_boot/None/model_final.pt
   lr: 0.001
   n_epochs: 400
-  save_every: 1000
+  save_every: 10
   z_dim: 64
