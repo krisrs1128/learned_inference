@@ -1,5 +1,5 @@
 bootstrap:
-  B: 20
+  B: 50
   path: bootstraps/vae_boot/bootstraps.csv
 organization:
   features_dir: features/vae_coreset_1000

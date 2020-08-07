@@ -1,5 +1,5 @@
 bootstrap:
-  B: 20
+  B: 50
   path: bootstraps/vae_boot/bootstraps.csv
 organization:
   features_dir: features/vae_tune_30
@@ -10,6 +10,6 @@ train:
   batch_size: 32
   checkpoint: runs/vae_no_boot/None/model_30.pt
   lr: 0.001
-  n_epochs: 1
+  n_epochs: 69
   save_every: 1000
   z_dim: 64

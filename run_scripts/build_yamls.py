@@ -29,7 +29,7 @@ def coreset_yaml(original_yaml, out_dir, size=100, n_epochs=400):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit"):
+def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit", B=50):
     lines = ["#!/bin/bash",
              "universe = docker",
              "log = /home/ksankaran/logs/job_$(Cluster).log",
@@ -46,14 +46,14 @@ def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit"):
              "request_cpus = 1",
              "request_memory = 4GB",
              "request_disk = 1GB",
-             "queue 1"]
+             f"queue {B}"]
 
     with open(pathlib.Path(out_dir, output_name), "w") as f:
         f.write('\n'.join(lines))
 
 
 if __name__ == '__main__':
-        for epoch in range(0, 60, 10):
+        for epoch in range(0, 100, 10):
             fine_tune_yaml("../conf/train_boot.yaml", "../conf/fine_tuning/", epoch)
             cluster_submit("../run_scripts/", f"../conf/fine_tuning/start_{epoch}.yaml", f"tune_{epoch}.submit")
 

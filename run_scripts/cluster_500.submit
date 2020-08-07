@@ -11,4 +11,4 @@ arguments = ../conf/coreset/coreset_500.yaml $(Process) $(Cluster)
 request_cpus = 1
 request_memory = 4GB
 request_disk = 1GB
-queue 1
+queue 50

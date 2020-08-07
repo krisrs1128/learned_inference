@@ -7,9 +7,9 @@ train:
   checkpoint: null
   batch_size: 32
   lr: 0.001
-  n_epochs: 5
+  n_epochs: 100
   save_every: 1000
   z_dim: 64
 bootstrap:
   path: "bootstraps/vae_boot/bootstraps.csv"
-  B: 20
+  B: 50
