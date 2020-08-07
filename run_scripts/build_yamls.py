@@ -17,7 +17,7 @@ def fine_tune_yaml(original_yaml, out_dir, start_epoch=0):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def coreset_yaml(original_yaml, out_dir, size=100, n_epochs=1000):
+def coreset_yaml(original_yaml, out_dir, size=100, n_epochs=400):
     conf = yaml.safe_load(open(original_yaml, "r"))
     conf["organization"]["out_dir"] = str(pathlib.Path("runs", f"vae_coreset_{size}"))
     conf["organization"]["features_dir"] = str(pathlib.Path("features", f"vae_coreset_{size}"))
