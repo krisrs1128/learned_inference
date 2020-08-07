@@ -49,7 +49,7 @@ def save_wrapper(loader, model, model_paths, out_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--conf", type=str, help="configuration file")
-    parser.add_argument("-m", "--model_path", default="**/model*final*pt", statetype=str, help="model path")
+    parser.add_argument("-m", "--model_path", default="**/model*final*pt", type=str, help="model path")
     args = parser.parse_args()
     opts = Dict(yaml.safe_load(open(args.conf)))
 
