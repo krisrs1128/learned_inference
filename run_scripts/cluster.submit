@@ -3,7 +3,7 @@ universe = docker
 log = /home/ksankaran/logs/job_$(Cluster).log
 error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err
 output = /home/ksankaran/logs/job_$(Cluster)_$(Process).out
-docker_image = krisrs1128/learned_inference_dev:latest
+docker_image = krisrs1128/learned_inference_dev0
 input = data.tar.gz
 transfer_output_files = data_output_$(Cluster)_$(Process).tar.gz
 
