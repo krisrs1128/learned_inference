@@ -12,4 +12,4 @@ train:
   z_dim: 64
 bootstrap:
   path: "bootstraps/vae_boot/bootstraps.csv"
-  B: 5
+  B: 20
