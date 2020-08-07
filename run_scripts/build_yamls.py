@@ -53,7 +53,7 @@ def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit", B=5
 
 
 if __name__ == '__main__':
-        for epoch in range(0, 100, 10):
+        for epoch in range(0, 70, 10):
             fine_tune_yaml("../conf/train_boot.yaml", "../conf/fine_tuning/", epoch)
             cluster_submit("../run_scripts/", f"../conf/fine_tuning/start_{epoch}.yaml", f"tune_{epoch}.submit")
 
