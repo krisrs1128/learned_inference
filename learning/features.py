@@ -63,10 +63,9 @@ if __name__ == '__main__':
     )
     train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
     print(args.model_path)
-    model_paths = list(Path(opts.organization.out_dir).glob(args.model_path))
+    model_paths = list(data_dir / Path(opts.organization.out_dir).glob(args.model_path))
     print(model_paths)
-    print(data_dir / Path(opts.organization.train_dir))
-    print(data_dir / Path(opts.organization.features_dir))
+    print(opts.organization)
 
     save_wrapper(
         train_loader,
