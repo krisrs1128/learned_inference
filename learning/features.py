@@ -49,19 +49,24 @@ def save_wrapper(loader, model, model_paths, out_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--conf", type=str, help="configuration file")
-    parser.add_argument("-m", "--model_path", default="**/model*final*pt", type=str, help="model path")
+    parser.add_argument("-m", "--model_path", default="**/model_final.pt", type=str, help="model path")
     args = parser.parse_args()
     opts = Dict(yaml.safe_load(open(args.conf)))
 
     model = VAE(z_dim=opts.train.z_dim)
     data_dir = Path(os.environ["DATA_DIR"])
+    print(data_dir)
     cell_data = dt.CellDataset(
         data_dir / opts.organization.train_dir,
         data_dir / Path(opts.organization.xy),
         dt.RandomCrop(64)
     )
     train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
+    print(args.model_path)
     model_paths = list(Path(opts.organization.out_dir).glob(args.model_path))
+    print(model_paths)
+    print(data_dir / Path(opts.organization.train_dir))
+    print(data_dir / Path(opts.organization.features_dir))
 
     save_wrapper(
         train_loader,
