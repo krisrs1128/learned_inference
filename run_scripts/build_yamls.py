@@ -59,4 +59,4 @@ if __name__ == '__main__':
 
         for size in [250, 500, 1000, 2000]:
             coreset_yaml("../conf/train_boot.yaml", "../conf/coreset/", size)
-            cluster_submit("../run_scripts/", f"../conf/coreset_{size}.yaml", f"cluster_{epoch}.submit")
+            cluster_submit("../run_scripts/", f"../conf/coreset_{size}.yaml", f"cluster_{size}.submit")
