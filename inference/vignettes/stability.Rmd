@@ -35,16 +35,17 @@ for (p in features_paths[1:10]) {
   features_list[[p]]$ix <- gsub(".npy", "", features_list[[p]]$path) %>%
     str_extract("[0-9]+$") %>%
     as.integer()
+  features_list[[p]] <- features_list[[p]] %>%
+    arrange(ix)
 }
 
 Xy <- read_csv(file.path(data_dir, conf$organization$xy))
 
 z <- lapply(features_list, function(z) as.matrix(z[, 4:67]))
-names(z) <- basename(names(z))
+names(z) <- basename(names(features_list))
 
 for (i in seq_along(z)) {
   heatmap(cor(Xy[features_list[[i]]$ix, ], z[[i]]))
-  Sys.sleep(.3)
 }
 ```
 
@@ -57,10 +58,17 @@ shared between the pairs, regardless of the column that is the source.
 rvs <- pairwise_rv(z)
 rownames(rvs) <- names(z)
 colnames(rvs) <- names(z)
-heatmap(rvs)
+rv_order <- names(z)[hclust(dist(rvs))$order]
 
-ggplot(melt(rvs)) +
+mrvs <- melt(rvs) %>%
+  mutate(
+    Var1 = factor(Var1, levels = rv_order),
+    Var2 = factor(Var2, levels = rv_order)
+  )
+
+ggplot(mrvs) +
   geom_tile(aes(x = Var1, y = Var2, fill = value)) +
+  scale_fill_gradient(low = "white", high = "black") +
   theme(axis.text.x = element_text(angle =  -90))
 
 hist(rvs, 100)
@@ -111,8 +119,13 @@ rownames(coefs) <- NULL
 
 ggplot(coefs %>% filter(j != 1)) +
   geom_line(aes(x = lambda, y = beta_j, group = b), alpha = 0.5) +
-  facet_wrap(~ j) +
-  ggtitle("Projected Coefs. across Bootstraps")
+  scale_x_reverse(breaks=c(0.16, 0.08, 0)) +
+  scale_y_continuous(breaks=c(-0.15, 0, 0.15)) +
+  facet_wrap(~ j, ncol = 5) +
+  labs(
+    x = expression(lambda),
+    y = expression(beta[j])
+  )
 ```
 
 The features seem relatively stable. Note that the prediction performance is
@@ -139,4 +152,24 @@ scores_df <- bind_rows(scores_df, .id = "b")
 
 ggplot(scores_df %>% filter(ix < 10)) +
   geom_point(aes(x = V1, y = V2, col = as.factor(ix)), alpha = 0.5)
+
+ggplot(scores_df) +
+  stat_density_2d(
+    geom = "raster",
+    aes(x = V1, y = V2, fill = ..density.., col = b),
+    contour = F
+  ) +
+  scale_fill_gradient(low = "white", high = "black") +
+  facet_wrap(~b)
+
+ggplot(scores_df %>% filter(ix < 10)) +
+  stat_density_2d(
+    geom = "raster",
+    aes(x = V1, y = V2, alpha = ..density.., fill = as.factor(ix)),
+    contour = F
+  ) +
+  theme(legend.position =  "none", strip.text = element_blank()) +
+  scale_alpha_continuous(range = c(0, 1)) +
+  facet_wrap(~ix) +
+
 ```
