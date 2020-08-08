@@ -122,7 +122,6 @@ class CellDataset(Dataset):
 
     def __getitem__(self, i):
         ix = self.resample_ix[i]
-        print(ix)
         img = np.load(self.img_files[ix])
         y = self.xy["y"][self.img_ids[ix] - 1] # numpy's are 1-indexed
 

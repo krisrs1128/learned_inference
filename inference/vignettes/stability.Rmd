@@ -28,7 +28,7 @@ features_dir <- file.path(params$data_dir, conf$organization$features_dir)
 features_paths <- list.files(features_dir, "*csv", full.names = TRUE)
 
 features_list <- list()
-for (p in features_paths) {
+for (p in features_paths[1:10]) {
   features_list[[p]] <- read_csv(p) %>%
     select(path, model, img_id, everything()) %>%
     select(-img_id, -y)
@@ -40,8 +40,12 @@ for (p in features_paths) {
 Xy <- read_csv(file.path(data_dir, conf$organization$xy))
 
 z <- lapply(features_list, function(z) as.matrix(z[, 4:67]))
-heatmap(cor(Xy[features_list[[1]]$ix, ], z[[1]]))
-hist(cor(Xy[features_list[[1]]$ix, "y"], z[[1]]), 30)
+names(z) <- basename(names(z))
+
+for (i in seq_along(z)) {
+  heatmap(cor(Xy[features_list[[i]]$ix, ], z[[i]]))
+  Sys.sleep(.3)
+}
 ```
 
 For our first summary, we'll calculate the RV coefficients between unprojected
@@ -51,8 +55,15 @@ shared between the pairs, regardless of the column that is the source.
 
 ```{r}
 rvs <- pairwise_rv(z)
+rownames(rvs) <- names(z)
+colnames(rvs) <- names(z)
 heatmap(rvs)
-hist(rvs, 20)
+
+ggplot(melt(rvs)) +
+  geom_tile(aes(x = Var1, y = Var2, fill = value)) +
+  theme(axis.text.x = element_text(angle =  -90))
+
+hist(rvs, 100)
 ```
 
 Calculate pairwise RV coefficients between the projected pairs. Note an
@@ -64,7 +75,7 @@ n_comp <- 10
 cca_res <- MultiCCA(z, ncomponents = n_comp)
 
 scores <- list()
-for (b in seq_len(B)) {
+for (b in seq_along(z)) {
   scores[[b]] <- z[[b]] %*% cca_res$ws[[b]]
 }
 
@@ -83,7 +94,7 @@ y <- Xy[features_list[[1]]$ix, ] %>% .[["y"]]
 fits <- list()
 coefs <- list()
 i <- 1
-for (b in seq_len(B)) {
+for (b in seq_along(scores)) {
   fits[[b]] <- glmnet(scores[[b]], y)
   for (j in seq_len(n_comp + 1)) {
     coefs[[i]] <- data.frame(
