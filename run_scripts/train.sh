@@ -3,6 +3,7 @@ tar -zxvf $_CONDOR_SCRATCH_DIR/data.tar.gz
 cd $HOME
 source .env
 cd $ROOT_DIR/learning
+echo $DATA_DIR
 echo "parameters"
 echo ${1}
 echo ${2}
