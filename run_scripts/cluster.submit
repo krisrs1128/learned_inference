@@ -6,14 +6,8 @@ output = /home/ksankaran/logs/job_$(Cluster)_$(Process).out
 docker_image = krisrs1128/learned_inference_dev
 input = data.tar.gz
 transfer_output_files = data_output_$(Cluster)_$(Process).tar.gz
-
 executable = train.sh
 arguments = "'../conf/train_boot.yaml' $(Process) $(Cluster)"
-
-request_gpus = 1
-+WantGPULab = true
-+GPUJobLength = "short"
-
 request_cpus = 1
 request_memory = 4GB
 request_disk = 2GB

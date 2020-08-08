@@ -1,15 +1,15 @@
 organization:
-  features_dir: "features/vae_boot/"
-  out_dir: "runs/vae_boot/"
-  train_dir: "train"
-  xy: "Xy.csv"
+  features_dir: features/vae_boot
+  out_dir: runs/vae_boot
+  train_dir: train
+  xy: Xy.csv
 train:
-  checkpoint: null
   batch_size: 32
+  checkpoint: null
   lr: 0.001
   n_epochs: 70
   save_every: 10
   z_dim: 64
 bootstrap:
-  path: "bootstraps/vae_boot/bootstraps.csv"
   B: 50
+  path: bootstraps/vae_boot/bootstraps.csv
