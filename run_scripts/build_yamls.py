@@ -35,7 +35,7 @@ def cluster_submit(out_dir, conf_path="train", output_name="cluster.submit", B=5
              "log = /home/ksankaran/logs/job_$(Cluster).log",
              "error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err",
              "output = /home/ksankaran/logs/job_$(Cluster)_$(Process).out",
-             "docker_image = krisrs1128/learned_inference_d2",
+             "docker_image = krisrs1128/learned_inference_d3",
              "input = data.tar.gz",
              "transfer_output_files = data_output_$(Cluster)_$(Process).tar.gz",
              "executable = train.sh",
