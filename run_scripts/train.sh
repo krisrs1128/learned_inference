@@ -3,6 +3,12 @@ tar -zxvf $_CONDOR_SCRATCH_DIR/data.tar.gz
 cd $HOME
 source .env
 cd $ROOT_DIR/learning
+echo "parameters"
+echo ${1}
+echo ${2}
+echo ${3}
+ls -R
+pwd
 python3 -m bootstrap -c ${1}
 python3 -m train -c ${1} -b ${2}
 python3 -m features -c ${1}
