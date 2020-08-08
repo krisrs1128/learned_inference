@@ -28,7 +28,7 @@ features_dir <- file.path(params$data_dir, conf$organization$features_dir)
 features_paths <- list.files(features_dir, "*csv", full.names = TRUE)
 
 features_list <- list()
-for (p in features_paths[1:10]) {
+for (p in features_paths)  {
   features_list[[p]] <- read_csv(p) %>%
     select(path, model, img_id, everything()) %>%
     select(-img_id, -y)
@@ -71,7 +71,9 @@ ggplot(mrvs) +
   scale_fill_gradient(low = "white", high = "black") +
   theme(axis.text.x = element_text(angle =  -90))
 
-hist(rvs, 100)
+ggplot(mrvs %>% filter(value > 0)) +
+  geom_histogram(aes(x = value), binwidth = 0.01) +
+  scale_y_continuous(expand = c(0, 0))
 ```
 
 Calculate pairwise RV coefficients between the projected pairs. Note an
@@ -150,26 +152,33 @@ for (b in seq_len(B)) {
 
 scores_df <- bind_rows(scores_df, .id = "b")
 
-ggplot(scores_df %>% filter(ix < 10)) +
-  geom_point(aes(x = V1, y = V2, col = as.factor(ix)), alpha = 0.5)
-
-ggplot(scores_df) +
-  stat_density_2d(
-    geom = "raster",
-    aes(x = V1, y = V2, fill = ..density.., col = b),
-    contour = F
+ggplot(scores_df %>% filter(as.numeric(b) < 10)) +
+  geom_point(
+    aes(x = V1, y = V2),
+    alpha = 0.25, size = .9
   ) +
-  scale_fill_gradient(low = "white", high = "black") +
-  facet_wrap(~b)
+  facet_wrap(~b, ncol = 5)
 
-ggplot(scores_df %>% filter(ix < 10)) +
+ggplot(scores_df %>% filter(ix < 40)) +
+  geom_point(aes(x = reorder(ix, V1, mean), y = V1))
+
+scores_means <- scores_df %>%
+  group_by(ix) %>%
+  summarise(V1 = median(V1), V2 = median(V2))
+
+ggplot(scores_df %>% filter(ix < 9)) +
   stat_density_2d(
-    geom = "raster",
-    aes(x = V1, y = V2, alpha = ..density.., fill = as.factor(ix)),
-    contour = F
+    aes(x = V1, y = V2, group = ix, alpha = ..level.., fill = as.factor(ix)),
+    geom = "polygon",
+    binwidth = 0.08
   ) +
-  theme(legend.position =  "none", strip.text = element_blank()) +
-  scale_alpha_continuous(range = c(0, 1)) +
-  facet_wrap(~ix) +
-
+  geom_text(
+    data = scores_means %>% filter(ix < 9),
+    aes(x = V1, y = V2, label = ix, col = as.factor(ix)),
+    size = 8, family = "mono"
+  ) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Set2") +
+  scale_alpha(range = c(0.1, 1)) +
+  theme(legend.position =  "none", strip.text = element_blank())
 ```
