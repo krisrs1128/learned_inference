@@ -1,5 +1,8 @@
 ---
 title: Stability study
+params:
+  data_dir: "/Users/kris/Desktop/data/"
+  root_dir: "/Users/kris/Desktop/conceptual/learned_inference/"
 ---
 
 
@@ -20,26 +23,25 @@ Let's read in all the bootstrapped learned features. We save the full feature
 data frame in `features_list` and the purely numerical component in `z`.
 
 ```{r}
-data_dir <- file.path("~/Desktop", "data")
-root_dir <- file.path("..", "..")
-conf <- yaml.load_file(file.path(root_dir, "conf", "train.yaml"))
-features_dir <- file.path(data_dir, conf$organization$features_dir)
-features_paths <- list.files(features_dir, full.names = TRUE)
+conf <- yaml.load_file(file.path(params$root_dir, "conf", "train_boot.yaml"))
+features_dir <- file.path(params$data_dir, conf$organization$features_dir)
+features_paths <- list.files(features_dir, "*csv", full.names = TRUE)
 
 features_list <- list()
 for (p in features_paths) {
   features_list[[p]] <- read_csv(p) %>%
-    select(-X1) %>%
-    select(path, y, everything())
-  features_list[[p]]$ix <- str_extract(features_list[[p]]$path, "[0-9]+") %>%
+    select(path, model, img_id, everything()) %>%
+    select(-img_id, -y)
+  features_list[[p]]$ix <- gsub(".npy", "", features_list[[p]]$path) %>%
+    str_extract("[0-9]+$") %>%
     as.integer()
 }
 
 Xy <- read_csv(file.path(data_dir, conf$organization$xy))
 
-z <- lapply(features_list, function(z) as.matrix(z[, 3:66]))
+z <- lapply(features_list, function(z) as.matrix(z[, 4:67]))
 heatmap(cor(Xy[features_list[[1]]$ix, ], z[[1]]))
-hist(cor(features_list[[1]]$y, z[[1]]), 30)
+hist(cor(Xy[features_list[[1]]$ix, "y"], z[[1]]), 30)
 ```
 
 For our first summary, we'll calculate the RV coefficients between unprojected

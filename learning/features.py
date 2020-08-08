@@ -55,20 +55,13 @@ if __name__ == '__main__':
 
     model = VAE(z_dim=opts.train.z_dim)
     data_dir = Path(os.environ["DATA_DIR"])
-    print(data_dir)
     cell_data = dt.CellDataset(
         data_dir / opts.organization.train_dir,
         data_dir / Path(opts.organization.xy),
         dt.RandomCrop(64)
     )
     train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
-    print("in features")
-    print(args.model_path)
-    print(data_dir / Path(opts.organization.out_dir))
-    print(data_dir / opts.organization.out_dir)
     model_paths = list((data_dir / opts.organization.out_dir).glob(args.model_path))
-    print(model_paths)
-    print(opts.organization)
 
     save_wrapper(
         train_loader,

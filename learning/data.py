@@ -97,9 +97,10 @@ class CellDataset(Dataset):
 
     def __init__(self, input_dir, xy_path=None, transform=None, boot=None):
         """Initialize dataset."""
+        # self.img_files = list(pathlib.Path(input_dir).glob("*npy"))
         self.img_files = list(pathlib.Path(input_dir).glob("*npy"))
-        img_ids = [str(s) for s in self.img_files]
-        img_ids = [re.search("[0-9]+", s).group() for s in img_ids]
+        img_ids = [str(s).replace(".npy", "") for s in self.img_files]
+        img_ids = [re.search("[0-9]+$", s).group() for s in img_ids]
         self.img_ids = [int(s) for s in img_ids]
 
         # default xy and bootstrap paths
@@ -121,6 +122,7 @@ class CellDataset(Dataset):
 
     def __getitem__(self, i):
         ix = self.resample_ix[i]
+        print(ix)
         img = np.load(self.img_files[ix])
         y = self.xy["y"][self.img_ids[ix] - 1] # numpy's are 1-indexed
 
