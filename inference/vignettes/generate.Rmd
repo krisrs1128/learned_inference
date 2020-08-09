@@ -150,5 +150,33 @@ simulation parameters.
 
 ```{r, eval = FALSE}
 library("png")
-readPNG(file.path(params$out_dir, "pngs", "img-000.png"))
+
+k <- 1
+n <- 15
+m <- 10
+plot_data <- list()
+for (i in seq_len(n)) {
+  for (j in seq_len(m)) {
+    k <- k + 1
+    im <- readPNG(file.path(params$out_dir, "pngs", sprintf("image-%s.png", str_pad(k, 4, "left", 0))))
+    plot_data[[k]] <- list(x = i, y = j, im = im)
+  }
+}
+
+
+xgrid <- seq(0, max(n, m), 1)
+plot(xgrid, t="n", asp = 1)
+for (i in seq_along(plot_data)) {
+  if (is.null(plot_data[[i]]$im)) next
+  rasterImage(
+    plot_data[[i]]$im,
+    xleft = plot_data[[i]]$x,
+    ybottom = plot_data[[i]]$y,
+    xright = plot_data[[i]]$x + 1,
+    ytop = plot_data[[i]]$y + 1,
+    interpolate = FALSE
+  )
+}
+
+
 ```

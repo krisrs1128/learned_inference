@@ -32,9 +32,9 @@ features_dirs <- list(
   "tune_50" = file.path(params$data_dir, "features", "vae_tune_50"),
   "tune_40" = file.path(params$data_dir, "features", "vae_tune_40"),
   "tune_30" = file.path(params$data_dir, "features", "vae_tune_30"),
-  "tune_20" = file.path(params$data_dir, "features", "vae_tune_20")
-  ## "tune_10" = file.path(params$data_dir, "features", "vae_tune_10"),
-  ## "tune_0" = file.path(params$data_dir, "features", "vae_tune_0")
+  "tune_20" = file.path(params$data_dir, "features", "vae_tune_20"),
+  "tune_10" = file.path(params$data_dir, "features", "vae_tune_10"),
+  "tune_0" = file.path(params$data_dir, "features", "vae_tune_0")
 )
 
 features_list <- list()
@@ -73,10 +73,10 @@ mrvs <- melt(rvs)
 colnames(mrvs) <- c("i", "j", "value", "tune_level")
 
 ggplot(mrvs %>% filter(value > 0)) +
-  geom_histogram(aes(x = value), binwidth = 0.005) +
+  geom_histogram(aes(x = value, y = ..density.., fill = tune_level), binwidth = 0.005) +
   labs(x = "Pairwise RV Coefficients") +
-  scale_y_continuous(expand = c(0, 0)) +
-  facet_grid(tune_level ~ .)
+  scale_y_continuous(expand = c(0, 0))
+  ## facet_grid(tune_level ~ ., scales = "free_y")
 
 features_list$tune_50 %>%head()
 features_list$start_10$"/Users/kris/Desktop/data/features/vae_tune_10/features_None.csv" %>%
