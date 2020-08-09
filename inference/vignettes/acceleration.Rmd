@@ -28,9 +28,13 @@ different bootstrap results, per tuning level.
 
 ```{r}
 features_dirs <- list(
-  "bootstraps" = file.path(params$data_dir, "features", "vae_no_boot"),
-  "start_10" = file.path(params$data_dir, "features", "vae_tune_10"),
-  "start_50" = file.path(params$data_dir, "features", "vae_tune_50")
+  "tune_60" = file.path(params$data_dir, "features", "vae_tune_60"),
+  "tune_50" = file.path(params$data_dir, "features", "vae_tune_50"),
+  "tune_40" = file.path(params$data_dir, "features", "vae_tune_40"),
+  "tune_30" = file.path(params$data_dir, "features", "vae_tune_30"),
+  "tune_20" = file.path(params$data_dir, "features", "vae_tune_20")
+  ## "tune_10" = file.path(params$data_dir, "features", "vae_tune_10"),
+  ## "tune_0" = file.path(params$data_dir, "features", "vae_tune_0")
 )
 
 features_list <- list()
@@ -38,36 +42,43 @@ for (i in seq_along(features_dirs)) {
   cur_dir <- names(features_dirs)[i]
   print(cur_dir)
 
-  features_paths <- list.files(features_dirs[[i]], full.names = TRUE)
+  features_paths <- list.files(features_dirs[[i]], "*.csv", full.names = TRUE)
   features_list[[cur_dir]] <- list()
-  print(i)
 
   for (p in features_paths) {
     features_list[[cur_dir]][[p]] <- read_csv(p) %>%
-      select(-X1) %>%
-      select(path, model, img_id, y, everything())
-    features_list[[cur_dir]][[p]]$ix <- str_extract(features_list[[cur_dir]][[p]]$path, "[0-9]+") %>%
+      select(path, model, img_id, everything()) %>%
+      select(-img_id, -y)
+    features_list[[cur_dir]][[p]]$ix <- gsub(".npy", "", features_list[[cur_dir]][[p]]$path) %>%
+      str_extract("[0-9]+$") %>%
       as.integer()
+    features_list[[cur_dir]][[p]] <- features_list[[cur_dir]][[p]] %>%
+      arrange(ix)
   }
 }
 ```
 
-* filter bootstrap features
+* Calculate pairwise RVs
 
 ```{r}
-tune_features <- setdiff(names(features_dirs), "bootstraps")
-
-for (i in seq_along(tune_features)) {
-  ft <- tune_features[i]
-  for (j in seq_along(features_list[[ft]])) {
-    features_list[[ft]][[j]] <- features_list[[ft]][[j]] %>%
-      filter(!grepl("boot", model))
-  }
-
-  ## features_list[[ft]] <- bind_rows(features_list[[ft]], id. = "boot")
+z <- list()
+rvs <- list()
+for (i in seq_along(features_list)) {
+  cur_dir <- names(features_list)[i]
+  z[[cur_dir]] <- lapply(features_list[[i]], function(y) as.matrix(y[, 4:67]))
+  rvs[[cur_dir]] <- pairwise_rv(z[[cur_dir]])
 }
 
-features_list$start_10 %>%head()
+mrvs <- melt(rvs)
+colnames(mrvs) <- c("i", "j", "value", "tune_level")
+
+ggplot(mrvs %>% filter(value > 0)) +
+  geom_histogram(aes(x = value), binwidth = 0.005) +
+  labs(x = "Pairwise RV Coefficients") +
+  scale_y_continuous(expand = c(0, 0)) +
+  facet_grid(tune_level ~ .)
+
+features_list$tune_50 %>%head()
 features_list$start_10$"/Users/kris/Desktop/data/features/vae_tune_10/features_None.csv" %>%
   .[["model"]]
 ```
