@@ -11,8 +11,10 @@ library("FactoMineR")
 library("PMA")
 library("dplyr")
 library("glmnet")
+library("RColorBrewer")
 library("ggplot2")
 library("readr")
+library("reshape2")
 library("stringr")
 library("yaml")
 library("inference")
@@ -28,23 +30,28 @@ features_dir <- file.path(params$data_dir, conf$organization$features_dir)
 features_paths <- list.files(features_dir, "*csv", full.names = TRUE)
 
 features_list <- list()
-for (p in features_paths[1:10]) {
+for (p in features_paths)  {
   features_list[[p]] <- read_csv(p) %>%
     select(path, model, img_id, everything()) %>%
     select(-img_id, -y)
   features_list[[p]]$ix <- gsub(".npy", "", features_list[[p]]$path) %>%
     str_extract("[0-9]+$") %>%
     as.integer()
+  features_list[[p]] <- features_list[[p]] %>%
+    arrange(ix)
 }
 
-Xy <- read_csv(file.path(data_dir, conf$organization$xy))
+Xy <- read_csv(file.path(params$data_dir, conf$organization$xy))
 
 z <- lapply(features_list, function(z) as.matrix(z[, 4:67]))
-names(z) <- basename(names(z))
+names(z) <- basename(names(features_list))
+
+coul <- colorRampPalette(brewer.pal(8, "PiYG"))(25)
 
 for (i in seq_along(z)) {
-  heatmap(cor(Xy[features_list[[i]]$ix, ], z[[i]]))
-  Sys.sleep(.3)
+  png(sprintf("~/Desktop/hm_%i.png", i))
+  heatmap(cor(Xy[features_list[[i]]$ix, ], z[[i]]), col = coul)
+  dev.off()
 }
 ```
 
@@ -57,13 +64,30 @@ shared between the pairs, regardless of the column that is the source.
 rvs <- pairwise_rv(z)
 rownames(rvs) <- names(z)
 colnames(rvs) <- names(z)
-heatmap(rvs)
+rv_order <- names(z)[hclust(dist(rvs))$order]
 
-ggplot(melt(rvs)) +
+mrvs <- melt(rvs) %>%
+  mutate(
+    Var1 = factor(Var1, levels = rv_order),
+    Var2 = factor(Var2, levels = rv_order),
+    Var1 = gsub("features_", "", Var1),
+    Var2 = gsub("features_", "", Var2),
+  )
+
+ggplot(mrvs %>% filter(value > 0)) +
   geom_tile(aes(x = Var1, y = Var2, fill = value)) +
-  theme(axis.text.x = element_text(angle =  -90))
+  scale_fill_gradient(low = "white", high = "black") +
+  coord_fixed() +
+  theme(
+    axis.text.x = element_text(angle =  -90),
+    axis.text = element_text(size = 6),
+    axis.title =  element_blank()
+  )
 
-hist(rvs, 100)
+ggplot(mrvs %>% filter(value > 0)) +
+  geom_histogram(aes(x = value), binwidth = 0.01) +
+  labs(x = "Pairwise RV Coefficients") +
+  scale_y_continuous(expand = c(0, 0))
 ```
 
 Calculate pairwise RV coefficients between the projected pairs. Note an
@@ -80,8 +104,35 @@ for (b in seq_along(z)) {
 }
 
 rvs_aligned <- pairwise_rv(scores)
-heatmap(rvs_aligned)
-hist(rvs_aligned, 30)
+```
+
+```{r}
+rownames(rvs_aligned) <- names(z)
+colnames(rvs_aligned) <- names(z)
+rv_order <- names(z)[hclust(dist(rvs_aligned))$order]
+
+mrvs <- melt(rvs_aligned) %>%
+  mutate(
+    Var1 = factor(Var1, levels = rv_order),
+    Var2 = factor(Var2, levels = rv_order),
+    Var1 = gsub("features_", "", Var1),
+    Var2 = gsub("features_", "", Var2),
+  )
+
+ggplot(mrvs %>% filter(value > 0)) +
+  geom_tile(aes(x = Var1, y = Var2, fill = value)) +
+  scale_fill_gradient(low = "white", high = "black") +
+  coord_fixed() +
+  theme(
+    axis.text.x = element_text(angle =  -90),
+    axis.text = element_text(size = 6),
+    axis.title =  element_blank()
+  )
+
+ggplot(mrvs %>% filter(value > 0)) +
+  geom_histogram(aes(x = value), binwidth = 0.01) +
+  labs(x = "Pairwise RV Coefficients [Projected Space]") +
+  scale_y_continuous(expand = c(0, 0))
 ```
 
 We can now try stability selection. This will depend on the scores. To see why
@@ -111,8 +162,13 @@ rownames(coefs) <- NULL
 
 ggplot(coefs %>% filter(j != 1)) +
   geom_line(aes(x = lambda, y = beta_j, group = b), alpha = 0.5) +
-  facet_wrap(~ j) +
-  ggtitle("Projected Coefs. across Bootstraps")
+  scale_x_reverse(breaks=c(0.16, 0.08, 0)) +
+  scale_y_continuous(breaks=c(-0.15, 0, 0.15)) +
+  facet_wrap(~ j, ncol = 5) +
+  labs(
+    x = expression(lambda),
+    y = expression(beta[j])
+  )
 ```
 
 The features seem relatively stable. Note that the prediction performance is
@@ -120,7 +176,7 @@ quite weak, though. Perhaps this isn't too surprising, since we trained an
 unsupervised feature extractor.
 
 ```{r}
-for (b in seq_len(B)) {
+for (b in seq_along(fits)) {
   y_hat <- predict(fits[[b]], newx=scores[[b]])
   plot(y, y_hat[, dim(y_hat)[2]], xlim = c(1, 9), ylim = c(2, 4), col = rgb(0, 0, 0, 0.5), cex = 0.1, main = round(fits[[b]]$lambda[dim(y_hat)[2]], 6))
 }
@@ -130,13 +186,47 @@ What do the bootstrapped scores look like?
 
 ```{r}
 scores_df <- list()
-for (b in seq_len(B)) {
+for (b in seq_along(scores)) {
   scores_df[[b]] <- as.data.frame(scores[[b]]) %>%
     mutate(ix = row_number())
 }
 
 scores_df <- bind_rows(scores_df, .id = "b")
 
-ggplot(scores_df %>% filter(ix < 10)) +
-  geom_point(aes(x = V1, y = V2, col = as.factor(ix)), alpha = 0.5)
+ggplot(scores_df %>% filter(as.numeric(b) < 26)) +
+  geom_point(
+    aes(x = V1, y = V2),
+    alpha = 0.1, size = .5
+  ) +
+  coord_fixed(ratio = sqrt(cca_res$cors[2] / cca_res$cors[1])) +
+  facet_wrap(~b, ncol = 5) +
+  theme(strip.text = element_blank())
+
+ggplot(scores_df %>% filter(ix < 40)) +
+  geom_point(aes(x = reorder(ix, V1, mean), y = V1))
+
+scores_means <- scores_df %>%
+  group_by(ix) %>%
+  summarise(V1 = median(V1), V2 = median(V2))
+
+ggplot(scores_df %>% filter(ix < 9)) +
+  stat_density_2d(
+    aes(x = V1, y = V2, group = ix, alpha = ..level.., fill = as.factor(ix)),
+    geom = "polygon",
+    binwidth = 0.08
+  ) +
+  geom_text(
+    data = scores_means %>% filter(ix < 9),
+    aes(x = V1, y = V2, label = ix, col = as.factor(ix)),
+    size = 8, family = "mono"
+  ) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Set2") +
+  scale_alpha(range = c(0.1, 1)) +
+  labs(
+    x = "First Sparse MCCA Direction",
+    y = "Second Sparse MCCA Direction"
+  ) +
+  coord_fixed(ratio = sqrt(cca_res$cors[2] / cca_res$cors[1])) +
+  theme(legend.position =  "none", strip.text = element_blank())
 ```
