@@ -30,5 +30,3 @@ if __name__ == '__main__':
 
     data_dir = pathlib.Path(os.environ["DATA_DIR"])
     out_path = pathlib.Path(data_dir / opts.bootstrap.path)
-    train_imgs = list(pathlib.Path(data_dir / opts.organization.train_dir).glob("*npy"))
-    bootstrap_indices(len(train_imgs), opts.bootstrap.B, out_path)

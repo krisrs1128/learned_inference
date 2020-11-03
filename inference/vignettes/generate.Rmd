@@ -1,7 +1,7 @@
 ---
 title: Data Generation Mechanism
 params:
-  out_dir: /Users/kris/Desktop/data
+  out_dir: /Users/kris/Documents/stability_data/
 ---
 
 ```{r}
@@ -130,7 +130,8 @@ write_csv(data.frame(X = X, y = y), file.path(params$out_dir, "Xy.csv"))
 Now we can simulate all the images.
 
 ```{r}
-dir.create(file.path(params$out_dir, "tiffs"))
+tiles_dir <- file.path(params$out_dir, "tiles")
+dir.create(tiles_dir)
 
 for (i in seq_len(n_images)) {
   result <- sim_wrapper(n_original[i], nu[i], alpha[i], beta_r[i, ], nu_r[i],
@@ -140,7 +141,7 @@ for (i in seq_len(n_images)) {
   marks <- result$marks %>%
     mutate(variable = paste0("X", mark))
 
-  out_name <- sprintf(file.path(params$out_dir, "tiffs", "image-%s.tiff"), str_pad(i, 4, "left", 0))
+  out_name <- sprintf(file.path(tiles_dir, "image-%s.tiff"), str_pad(i, 4, "left", 0))
   save_raster(marks, out_name)
 }
 ```
@@ -177,6 +178,4 @@ for (i in seq_along(plot_data)) {
     interpolate = FALSE
   )
 }
-
-
 ```
