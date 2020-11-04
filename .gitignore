@@ -2,5 +2,6 @@
 *.log
 *.bbl
 *.blg
-learning/venv
+*pyc
 data
+*__pycache__*
