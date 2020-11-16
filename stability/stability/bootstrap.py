@@ -11,12 +11,13 @@ import os
 from addict import Dict
 import yaml
 
-def bootstrap_indices(N, B=30, out_path="./"):
+def bootstrap_indices(N, B=30, out_path="./bootstraps.csv"):
     result = np.zeros((B, N))
     for b in range(B):
         result[b, :] = np.random.choice(range(N), N)
 
     os.makedirs(out_path.parent, exist_ok=True)
     result = result.astype(int)
-    pd.DataFrame(result).to_csv(out_path)
+    pd.DataFrame(result).to_csv(out_path, index=False)
     return result
+
