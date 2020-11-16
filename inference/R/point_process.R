@@ -153,10 +153,10 @@ save_raster <- function(marks, out_name, n_channels=3) {
   r <- list()
   for (i in seq_along(pts)) {
     if (any(is.na(st_dimension(pts[[i]])))) {
-      r[[i]] <- raster(ncols=128, nrows=128, ext=extent(c(0, 1, 0, 1)))
+      r[[i]] <- raster(ncols=64, nrows=64, ext=extent(c(0, 1, 0, 1)))
       values(r[[i]]) <- 0
     } else {
-      r[[i]] <- raster(pts[[i]], ncols=128, nrows=128, ext=extent(c(0, 1, 0, 1)))
+      r[[i]] <- raster(pts[[i]], ncols=64, nrows=64, ext=extent(c(0, 1, 0, 1)))
       r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
     }
 
