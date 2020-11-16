@@ -8,8 +8,8 @@ import pathlib
 import os
 import yaml
 from addict import Dict
-from .data import RandomCrop, CellDataset
-from models.vae import VAE, loss_fn
+from .data import CellDataset
+from .models.vae import VAE, loss_fn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid
@@ -28,27 +28,18 @@ def log_epoch(epoch, loss, loader, writer, stage="train"):
     writer.add_image("{stage}/x_hat", make_grid(x_hat), epoch)
 
 
-def save_model(model, optim, epoch, out_dir, save_optim=False):
-    model_path = pathlib.Path(out_dir) / f"model_{epoch}.pt"
-    torch.save(model.state_dict(), model_path)
-
-    if save_optim:
-        optim_path = pathlib.Path(out_dir) / f"optim_{epoch}.pt"
-        torch.save(optim.state_dict(), optim_path)
-
-
-def train(model, optim, loader, opts, out_dir, writer):
+def train(model, optim, loaders, opts, out_paths, writer):
     """
     Wrap all training for a model
     """
     for epoch in range(opts.train.n_epochs):
         model, optim, losses = train_epoch(model, loader, optim, epoch)
-        log_epoch(epoch, losses, loader, writer)
+        log_epoch(epoch, losses, loaders["train"], writer)
 
         if epoch % opts.train.save_every == 0:
-            save_model(model, optim, epoch, out_dir)
+            save_features(loaders["features"], model, epoch, out_paths)
 
-    save_model(model, optim, "final", out_dir)
+    save_features(loaders["features"], model, "final", out_paths)
     return losses
 
 

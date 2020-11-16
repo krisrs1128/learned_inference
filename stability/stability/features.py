@@ -4,17 +4,85 @@ Save features from trained model
 Usage:
 python3 -m features -c ../conf/train.yaml
 """
-import pandas as pd
 import numpy as np
-from pathlib import Path
-import argparse
-import yaml
-from addict import Dict
-import torch
 import os
+from addict import Dict
+from pathlib import Path
 from torch.utils.data import DataLoader
-from models.vae import VAE
-import data as dt
+import argparse
+import pandas as pd
+import torch
+import yaml
+
+
+class SaveOutput:
+    def __init__(self):
+        self.outputs = []
+
+    def __call__(self, module, module_in, module_out):
+        self.outputs.append(module_out)
+
+    def clear(self):
+        self.outputs = []
+
+
+def activations(model, layers, x, device=None):
+    """Get all activation vectors over images for a model.
+    :param model: A pytorch model
+    :type model: currently is Net defined by ourselves
+    :param layers: One or more layers that activations are desired
+    :type layers: torch.nn.modules.container.Sequential
+    :param x: A 4-d tensor containing the test datapoints from which activations are desired.
+                The 1st dimension should be the number of test datapoints.
+                The next 3 dimensions should match the input of the model
+    :type x: torch.Tensor
+    :return (output): A list containing activations of all specified layers.
+    """
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    save_output = SaveOutput()
+    hook_handles = []
+
+    for layer in layers:
+        handle = layer.register_forward_hook(save_output)
+        hook_handles.append(handle)
+
+    with torch.no_grad():
+      x = x.to(device)
+      out = model(x)
+
+    output = save_output.outputs.copy()
+    del save_output, hook_handles, out
+    return output
+
+
+def save_features(loader, model, layers, epoch, out_paths):
+    """
+    To save in python and load in R, can use
+
+    Python >
+    h = save_features(ft_loader, model, layers, "0", "tmp")
+    np.save("h1.npy", h["layer_1"].numpy())
+
+    R >
+    library("reticulate")
+    np <- import("numpy", convert=FALSE)
+    h <- py_to_r(np$load("h1.npy"))
+    """
+    h = {}
+    for i in range(len(layers)):
+        h[f"layer_{i}"] = []
+
+    for x, _ in loader:
+        hx = activations(model, layers, x[:, :, :64, :64])
+        for i, l in enumerate(layers):
+            h[f"layer_{i}"].append(hx[i])
+
+    for i in range(len(layers)):
+        h[f"layer_{i}"] = torch.cat(h[f"layer_{i}"])
+
+    return h
 
 
 def save_encodings(loader, model, model_path, out_path):
@@ -44,28 +112,3 @@ def save_wrapper(loader, model, model_paths, out_dir):
         model.load_state_dict(torch.load(model_path))
         out_path = out_dir / Path(f"features_{model_path.parts[-2]}.csv")
         save_encodings(loader, model, model_path, out_path)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--conf", type=str, help="configuration file")
-    parser.add_argument("-m", "--model_path", default="**/model_final.pt", type=str, help="model path")
-    args = parser.parse_args()
-    opts = Dict(yaml.safe_load(open(args.conf)))
-
-    model = VAE(z_dim=opts.train.z_dim)
-    data_dir = Path(os.environ["DATA_DIR"])
-    cell_data = dt.CellDataset(
-        data_dir / opts.organization.train_dir,
-        data_dir / Path(opts.organization.xy),
-        dt.RandomCrop(64)
-    )
-    train_loader = DataLoader(cell_data, batch_size=opts.train.batch_size)
-    model_paths = list((data_dir / opts.organization.out_dir).glob(args.model_path))
-
-    save_wrapper(
-        train_loader,
-        model,
-        model_paths,
-        data_dir / opts.organization.features_dir
-    )

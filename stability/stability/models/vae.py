@@ -5,9 +5,7 @@ import os
 import pathlib
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 import torch
-import data as dt
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Flatten(nn.Module):
@@ -89,13 +87,3 @@ def loss_fn(recon_x, x, mu, logvar):
     BCE = F.binary_cross_entropy(recon_x, x, reduction="sum")
     KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
     return BCE + KLD, BCE, KLD
-
-
-if __name__ == '__main__':
-    npy_dir = pathlib.Path(os.environ["DATA_DIR"], "npys")
-    data = dt.CellDataset(npy_dir, pathlib.Path("data", "Xy.csv"), dt.RandomCrop(64))
-    vae = VariationalAutoencoder()
-
-    loader = DataLoader(data, batch_size=32)
-    for x, _, _ in loader:
-        z_mean, z_var, encoded, decoded = vae.forward(x)
