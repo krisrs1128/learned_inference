@@ -57,32 +57,59 @@ def activations(model, layers, x, device=None):
     return output
 
 
-def save_features(loader, model, layers, epoch, out_paths):
-    """
-    To save in python and load in R, can use
-
-    Python >
-    h = save_features(ft_loader, model, layers, "0", "tmp")
-    np.save("h1.npy", h["layer_1"].numpy())
-
-    R >
-    library("reticulate")
-    np <- import("numpy", convert=FALSE)
-    h <- py_to_r(np$load("h1.npy"))
-    """
+def loader_activations(loader, model, layers):
     h = {}
-    for i in range(len(layers)):
-        h[f"layer_{i}"] = []
+    for k in layers.keys():
+        h[k] = []
 
     for x, _ in loader:
-        hx = activations(model, layers, x[:, :, :64, :64])
-        for i, l in enumerate(layers):
-            h[f"layer_{i}"].append(hx[i])
+        hx = activations(model, layers.values(), x)
+        for i, k in enumerate(layers.keys()):
+            h[k].append(hx[i])
 
-    for i in range(len(layers)):
-        h[f"layer_{i}"] = torch.cat(h[f"layer_{i}"])
+    for k in layers.keys():
+        h[k] = torch.cat(h[k])
 
     return h
+
+def vae_layers(model):
+    return {
+        "mu": model.fc1,
+        "logvar": model.fc2,
+        "layer_1": model.encoder[0],
+        "layer_2": model.encoder[2],
+        "layer_4": model.encoder[4],
+        "layer_6": model.encoder[6],
+    }
+
+
+def save_features(loader, model, epoch, out_paths, layers=None):
+    if layers is None:
+        layers = vae_layers(model)
+
+    h = loader_activations(loader, model, layers)
+
+    metadata = []
+    for k in h.keys():
+        k_path = Path(out_paths[0] + k)
+        if not k_path.parent.exists():
+            k_path.parent.mkdir(parents=True, exist_ok=True)
+
+        np.save(k_path, h[k].detach().cpu().numpy())
+        metadata.append({
+            "epoch": epoch,
+            "layer": k,
+            "out_path": out_paths[0] + k
+        })
+
+    # save relevant metadata
+    metadata = pd.DataFrame(metadata)
+
+    if Path(out_paths[1]).exists():
+        metadata.to_csv(out_paths[1], mode="a", header=False)
+    else:
+        metadata.to_csv(out_paths[1])
+
 
 
 def save_encodings(loader, model, model_path, out_path):
