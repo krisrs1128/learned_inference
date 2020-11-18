@@ -1,0 +1,45 @@
+---
+title: "Preliminary Feature Analysis"
+output: html_notebook
+---
+
+```{r}
+library("readr")
+library("dplyr")
+library("ggplot2")
+library("reticulate")
+library("reshape2")
+```
+
+```{r}
+np <- import("numpy")
+mus <- list()
+mus[[1]] <- np$load("/Users/kris/Desktop/mu_75.npy")
+mus[[2]] <- np$load("/Users/kris/Desktop/layer_4_199.npy")
+```
+
+```{r}
+mus_df <- melt(mus[[1]], varnames = c("sample_ix", "features", "spatial1", "spatial2"))
+mu_true_df <- melt(mus[[2]], varnames = c("sample_ix", "features"))
+```
+
+```{r}
+ggplot(mus_df %>% filter(features < 10, sample_ix < 5)) +
+  geom_tile(aes(x = spatial1, y = spatial2, fill = value)) +
+  scale_fill_gradient2() +
+  coord_fixed() + 
+  facet_grid(features ~ sample_ix)
+```
+
+```{r}
+head(mu_true_df)
+
+ggplot(mu_true_df %>% filter(sample_ix < 20)) +
+  geom_tile(aes(x = features, y = sample_ix, fill = value)) +
+  scale_fill_gradient2() +
+  coord_fixed()
+
+mu_mat <- dcast(mu_true_df, sample_ix ~ features)
+heatmap(as.matrix(mu_mat[, -1]))
+```
+

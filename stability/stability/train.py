@@ -18,6 +18,7 @@ import torch
 import torch.nn.functional as F
 import yaml
 
+
 def log_stage(stage, epoch, model, loss, loader, writer):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     writer.add_scalar(f"loss/{stage}", np.mean(loss[epoch]), epoch)
