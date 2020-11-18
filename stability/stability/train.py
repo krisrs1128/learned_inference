@@ -20,7 +20,7 @@ import yaml
 
 def log_stage(stage, epoch, model, loss, loader, writer):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    writer.add_scalar(f"loss/{stage}", np.mean(loss), epoch)
+    writer.add_scalar(f"loss/{stage}", np.mean(loss[epoch]), epoch)
     x, _ = next(iter(loader))
     x_hat, _, _ = model(x.to(device))
     writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
@@ -35,10 +35,11 @@ def train(model, optim, loaders, opts, out_paths, writer):
     """
     Wrap all training for a model
     """
-    loss = {"dev": 0, "train": 0}
+    loss = {"dev": [], "train": []}
     for epoch in range(opts.train.n_epochs):
-        model, optim, loss["train"] = train_epoch(model, loaders["train"], optim)
-        loss["dev"] = losses(model, loaders["dev"])
+        model, optim, lt = train_epoch(model, loaders["train"], optim)
+        loss["train"].append(lt)
+        loss["dev"].append(losses(model, loaders["dev"]))
         log_epoch(epoch, model, loss, loaders, writer)
 
         if epoch % opts.train.save_every == 0 or (epoch + 1) == opts.train.n_epochs:

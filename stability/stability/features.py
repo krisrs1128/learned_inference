@@ -83,59 +83,23 @@ def vae_layers(model):
     }
 
 
-def save_features(loader, model, epoch, out_paths, layers=None):
-    if layers is None:
-        layers = vae_layers(model)
-
+def save_features(loader, model, epoch, out_paths):
+    layers = vae_layers(model)
     h = loader_activations(loader, model, layers)
 
+    # save these activations
     metadata = []
     for k in h.keys():
-        k_path = Path(out_paths[0] + k)
+        k_path = Path(out_paths[0]) / f"{k}_{str(epoch)}.npy"
         if not k_path.parent.exists():
             k_path.parent.mkdir(parents=True, exist_ok=True)
 
         np.save(k_path, h[k].detach().cpu().numpy())
-        metadata.append({
-            "epoch": epoch,
-            "layer": k,
-            "out_path": out_paths[0] + k
-        })
+        metadata.append({"epoch": epoch, "layer": k, "out_path": k_path})
 
     # save relevant metadata
     metadata = pd.DataFrame(metadata)
-
     if Path(out_paths[1]).exists():
         metadata.to_csv(out_paths[1], mode="a", header=False)
     else:
         metadata.to_csv(out_paths[1])
-
-
-
-def save_encodings(loader, model, model_path, out_path):
-    os.makedirs(out_path.parent, exist_ok=True)
-
-    i = 0
-    for x, y, img_id, img_path in loader:
-        batch_size = len(x)
-        mode = "w" if i == 0 else "a"
-
-        with torch.no_grad():
-            z_mean, _, _ = model.encode(x)
-            z_mean = np.array(z_mean)
-            z_df = pd.DataFrame(z_mean)
-            z_df["model"] = model_path
-            z_df["img_id"] = img_id[0]
-            z_df["path"] = img_path[0]
-            z_df["y"] = np.array(y)
-            z_df.to_csv(out_path, mode=mode, header=(i == 0))
-
-        i += 1
-
-
-def save_wrapper(loader, model, model_paths, out_dir):
-    for model_path in model_paths:
-        print(f"Saving features for {model_path}")
-        model.load_state_dict(torch.load(model_path))
-        out_path = out_dir / Path(f"features_{model_path.parts[-2]}.csv")
-        save_encodings(loader, model, model_path, out_path)
