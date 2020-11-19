@@ -15,6 +15,24 @@ import torch
 import yaml
 
 
+def load_checkpoint(model, path, load_keys=None):
+    """
+    Load from a subset of keys
+    """
+    if torch.cuda.is_available():
+        pretrained = torch.load(path)
+    else:
+        pretrained = torch.load(path, map_location=torch.device("cpu"))
+
+    state = model.state_dict()
+    if load_keys is None:
+      load_keys = state.keys()
+
+    state_subset = {k: v for k, v in prtrained.items() if k in load_keys}
+    state.update(state_subset)
+    self.load_state_dict(state)
+
+
 class SaveOutput:
     def __init__(self):
         self.outputs = []

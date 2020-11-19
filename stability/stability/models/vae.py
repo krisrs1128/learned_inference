@@ -49,16 +49,6 @@ class VAE(nn.Module):
             nn.Sigmoid(),
         )
 
-    def load_checkpoint(self, path):
-        if path is None:
-            return
-
-        if torch.cuda.is_available():
-            state = torch.load(path)
-        else:
-            state = torch.load(path, map_location=torch.device("cpu"))
-        self.load_state_dict(state)
-
     def reparameterize(self, mu, logvar):
         std = logvar.mul(0.5).exp_()
         eps = torch.randn(*mu.size())
