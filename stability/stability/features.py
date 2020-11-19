@@ -90,6 +90,7 @@ def loader_activations(loader, model, layers):
 
     return h
 
+
 def vae_layers(model):
     return {
         "layer_1": model.encoder[0],
@@ -98,6 +99,16 @@ def vae_layers(model):
         "layer_4": model.encoder[6],
         "mu": model.fc1,
         "logvar": model.fc2
+    }
+
+
+def cbr_layers(model):
+    return {
+        "layer_1": model.cnn_layers[3],
+        "layer_2": model.cnn_layers[7],
+        "layer_3": model.cnn_layers[11],
+        "layer_4": model.cnn_layers[15],
+        "linear": model.linear_layers
     }
 
 
