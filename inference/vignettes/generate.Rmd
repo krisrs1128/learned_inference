@@ -1,7 +1,7 @@
 ---
 title: Data Generation Mechanism
 params:
-  out_dir: /Users/kris/Documents/stability_data/
+  out_dir: /Users/kris/Documents/stability_data_big/
 ---
 
 ```{r}
@@ -102,7 +102,7 @@ We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
-n_images <- 1000
+n_images <- 5e3
 n_original <- rnegbin(n_images, 250, 5)
 beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
   matrix(ncol = 3)
@@ -123,15 +123,15 @@ colnames(X) <- c("N", paste0("beta_", 1:ncol(beta_r)), "nu_r", "alpha_r", "nu", 
 y <- X %*% c(1 / 5000, 1/3, -1/3, -1/3, 1/4, 1/4, 1/4, 1/4, 1, 1/800) + rnorm(n_images, 0, eps)
 
 plot(X[, 8], y)
-dir.create(params$out_dir)
-write_csv(data.frame(X = X, y = y), file.path(params$out_dir, "Xy.csv"))
 ```
 
 Now we can simulate all the images.
 
 ```{r}
+dir.create(params$out_dir)
 tiles_dir <- file.path(params$out_dir, "tiles")
 dir.create(tiles_dir)
+paths <- vector(length = n_images)
 
 for (i in seq_len(n_images)) {
   result <- sim_wrapper(n_original[i], nu[i], alpha[i], beta_r[i, ], nu_r[i],
@@ -141,9 +141,11 @@ for (i in seq_len(n_images)) {
   marks <- result$marks %>%
     mutate(variable = paste0("X", mark))
 
-  out_name <- sprintf(file.path(tiles_dir, "image-%s.tiff"), str_pad(i, 4, "left", 0))
-  save_raster(marks, out_name)
+  paths[i] <- sprintf(file.path(tiles_dir, "image-%s.tiff"), str_pad(i, 4, "left", 0))
+  save_raster(marks, paths[i])
 }
+
+write_csv(data.frame(paths = paths, X = X, y = y), file.path(params$out_dir, "Xy.csv"))
 ```
 
 Let's make a nice display of all the images, and how they vary with different
