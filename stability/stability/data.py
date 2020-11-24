@@ -103,7 +103,7 @@ class CellDataset(Dataset):
 
         # default xy values
         if xy_path:
-            self.xy = pd.read_csv(xy_path)
+            self.xy = pd.read_csv(xy_path, index_col="path")
         else:
             self.xy = {"y": np.zeros(len(img_paths))}
 
@@ -112,6 +112,5 @@ class CellDataset(Dataset):
 
     def __getitem__(self, i):
         img = np.load(self.img_paths[i])
-        y = self.xy["y"][i] # numpy's are 1-indexed
-
-        return torch.Tensor(img.transpose(2, 0, 1)), torch.tensor([y])
+        y = self.xy.loc[self.img_paths[i], "y"]
+        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y])
