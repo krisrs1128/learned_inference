@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 from .features import save_features
-from .models.vae import loss_fn
+from .models.vae import vae_loss
 import numpy as np
 import os
 import pandas as pd
@@ -23,8 +23,16 @@ def log_stage(stage, epoch, model, loss, loader, writer):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     writer.add_scalar(f"loss/{stage}", np.mean(loss[epoch]), epoch)
     x, _ = next(iter(loader))
-    x_hat, _, _ = model(x.to(device))
-    writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
+
+    if "VAE" in str(model.__class__):
+      x_hat  = model(x.to(device))["x_hat"]
+      writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
+    else:
+      y_hat = model(x.to(device))["y_hat"]
+      print(y_hat)
+      print(y_hat.shape)
+      for i in range(len(y_hat)):
+          writer.add_scalar(f"y_hat_{i}/{stage}", y_hat[i], epoch)
 
 
 def log_epoch(epoch, model, loss, loaders, writer):
@@ -32,15 +40,15 @@ def log_epoch(epoch, model, loss, loaders, writer):
     log_stage("dev", epoch, model, loss["dev"], loaders["dev"], writer)
 
 
-def train(model, optim, loaders, opts, out_paths, writer):
+def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
     """
     Wrap all training for a model
     """
     loss = {"dev": [], "train": []}
     for epoch in range(opts.train.n_epochs):
-        model, optim, lt = train_epoch(model, loaders["train"], optim)
+        model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn)
         loss["train"].append(lt)
-        loss["dev"].append(losses(model, loaders["dev"]))
+        loss["dev"].append(losses(model, loaders["dev"], loss_fn))
         log_epoch(epoch, model, loss, loaders, writer)
 
         if epoch % opts.train.save_every == 0 or (epoch + 1) == opts.train.n_epochs:
@@ -49,18 +57,20 @@ def train(model, optim, loaders, opts, out_paths, writer):
     return loss
 
 
-def train_epoch(model, loader, optim):
+def train_epoch(model, loader, optim, loss_fn=vae_loss):
     """
     Train model for a single epoch
     """
     epoch_losses, i = [], 0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
 
-    for x, _, in loader:
+    for x, y, in loader:
         # get loss
         x = x.to(device)
-        x_hat, mu, logvar = model(x)
-        loss, _, _ = loss_fn(x_hat, x, mu, logvar)
+        y = y.to(device)
+        output = model(x)
+        loss = loss_fn(x, y, output)
 
         # update
         optim.zero_grad()
@@ -71,18 +81,19 @@ def train_epoch(model, loader, optim):
     return model, optim, epoch_losses
 
 
-def losses(model, loader):
+def losses(model, loader, loss_fn=vae_loss):
     """
     Calculate losses on an arbitrary loader
     """
     epoch_losses = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    for x, _ in loader:
+    for x, y in loader:
         x = x.to(device)
+        y = y.to(device)
         with torch.no_grad():
-            x_hat, mu, logvar = model(x)
-            loss = loss_fn(x_hat, x, mu, logvar)[0]
+            output = model(x)
+            loss = loss_fn(x, y, output)
             epoch_losses.append(loss.item())
 
     return epoch_losses

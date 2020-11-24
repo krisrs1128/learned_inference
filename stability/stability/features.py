@@ -113,10 +113,13 @@ def cbr_layers(model):
 
 
 def save_features(loader, model, epoch, out_paths):
-    layers = vae_layers(model)
-    h = loader_activations(loader, model, layers)
+    if "VAE" in str(model.__class__):
+        layers = vae_layers(model)
+    else:
+        layers = cbr_layers(model)
 
     # save these activations
+    h = loader_activations(loader, model, layers)
     metadata = []
     for k in h.keys():
         k_path = Path(out_paths[0]) / f"{k}_{str(epoch)}.npy"
