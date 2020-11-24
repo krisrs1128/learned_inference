@@ -70,10 +70,10 @@ class VAE(nn.Module):
 
     def forward(self, x):
         z, mu, logvar = self.encode(x)
-        z = self.decode(z)
-        return z, mu, logvar
+        return {"x_hat": self.decode(z), "mu": mu, "logvar": logvar}
 
-def loss_fn(recon_x, x, mu, logvar):
-    BCE = F.binary_cross_entropy(recon_x, x, reduction="sum")
+def vae_loss(x, y, output):
+    BCE = F.binary_cross_entropy(output["x_hat"], x, reduction="sum")
+    logvar, mu = output["logvar"], output["mu"]
     KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
-    return BCE + KLD, BCE, KLD
+    return BCE + KLD

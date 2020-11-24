@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import torch
 from torch import nn
 
 class CBRNet(nn.Module):
@@ -37,4 +38,8 @@ class CBRNet(nn.Module):
     def forward(self, x):
         x = self.cnn_layers(x)
         x = x.view(x.size(0), -1)
-        return self.linear_layers(x)
+        return {"y_hat": self.linear_layers(x)}
+
+def cnn_loss(x, y, output):
+    l2 = torch.nn.MSELoss()
+    return l2(output["y_hat"], y)
