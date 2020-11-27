@@ -114,7 +114,7 @@ mark_process <- function(z, probs, tau=1, lambdas=NULL) {
 
 #' Helper to Wrap Simulation
 #' @export
-sim_wrapper <- function(n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas) {
+sim_wrapper <- function(x, n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas) {
   intensity <- matern_process(x, nu, alpha)
   z <- inhomogeneous_process(n_original, intensity)
   probs <- relative_intensities(x, betas = beta_r, nu = nu_r, alpha = alpha_r)
@@ -140,9 +140,9 @@ spatial_df <- function(x) {
 
 #' @importFrom dplyr %>%
 #' @importFrom sf st_dimension
-#' @importFrom raster raster rasterize writeRaster stack
+#' @importFrom raster raster rasterize stack
 #' @export
-save_raster <- function(marks, out_name, n_channels=3) {
+make_raster <- function(marks, n_channels=3) {
   pts <- vector("list", n_channels)
   for (i in seq_along(pts)) {
     pts[[i]] <- marks %>%
@@ -159,7 +159,7 @@ save_raster <- function(marks, out_name, n_channels=3) {
       r[[i]] <- raster(pts[[i]], ncols=64, nrows=64, ext=extent(c(0, 1, 0, 1)))
       r[[i]] <- rasterize(pts[[i]], r[[i]], field = 1, background = 0)
     }
-
   }
-  writeRaster(stack(r), out_name, overwrite=TRUE)
+  
+  stack(r)
 }

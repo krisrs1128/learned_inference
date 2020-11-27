@@ -1,7 +1,7 @@
 ---
 title: Data Generation Mechanism
 params:
-  out_dir: /Users/kris/Documents/stability_data_big/
+  out_dir: /Users/kris/Documents/stability_data/
 ---
 
 ```{r}
@@ -67,7 +67,7 @@ lambdas <- c(20, 50, 100) # rate parameters in gamma controlling size
 ```
 
 ```{r}
-result <- sim_wrapper(n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
+result <- sim_wrapper(x, n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
 marks <- result$marks %>%
   mutate(variable = paste0("X", mark))
 mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
@@ -124,28 +124,42 @@ y <- X %*% c(1 / 5000, 1/3, -1/3, -1/3, 1/4, 1/4, 1/4, 1/4, 1, 1/800) + rnorm(n_
 
 plot(X[, 8], y)
 ```
-
-Now we can simulate all the images.
+Let's create the directory within which to save our results.
 
 ```{r}
 dir.create(params$out_dir)
 tiles_dir <- file.path(params$out_dir, "tiles")
 dir.create(tiles_dir)
-paths <- vector(length = n_images)
+```
 
-for (i in seq_len(n_images)) {
-  result <- sim_wrapper(n_original[i], nu[i], alpha[i], beta_r[i, ], nu_r[i],
-                        alpha_r[i], tau[i], lambdas[i, ])
+Now we can simulate all the images.
 
-  message(sprintf("saving %s/%s", i, n_images))
+```{r}
+# can convert foreach into a standard for loop if no parallel backend
+library("parallel")
+library("doParallel")
+library("foreach")
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
+
+pkgs <- c("inference", "dplyr", "MASS", "stringr", "sf", "raster", "reticulate")
+paths <- foreach(j = seq_len(n_images), .combine = c, .packages = pkgs) %dopar% {
+  # generate the shapefile representing cells
+  result <- sim_wrapper(x, n_original[j], nu[j], alpha[j], beta_r[j, ], nu_r[j],
+                        alpha_r[j], tau[j], lambdas[j, ])
   marks <- result$marks %>%
     mutate(variable = paste0("X", mark))
-
-  paths[i] <- sprintf(file.path(tiles_dir, "image-%s.tiff"), str_pad(i, 4, "left", 0))
-  save_raster(marks, paths[i])
+  
+  # convert to raster and save as numpy
+  path <- sprintf(file.path(tiles_dir, "image-%s.npy"), str_pad(j, 4, "left", 0))
+  r <- make_raster(marks, 3)
+  np <- reticulate::import("numpy")
+  np$save(path, as.array(r))
+  return(path)
 }
+stopCluster(cl)
 
-write_csv(data.frame(paths = paths, X = X, y = y), file.path(params$out_dir, "Xy.csv"))
+write_csv(data.frame(path = paths, X = X, y = y), file.path(params$out_dir, "Xy.csv"))
 ```
 
 Let's make a nice display of all the images, and how they vary with different

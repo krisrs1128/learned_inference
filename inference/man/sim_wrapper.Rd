@@ -4,7 +4,7 @@
 \alias{sim_wrapper}
 \title{Helper to Wrap Simulation}
 \usage{
-sim_wrapper(n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
+sim_wrapper(x, n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
 }
 \description{
 Helper to Wrap Simulation
