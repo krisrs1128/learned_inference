@@ -55,42 +55,18 @@ def random_split(ids, split_ratio):
     random.shuffle(ids)
     sizes = len(ids) * np.array(split_ratio)
     ix = [int(s) for s in np.cumsum(sizes)]
-    return {
+    splits = {
         "train": ids[: ix[0]],
         "dev": ids[ix[0] : ix[1]],
         "test": ids[ix[1] : ix[2]],
     }
 
+    splits_df = []
+    for k in splits.keys():
+        for v in splits[k]:
+            splits_df.append({"path": v, "split": k})
 
-def reshuffle(split_ids, output_dir="output/", n_cpu=3):
-    """
-    Reshuffle Data for Training
-
-    Given a dictionary specifying train / dev / test split, copy into train /
-    dev / test folders.
-    """
-    for split_type in split_ids:
-        path = pathlib.Path(output_dir, split_type)
-        os.makedirs(path, exist_ok=True)
-
-    # reshuffle train and test images
-    target_locs = {}
-    for split_type in split_ids:
-        target_locs[split_type] = []
-
-        for source in split_ids[split_type]:
-            target = pathlib.Path(
-                output_dir, split_type, os.path.basename(source)
-            ).resolve()
-            copyfile(source, target)
-            target_locs[split_type].append(target)
-
-    # return paths in a dataframe
-    split_df = []
-    for k in target_locs.keys():
-        for path in target_locs[k]:
-            split_df.append({"split": k, "path": path})
-    return pd.DataFrame(split_df)
+    return pd.DataFrame(splits_df)
 
 
 class CellDataset(Dataset):

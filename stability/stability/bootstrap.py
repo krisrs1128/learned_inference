@@ -20,4 +20,3 @@ def bootstrap_indices(N, B=30, out_path="./bootstraps.csv"):
     result = result.astype(int)
     pd.DataFrame(result).to_csv(out_path, index=False)
     return result
-
