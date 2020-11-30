@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
-WORKDIR /home/kris
-COPY . /home/kris/
+WORKDIR /home/kris/Desktop/learned_inference/
+COPY . /home/kris/Desktop/learned_inference/
 
 RUN apt-get update
 RUN apt-get install -y libglpk-dev libudunits2-dev
@@ -10,13 +10,13 @@ RUN apt-get install -y software-properties-common
 # install python
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get update
-RUN apt-get install -y python3.7
-RUN apt-get install -y libpython3.7-dev
+RUN apt-get install -y python3.8
+RUN apt-get install -y libpython3.8-dev
 RUN apt-get install -y python3-pip
 RUN apt-get install -y python3-venv python3-virtualenv
 
-WORKDIR /home/kris/learning/
-RUN pip3 install -r requirements.txt
+WORKDIR /home/kris/Desktop/conceptual/learned_inference/
+RUN pip3 install stability
 
 # install R
 ENV DEBIAN_FRONTEND=noninteractive

@@ -7,7 +7,7 @@
 # which let you use your python package on condor. The instructions are
 # generally copied and pasted from https://chtc.cs.wisc.edu/python-jobs.shtml
 
-tar -xzf python38.tar.gz
+tar -zxvf python38.tar.gz
 export PATH=$PWD/python/bin:$PATH
 
 mkdir li-packages

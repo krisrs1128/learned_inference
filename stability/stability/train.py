@@ -29,8 +29,6 @@ def log_stage(stage, epoch, model, loss, loader, writer):
       writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
     else:
       y_hat = model(x.to(device))["y_hat"]
-      print(y_hat)
-      print(y_hat.shape)
       for i in range(len(y_hat)):
           writer.add_scalar(f"y_hat_{i}/{stage}", y_hat[i], epoch)
 
