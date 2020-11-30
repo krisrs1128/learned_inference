@@ -89,6 +89,8 @@ def losses(model, loader, loss_fn=vae_loss):
     for x, y in loader:
         x = x.to(device)
         y = y.to(device)
+        model = model.to(device)
+        model.eval()
         with torch.no_grad():
             output = model(x)
             loss = loss_fn(x, y, output)
