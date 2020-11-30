@@ -4,7 +4,7 @@ universe = vanilla
 log = interactive.log
 
 # Choose a version of Python from the table above
-transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/chtc/python##.tar.gz
+transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/chtc/python38.tar.gz
 
 +IsBuildJob = true
 requirements = (OpSysMajorVer =?= 7)
