@@ -1,7 +1,6 @@
 ---
-title: Data Generation Mechanism
-params:
-  out_dir: /Users/kris/Documents/stability_data
+title: "Data Generation Mechanism"
+output: pdf_document
 ---
 
 ```{r}
@@ -128,8 +127,7 @@ plot(X[, 8], y)
 Let's create the directory within which to save our results.
 
 ```{r}
-dir.create(params$out_dir)
-tiles_dir <- file.path(params$out_dir, "tiles")
+tiles_dir <- file.path("tiles")
 dir.create(tiles_dir)
 ```
 
@@ -160,39 +158,5 @@ paths <- foreach(j = seq_len(n_images), .combine = c, .packages = pkgs) %dopar% 
 }
 stopCluster(cl)
 
-write_csv(data.frame(path = paths, X = X, y = y), file.path(params$out_dir, "Xy.csv"))
-```
-
-Let's make a nice display of all the images, and how they vary with different
-simulation parameters.
-
-```{r, eval = FALSE}
-library("png")
-
-k <- 1
-n <- 15
-m <- 10
-plot_data <- list()
-for (i in seq_len(n)) {
-  for (j in seq_len(m)) {
-    k <- k + 1
-    im <- readPNG(file.path(params$out_dir, "pngs", sprintf("image-%s.png", str_pad(k, 4, "left", 0))))
-    plot_data[[k]] <- list(x = i, y = j, im = im)
-  }
-}
-
-
-xgrid <- seq(0, max(n, m), 1)
-plot(xgrid, t="n", asp = 1)
-for (i in seq_along(plot_data)) {
-  if (is.null(plot_data[[i]]$im)) next
-  rasterImage(
-    plot_data[[i]]$im,
-    xleft = plot_data[[i]]$x,
-    ybottom = plot_data[[i]]$y,
-    xright = plot_data[[i]]$x + 1,
-    ytop = plot_data[[i]]$y + 1,
-    interpolate = FALSE
-  )
-}
+write_csv(data.frame(path = paths, X = X, y = y), file.path("Xy.csv"))
 ```
