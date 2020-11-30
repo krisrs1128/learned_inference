@@ -1,0 +1,15 @@
+organization: # all relative to $DATA_DIR
+  features_dir: "cnn/features/"
+  metadata: "cnn/metadata.csv"
+  splits: "splits.csv"
+  xy: "Xy.csv"
+train:
+  checkpoint: null
+  batch_size: 128
+  lr: 0.001
+  n_epochs: 200
+  save_every: 50
+bootstrap:
+  path: "bootstraps.csv"
+  index: null
+  B: 20

@@ -1,7 +1,7 @@
 ---
 title: Data Generation Mechanism
 params:
-  out_dir: /Users/kris/Documents/stability_data/
+  out_dir: /Users/kris/Documents/stability_data
 ---
 
 ```{r}
@@ -121,6 +121,7 @@ eps <- 0.01
 X <- cbind(n_original, beta_r, nu_r, alpha_r, nu, alpha, tau, (lambdas[, 1] - 50))
 colnames(X) <- c("N", paste0("beta_", 1:ncol(beta_r)), "nu_r", "alpha_r", "nu", "alpha", "tau", "lambda_1")
 y <- X %*% c(1 / 5000, 1/3, -1/3, -1/3, 1/4, 1/4, 1/4, 1/4, 1, 1/800) + rnorm(n_images, 0, eps)
+y <- y - mean(y)
 
 plot(X[, 8], y)
 ```
