@@ -8,9 +8,7 @@ export PYTHONPATH=$PWD/packages
 
 # unzipping data and displaying parameters
 tar -zxvf $_CONDOR_SCRATCH_DIR/stability_data.tar.gz
-cd $HOME
 source .env
-cd $ROOT_DIR/learning
 echo $DATA_DIR
 echo "parameters"
 echo ${1}
@@ -19,8 +17,9 @@ echo ${3}
 ls -R
 pwd
 
-
 # training model
+git clone https://github.com/krisrs1128/learned_inference.git
+cd learned_inference/notebooks/
 ipython -c "%run notebooks/train_cnn.ipynb"
 ls -lsh .
 
