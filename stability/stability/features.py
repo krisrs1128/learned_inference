@@ -33,93 +33,69 @@ def load_checkpoint(model, path, load_keys=None):
     self.load_state_dict(state)
 
 
-class SaveOutput:
-    def __init__(self):
-        self.outputs = []
-
-    def __call__(self, module, module_in, module_out):
-        self.outputs.append(module_out)
-
-    def clear(self):
-        self.outputs = []
-
-
-def activations(model, layers, x, device=None):
+def activations(model, prefixes, x):
     """Get all activation vectors over images for a model.
     :param model: A pytorch model
     :type model: currently is Net defined by ourselves
-    :param layers: One or more layers that activations are desired
-    :type layers: torch.nn.modules.container.Sequential
+    :param prefixes: One or more prefixes that activations are desired
+    :type prefixes: torch.nn.Module
     :param x: A 4-d tensor containing the test datapoints from which activations are desired.
                 The 1st dimension should be the number of test datapoints.
                 The next 3 dimensions should match the input of the model
     :type x: torch.Tensor
-    :return (output): A list containing activations of all specified layers.
+    :return (output): A list containing activations of all specified prefixes.
     """
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    save_output = SaveOutput()
-    hook_handles = []
-
-    for layer in layers:
-        handle = layer.register_forward_hook(save_output)
-        hook_handles.append(handle)
-
     with torch.no_grad():
-      x = x.to(device)
-      out = model(x)
-
-    output = save_output.outputs.copy()
-    del save_output, hook_handles, out
+      output = model(x)
     return output
 
 
-def loader_activations(loader, model, layers):
+def loader_activations(loader, model, prefixes, device):
     h = {}
-    for k in layers.keys():
+    for k in prefixes.keys():
         h[k] = []
 
     for x, _ in loader:
-        hx = activations(model, layers.values(), x)
-        for i, k in enumerate(layers.keys()):
+        hx = activations(model.to(device), prefixes.values(), x.to(device))
+        for i, k in enumerate(prefixes.keys()):
             h[k].append(hx[i])
 
-    for k in layers.keys():
+    for k in prefixes.keys():
         h[k] = torch.cat(h[k])
 
     return h
 
 
-def vae_layers(model):
+def vae_prefixes(model):
     return {
         "layer_1": model.encoder[0],
-        "layer_2": model.encoder[2],
-        "layer_3": model.encoder[4],
-        "layer_4": model.encoder[6],
+        "layer_2": model.encoder[:2],
+        "layer_3": model.encoder[:4],
+        "layer_4": model.encoder[:6],
         "mu": model.fc1,
         "logvar": model.fc2
     }
 
 
-def cbr_layers(model):
+def cbr_prefixes(model):
     return {
-        "layer_1": model.cnn_layers[3],
-        "layer_2": model.cnn_layers[7],
-        "layer_3": model.cnn_layers[11],
-        "layer_4": model.cnn_layers[15],
-        "linear": model.linear_layers
+        "layer_1": model.cnn_prefixes[:3],
+        "layer_2": model.cnn_prefixes[:7],
+        "layer_3": model.cnn_prefixes[:11],
+        "layer_4": model.cnn_prefixes[:15],
+        "linear": model.cnn_prefixes,
+        "final": model
     }
 
 
 def save_features(loader, model, epoch, out_paths):
     if "VAE" in str(model.__class__):
-        layers = vae_layers(model)
+        prefixes = vae_prefixes(model)
     else:
-        layers = cbr_layers(model)
+        prefixes = cbr_prefixes(model)
 
     # save these activations
-    h = loader_activations(loader, model, layers)
+    h = loader_activations(loader, prefixes)
     metadata = []
     for k in h.keys():
         k_path = Path(out_paths[0]) / f"{k}_{str(epoch)}.npy"

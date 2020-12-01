@@ -47,7 +47,7 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
         model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn)
         loss["train"].append(lt)
         loss["dev"].append(losses(model, loaders["dev"], loss_fn))
-        log_epoch(epoch, model, loss, loaders, writer)
+        #log_epoch(epoch, model, loss, loaders, writer)
 
         if epoch % opts.train.save_every == 0 or (epoch + 1) == opts.train.n_epochs:
             save_features(loaders["features"], model, epoch, out_paths)
@@ -74,7 +74,7 @@ def train_epoch(model, loader, optim, loss_fn=vae_loss):
         optim.zero_grad()
         loss.backward()
         optim.step()
-        epoch_losses.append(loss.item())
+        epoch_losses.append(loss.cpu().item())
 
     return model, optim, epoch_losses
 
@@ -89,11 +89,10 @@ def losses(model, loader, loss_fn=vae_loss):
     for x, y in loader:
         x = x.to(device)
         y = y.to(device)
-        model = model.to(device)
         model.eval()
         with torch.no_grad():
             output = model(x)
             loss = loss_fn(x, y, output)
-            epoch_losses.append(loss.item())
+            epoch_losses.append(loss.cpu().item())
 
     return epoch_losses
