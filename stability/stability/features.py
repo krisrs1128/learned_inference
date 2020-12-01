@@ -33,34 +33,21 @@ def load_checkpoint(model, path, load_keys=None):
     self.load_state_dict(state)
 
 
-def activations(model, prefixes, x):
-    """Get all activation vectors over images for a model.
-    :param model: A pytorch model
-    :type model: currently is Net defined by ourselves
-    :param prefixes: One or more prefixes that activations are desired
-    :type prefixes: torch.nn.Module
-    :param x: A 4-d tensor containing the test datapoints from which activations are desired.
-                The 1st dimension should be the number of test datapoints.
-                The next 3 dimensions should match the input of the model
-    :type x: torch.Tensor
-    :return (output): A list containing activations of all specified prefixes.
-    """
-    with torch.no_grad():
-      output = model(x)
-    return output
-
-
-def loader_activations(loader, model, prefixes, device):
+def loader_activations(loader, prefixes, device):
     h = {}
     for k in prefixes.keys():
         h[k] = []
 
-    for x, _ in loader:
-        hx = activations(model.to(device), prefixes.values(), x.to(device))
-        for i, k in enumerate(prefixes.keys()):
-            h[k].append(hx[i])
-
+    # loop over layers and then over samples
     for k in prefixes.keys():
+        prefixes[k].to(device)
+
+        for x, _ in loader:
+            x = x.to(device)
+
+            with torch.no_grad():
+                h[k].append(prefixes[k](x))
+
         h[k] = torch.cat(h[k])
 
     return h
@@ -79,23 +66,22 @@ def vae_prefixes(model):
 
 def cbr_prefixes(model):
     return {
-        "layer_1": model.cnn_prefixes[:3],
-        "layer_2": model.cnn_prefixes[:7],
-        "layer_3": model.cnn_prefixes[:11],
-        "layer_4": model.cnn_prefixes[:15],
-        "linear": model.cnn_prefixes,
-        "final": model
+        "layer_1": model.cnn_layers[:3],
+        "layer_2": model.cnn_layers[:7],
+        "layer_3": model.cnn_layers[:11],
+        "layer_4": model.cnn_layers[:15],
+        "linear": model.cnn_layers
     }
 
 
-def save_features(loader, model, epoch, out_paths):
+def save_features(loader, model, epoch, out_paths, device):
     if "VAE" in str(model.__class__):
         prefixes = vae_prefixes(model)
     else:
         prefixes = cbr_prefixes(model)
 
     # save these activations
-    h = loader_activations(loader, prefixes)
+    h = loader_activations(loader, prefixes, device)
     metadata = []
     for k in h.keys():
         k_path = Path(out_paths[0]) / f"{k}_{str(epoch)}.npy"

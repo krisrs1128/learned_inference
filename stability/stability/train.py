@@ -19,8 +19,7 @@ import torch.nn.functional as F
 import yaml
 
 
-def log_stage(stage, epoch, model, loss, loader, writer):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def log_stage(stage, epoch, model, loss, loader, writer, device):
     writer.add_scalar(f"loss/{stage}", np.mean(loss[epoch]), epoch)
     x, _ = next(iter(loader))
 
@@ -33,9 +32,9 @@ def log_stage(stage, epoch, model, loss, loader, writer):
           writer.add_scalar(f"y_hat_{i}/{stage}", y_hat[i], epoch)
 
 
-def log_epoch(epoch, model, loss, loaders, writer):
-    log_stage("train", epoch, model, loss["train"], loaders["train"], writer)
-    log_stage("dev", epoch, model, loss["dev"], loaders["dev"], writer)
+def log_epoch(epoch, model, loss, loaders, writer, device):
+    log_stage("train", epoch, model, loss["train"], loaders["train"], writer, device)
+    log_stage("dev", epoch, model, loss["dev"], loaders["dev"], writer, device)
 
 
 def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
@@ -43,24 +42,26 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
     Wrap all training for a model
     """
     loss = {"dev": [], "train": []}
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     for epoch in range(opts.train.n_epochs):
-        model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn)
+        print(f"{epoch}/{opts.train.n_epochs}")
+        model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn, device)
         loss["train"].append(lt)
         loss["dev"].append(losses(model, loaders["dev"], loss_fn))
-        #log_epoch(epoch, model, loss, loaders, writer)
+        log_epoch(epoch, model, loss, loaders, writer, device)
 
         if epoch % opts.train.save_every == 0 or (epoch + 1) == opts.train.n_epochs:
-            save_features(loaders["features"], model, epoch, out_paths)
+            save_features(loaders["features"], model, epoch, out_paths, device)
 
     return loss
 
 
-def train_epoch(model, loader, optim, loss_fn=vae_loss):
+def train_epoch(model, loader, optim, loss_fn, device):
     """
     Train model for a single epoch
     """
     epoch_losses, i = [], 0
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
     for x, y, in loader:
