@@ -17,4 +17,4 @@ python3 train_cnn.py
 
 # saving results
 cd $_CONDOR_SCRATCH_DIR/
-tar -zcvf output_${2}_${3}.tar.gz $DATA_DIR/features/
+tar -zcvf output_${2}_${3}.tar.gz $DATA_DIR/cnn/features/

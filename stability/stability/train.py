@@ -54,6 +54,7 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
         if epoch % opts.train.save_every == 0 or (epoch + 1) == opts.train.n_epochs:
             save_features(loaders["features"], model, epoch, out_paths, device)
 
+    torch.save(model.state_dict(), out_paths[2])
     return loss
 
 
