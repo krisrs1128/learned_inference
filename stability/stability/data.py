@@ -77,6 +77,6 @@ class CellDataset(Dataset):
         return len(self.img_paths)
 
     def __getitem__(self, i):
-        img = np.load(root / self.img_paths[i])
+        img = np.load(self.root / self.img_paths[i])
         y = self.xy.loc[self.img_paths[i], "y"]
         return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y])
