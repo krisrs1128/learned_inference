@@ -54,7 +54,7 @@ paths = {
 
 
 def initialize_loader(paths, data_dir, opts, **kwargs):
-    cell_data = sd.CellDataset(paths, data_dir / opts.organization.xy)
+    cell_data = sd.CellDataset(paths, data_dir / opts.organization.xy, data_dir)
     return DataLoader(cell_data, batch_size=opts.train.batch_size, **kwargs)
 
 loaders = {}

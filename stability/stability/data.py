@@ -62,9 +62,10 @@ class CellDataset(Dataset):
     """
     Dataset for working with tiffs of cells
     """
-    def __init__(self, img_paths, xy_path=None):
+    def __init__(self, img_paths, xy_path=None, root=pathlib.Path(".")):
         """Initialize dataset."""
         self.img_paths = img_paths
+        self.root = root
 
         # default xy values
         if xy_path:
@@ -76,6 +77,6 @@ class CellDataset(Dataset):
         return len(self.img_paths)
 
     def __getitem__(self, i):
-        img = np.load(self.img_paths[i])
+        img = np.load(root / self.img_paths[i])
         y = self.xy.loc[self.img_paths[i], "y"]
         return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y])
