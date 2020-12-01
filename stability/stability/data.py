@@ -5,24 +5,13 @@ Utilities for working with multichannel Tiffs
 import pathlib
 import random
 import os
-from shutil import copyfile
 import torch
 from torch.utils.data import Dataset
-import rasterio
 import re
 import pandas as pd
 import numpy as np
 from PIL import Image
 import pandas as pd
-
-
-def tiff_to_numpy(input_path, output_path):
-    """
-    Save a tiff image as a numpy array
-    """
-    imgf = rasterio.open(input_path)
-    img = imgf.read().transpose(1, 2, 0)
-    np.save(str(output_path), img)
 
 
 def convert_dir_numpy(input_dir, output_dir):
