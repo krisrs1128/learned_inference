@@ -3,12 +3,6 @@ appdirs==1.4.4
 distlib==0.3.1
 filelock==3.0.12
 importlib-metadata==1.7.0
-ipython==7.19.0
-jupyter-client==6.1.7
-jupyter-console==6.2.0
-jupyter-core==4.6.3
-jupyter==1.0.0
-jupyterlab-pygments==0.1.2
 numpy==1.19.1
 pandas==1.0.5
 pillow==7.2.0
