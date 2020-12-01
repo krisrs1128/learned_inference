@@ -46,7 +46,7 @@ def loader_activations(loader, prefixes, device):
             x = x.to(device)
 
             with torch.no_grad():
-                h[k].append(prefixes[k](x))
+                h[k].append(prefixes[k](x).cpu())
 
         h[k] = torch.cat(h[k])
 
