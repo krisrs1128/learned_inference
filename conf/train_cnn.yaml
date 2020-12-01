@@ -7,7 +7,7 @@ train:
   checkpoint: null
   batch_size: 128
   lr: 0.001
-  n_epochs: 200
+  n_epochs: 75
   save_every: 50
 bootstrap:
   path: "bootstraps.csv"
