@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # coding: utf-8
 
@@ -65,7 +64,11 @@ loaders["dev"] = initialize_loader(paths["dev"], data_dir, opts)
 loaders["test"] = initialize_loader(paths["test"], data_dir, opts)
 
 # train
-out_paths = [data_dir / opts.organization.features_dir, data_dir / opts.organization.metadata]
+out_paths = [
+    data_dir / opts.organization.features_dir, 
+    data_dir / opts.organization.metadata,
+    data_dir / "model_final.pt"
+]
 st.train(model, optim, loaders, opts, out_paths, writer, cnn_loss)
 
 
