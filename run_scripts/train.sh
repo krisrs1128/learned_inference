@@ -23,3 +23,5 @@ python3 train.py --train_yaml ${3} --bootstrap ${1}
 cd $_CONDOR_SCRATCH_DIR/
 rm -rf $DATA_DIR/tiles/
 tar -zcvf output_${2}_${1}.tar.gz $DATA_DIR/
+smbclient -k //research.drive.wisc.edu/ksankaran -c "put output_${2}_${1}.tar.gz"
+rm -rf 

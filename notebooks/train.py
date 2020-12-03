@@ -62,6 +62,7 @@ paths = {
 
 save_ix = np.random.choice(len(splits), opts.train.save_subset, replace=False)
 loaders = {
+    "train_fixed": initialize_loader(paths["train"][args.bootstrap], data_dir, opts),
     "train": initialize_loader(paths["train"][args.bootstrap], data_dir, opts, shuffle=True),
     "dev": initialize_loader(paths["dev"], data_dir, opts),
     "test": initialize_loader(paths["test"], data_dir, opts),

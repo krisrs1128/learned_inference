@@ -5,7 +5,6 @@ error = /home/ksankaran/logs/job_$(Cluster)_$(Process).err
 output = /home/ksankaran/logs/job_$(Cluster)_$(Process).out
 input = /staging/ksankaran/stability_data.tar.gz
 transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/chtc/python38.tar.gz,/home/ksankaran/packages/li-packages.tar.gz
-transfer_output_files = output_$(Cluster)_$(Process).tar.gz
 executable = train.sh
 arguments = "$(Process) $(Cluster) conf/cnn50.yaml"
 request_gpus = 1
