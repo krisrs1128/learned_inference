@@ -37,6 +37,7 @@ features_dir = data_dir / opts.organization.features_dir
 os.makedirs(features_dir, exist_ok=True)
 
 # Setup model
+print(opts.train)
 if opts.train.model == "cnn":
     model = CBRNet()
 elif opts.train.model == "vae":
@@ -45,10 +46,6 @@ elif opts.train.model == "rcf":
     raise NotImplementedError()
 else:
     raise NotImplementedError()
-
-optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
-if opts.train.checkpoint is not None:
-    model.load_checkpoint(data_dir / opts.train.checkpoint)
 
 # build loaders
 splits = pd.read_csv(data_dir / opts.organization.splits)
@@ -69,7 +66,7 @@ loaders = {
     "features": initialize_loader(paths["all"][save_ix], data_dir, opts)
 }
 
-# train
+# prepare logging
 subset_path = data_dir / opts.organization.features_dir / "subset.csv"
 splits.iloc[save_ix, :].to_csv(subset_path)
 writer = SummaryWriter(features_dir / "logs")
@@ -79,4 +76,7 @@ out_paths = [
     data_dir / opts.organization.metadata,
     data_dir / opts.organization.model
 ]
+
+# train
+optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
 st.train(model, optim, loaders, opts, out_paths, writer)
