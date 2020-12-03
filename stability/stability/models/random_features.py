@@ -2,6 +2,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
+import numpy as np
 
 class ConvSubset(nn.Module):
     def __init__(self, patches):
