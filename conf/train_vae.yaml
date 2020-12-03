@@ -9,7 +9,7 @@ train:
   lr: 0.0001
   n_epochs: 25
   save_every: 5
-  z_dim: 128
+  z_dim: 64
 bootstrap:
   path: "bootstraps.csv"
   index: null

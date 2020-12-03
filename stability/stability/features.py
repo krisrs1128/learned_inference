@@ -10,6 +10,7 @@ from addict import Dict
 from pathlib import Path
 from torch.utils.data import DataLoader
 import argparse
+import torch.nn as nn
 import pandas as pd
 import torch
 import yaml
@@ -59,8 +60,8 @@ def vae_prefixes(model):
         "layer_2": model.encoder[:2],
         "layer_3": model.encoder[:4],
         "layer_4": model.encoder[:6],
-        "mu": model.fc1,
-        "logvar": model.fc2
+        "mu": nn.Sequential(model.encoder, model.fc1),
+        "logvar": nn.Sequential(model.encoder, model.fc2)
     }
 
 
