@@ -8,6 +8,10 @@ export PYTHONPATH=$PWD/li-packages
 
 # unzipping data and displaying parameters
 tar -zxvf $_CONDOR_SCRATCH_DIR/stability_data.tar.gz
+echo $0
+echo $1
+echo $2
+echo $3
 
 # training model
 git clone https://github.com/krisrs1128/learned_inference.git
@@ -17,4 +21,4 @@ python3 train_cnn.py
 
 # saving results
 cd $_CONDOR_SCRATCH_DIR/
-tar -zcvf output_${2}_${3}.tar.gz $DATA_DIR/cnn/features/
+tar -zcvf output_${2}_${1}.tar.gz $DATA_DIR/cnn/features/

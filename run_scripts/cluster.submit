@@ -8,7 +8,10 @@ transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/chtc/python38.tar.gz,/ho
 transfer_output_files = output_$(Cluster)_$(Process).tar.gz
 executable = train.sh
 arguments = "$(Process) $(Cluster)"
+request_gpus = 1
 request_cpus = 1
-request_memory = 1GB
-request_disk = 1GB
++WantGPULab = true
++GPUJobLength = "short" 
+request_memory = 12GB
+request_disk = 16GB
 queue 1

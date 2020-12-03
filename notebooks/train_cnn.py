@@ -59,7 +59,7 @@ def initialize_loader(paths, data_dir, opts, **kwargs):
 
 loaders = {}
 loaders["train"] = initialize_loader(paths["train"][resample_ix][0], data_dir, opts, shuffle=True)
-loaders["features"] = initialize_loader(paths["train"], data_dir, opts)
+loaders["features"] = initialize_loader(paths["train"][:1000], data_dir, opts)
 loaders["dev"] = initialize_loader(paths["dev"], data_dir, opts)
 loaders["test"] = initialize_loader(paths["test"], data_dir, opts)
 
