@@ -12,6 +12,7 @@ train:
   n_epochs: 25
   save_every: 50
   save_subset: 2000
+  z_dim: 64
 bootstrap:
   path: "bootstraps_0.15-train.csv"
   index: null
