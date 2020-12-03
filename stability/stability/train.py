@@ -51,10 +51,15 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
         loss["dev"].append(losses(model, loaders["dev"], loss_fn))
         log_epoch(epoch, model, loss, loaders, writer, device)
 
+        # periodically save features
         if epoch % opts.train.save_every == 0 or (epoch + 1) == opts.train.n_epochs:
             save_features(loaders["features"], model, epoch, out_paths, device)
 
-    torch.save(model.state_dict(), out_paths[2])
+        # save best features / model
+        if loss["dev"][-1] == min(loss["dev"]):
+            save_features(loaders["features"], model, "best", out_paths, device)
+            torch.save(model.state_dict(), out_paths[2])
+
     return loss
 
 
