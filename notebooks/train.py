@@ -25,8 +25,8 @@ import yaml
 
 
 parser = argparse.ArgumentParser(description="Preprocess raw tiffs into slices")
-parser.add_argument("-c", "--train_yaml", type=str)
-parser.add_argument("-b", "--bootstrap", type=int)
+parser.add_argument("-c", "--train_yaml", default="../conf/train_cnn.yaml", type=str)
+parser.add_argument("-b", "--bootstrap", default=0, type=int)
 args = parser.parse_args()
 
 data_dir = pathlib.Path(os.environ["DATA_DIR"])
