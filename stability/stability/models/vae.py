@@ -19,8 +19,13 @@ class UnFlatten(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, image_channels=3, h_dim=1024, z_dim=32):
+    def __init__(self, image_channels=3, h_dim=1024, z_dim=32, device=None):
         super(VAE, self).__init__()
+
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
+
         self.encoder = nn.Sequential(
             nn.Conv2d(image_channels, 32, kernel_size=4, stride=2),
             nn.ReLU(),
@@ -51,7 +56,7 @@ class VAE(nn.Module):
 
     def reparameterize(self, mu, logvar):
         std = logvar.mul(0.5).exp_()
-        eps = torch.randn(*mu.size())
+        eps = torch.randn(*mu.size(), device=self.device)
         return mu + std * eps
 
     def bottleneck(self, h):
