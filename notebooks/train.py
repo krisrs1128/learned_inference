@@ -13,8 +13,8 @@ import json
 import pathlib
 from addict import Dict
 from stability.data import initialize_loader
-from stability.models.vae import VAE
-from stability.models.cnn import CBRNet
+from stability.models.vae import VAE, vae_loss
+from stability.models.cnn import CBRNet, cnn_loss
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import pandas as pd
@@ -40,8 +40,10 @@ os.makedirs(features_dir, exist_ok=True)
 print(opts.train)
 if opts.train.model == "cnn":
     model = CBRNet()
+    loss_fn = cnn_loss
 elif opts.train.model == "vae":
     model = VAE(z_dim=opts.train.z_dim)
+    loss_fn = vae_loss
 elif opts.train.model == "rcf":
     raise NotImplementedError()
 else:
@@ -79,4 +81,4 @@ out_paths = [
 
 # train
 optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
-st.train(model, optim, loaders, opts, out_paths, writer)
+st.train(model, optim, loaders, opts, out_paths, writer, loss_fn)
