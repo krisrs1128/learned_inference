@@ -17,7 +17,13 @@ echo $3
 git clone https://github.com/krisrs1128/learned_inference.git
 source learned_inference/.env
 cd learned_inference/notebooks/
-python3 train_cnn.py
+
+if [[ $3 == "cnn" ]]
+then stuff
+     python3 train_cnn.py
+else
+    python3 train_vae.py
+fi
 
 # saving results
 cd $_CONDOR_SCRATCH_DIR/
