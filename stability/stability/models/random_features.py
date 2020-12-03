@@ -32,3 +32,19 @@ class WideNet(nn.Module):
         conv = ConvSubset(self.patches[start:end])
         pre_h = conv(x)
         return F.max_pool2d(F.relu(pre_h - 1), pre_h.shape[2])
+
+
+def random_patches(paths, k=2048, patch_size=12, im_size=64):
+    selected_ = np.random.choice(paths, k)
+    p, n = np.unique(selected_, return_counts=True)
+    selected = dict(zip(p, n))
+
+    patches = []
+    for p, n in selected.items():
+        im = np.load(p)
+        for i in range(n):
+            ix = np.random.randint(0, im_size - patch_size, 2)
+            patches.append(im[ix[0]:(ix[0] + patch_size), ix[1]:(ix[1] + patch_size)])
+
+    patches = np.stack(patches, axis=0)
+    return np.transpose(patches, (0, 3, 1, 2))
