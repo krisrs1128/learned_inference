@@ -24,7 +24,7 @@ import json
 
 
 data_dir = pathlib.Path(os.environ["DATA_DIR"])
- root_dir = pathlib.Path(os.environ["ROOT_DIR"])
+root_dir = pathlib.Path(os.environ["ROOT_DIR"])
 opts = Dict(yaml.safe_load(open(root_dir / "conf/train_vae.yaml", "r")))
 
 features_dir = data_dir / opts.organization.features_dir
@@ -54,7 +54,7 @@ paths = {
 
 
 def initialize_loader(paths, data_dir, opts, **kwargs):
-    cell_data = CellDataset(paths, data_dir / opts.organization.xy)
+    cell_data = CellDataset(paths, data_dir / opts.organization.xy, data_dir)
     return DataLoader(cell_data, batch_size=opts.train.batch_size, **kwargs)
 
 loaders = {}
