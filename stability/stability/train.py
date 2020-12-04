@@ -33,7 +33,7 @@ def log_stage(stage, epoch, model, loss, loader, writer, device):
 
 
 def log_epoch(epoch, model, loss, loaders, writer, device):
-    log_stage("train", epoch, model, loss["train_fixed"], loaders["train_fixed"], writer, device)
+    log_stage("train", epoch, model, loss["train"], loaders["train_fixed"], writer, device)
     log_stage("dev", epoch, model, loss["dev"], loaders["dev"], writer, device)
 
 
