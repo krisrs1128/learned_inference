@@ -22,3 +22,16 @@ melt_stability <- function(res) {
   mcoef_paths <- melt(res$coef_paths, varnames = c("j", "lambda", "b"))
   list(Pi = mpi, coef_paths = mcoef_paths)
 }
+
+#' @importFrom reticulate import
+#' @export
+read_acts <- function(paths) {
+  results <- list()
+  np <- import("numpy")
+  for (i in seq_along(paths)) {
+    system(sprintf("tar -zxvf %s", paths[i]))
+    results[[i]] <- np$load(upath)  # how to get path to unzipped?
+  }
+
+  results
+}
