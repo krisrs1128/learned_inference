@@ -24,4 +24,4 @@ cd $_CONDOR_SCRATCH_DIR/
 rm -rf $DATA_DIR/tiles/
 export OUTNAME=$(basename ${3}).tar.gz
 tar -zcvf ${OUTNAME} -C $DATA_DIR/ .
-smbclient -k //research.drive.wisc.edu/ksankaran -c "put ${OUTNAME}"
+mv ${OUTNAME} /staging/ksankaran/
