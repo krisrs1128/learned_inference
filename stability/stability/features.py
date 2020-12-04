@@ -71,8 +71,7 @@ def cbr_prefixes(model):
         #"layer_2": model.cnn_layers[:7],
         #"layer_3": model.cnn_layers[:11],
         "layer_4": model.cnn_layers[:15],
-        "linear": model.cnn_layers,
-        "y_hat": model.forward_
+        "linear": model.cnn_layers
     }
 
 
