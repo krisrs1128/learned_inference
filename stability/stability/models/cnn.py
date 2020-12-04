@@ -34,11 +34,15 @@ class CBRNet(nn.Module):
             nn.Linear(in_features=512, out_features=1, bias=True)
         )
 
-    # Defining the forward pass
-    def forward(self, x):
+    def forward_(self, x):
         x = self.cnn_layers(x)
         x = x.view(x.size(0), -1)
-        return {"y_hat": self.linear_layers(x)}
+        return self.linear_layers(x)
+
+    # Defining the forward pass
+    def forward(self, x):
+        return {"y_hat": self.forward_(x)}
+
 
 def cnn_loss(x, y, output):
     l2 = torch.nn.MSELoss()

@@ -22,6 +22,6 @@ python3 train.py --train_yaml ${3} --bootstrap ${1}
 # saving results
 cd $_CONDOR_SCRATCH_DIR/
 rm -rf $DATA_DIR/tiles/
-export OUTNAME=$(basename ${3}).tar.gz
+export OUTNAME=$(basename ${3})_${1}.tar.gz
 tar -zcvf ${OUTNAME} -C $DATA_DIR/ .
 mv ${OUTNAME} /staging/ksankaran/
