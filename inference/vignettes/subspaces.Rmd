@@ -14,24 +14,114 @@ library("stringr")
 library("irlba")
 theme_set(theme_bw())
 ```
+First we read in all the relevant data.
 
 ```{r}
-data_dir <- "/Users/kris/Desktop"
+# unzip raw experimental output
+data_dir <- "/Users/kris/Documents/stability_outputs/"
 paths <- c(
-  "/Users/kris/Documents/stability_outputs/vae90.yaml_2.tar.gz",
-  "/Users/kris/Documents/stability_outputs/vae90.yaml_3.tar.gz"
+  file.path(data_dir, "vae90.yaml_1.tar.gz"),
+  file.path(data_dir, "vae90.yaml_2.tar.gz")
 )
-result <- read_acts(paths, data_dir = data_dir)
-```
+untar_all(paths, data_dir = data_dir)
 
-```{r}
-output_dirs <- sapply(paths, function(z) file.path(data_dir, basename(z)))
+# read in response data and input image paths
+output_dirs <- sapply(paths, function(z) file.path(data_dir, tools::file_path_sans_ext(basename(z))))
 Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
+metadata <- lapply(output_dirs, function(s) read_csv(file.path(s, "vae90", "metadata.csv")))
 subsets <- lapply(output_dirs, function(s) read_csv(file.path(s, "vae90", "features", "subset.csv")))
 ```
+```{r}
+metadata <- lapply(output_dirs, function(s) read_csv(file.path(s, "vae90", "metadata.csv")))
+metadata <- map_dfr(
+  metadata, 
+  function(x) 
+    x %>% 
+    mutate(path = str_extract(out_path, "vae90.*npy")) %>%
+    select(-out_path, -X1),
+  .id = "bootstrap"
+) %>%
+  mutate(
+    boot_path = tools::file_path_sans_ext(bootstrap),
+  ) %>%
+  tidyr::unite(path, boot_path, path, sep="/") %>%
+  select(-bootstrap) %>%
+  select(path, layer, epoch) %>%
+  arrange(path, layer, epoch)
+
+np <- import("numpy")
+acts_ <- metadata %>%
+  filter(epoch == "best", layer == "mu") %>%
+  .[["path"]] %>%
+  unique()
+acts <- map(acts_, function(x) data.frame(np$load(x)))
+length(acts)
+```
 
 ```{r}
-head(subsets[[1]] %>% arrange(path))
-head(subsets[[2]] %>% arrange(path))
+subsets_ <- map(subsets, ~ rename(., c("ix" = "X1", "image" = "path", "split" = "split")))
+acts <- map2(subsets_, acts, cbind)
+```
+
+First, we'll get the projected scores, using MultiCCA.
+
+```{r}
+library("PMA")
+x_list <- map(acts, ~ .x %>% select(starts_with("X")) %>% as.matrix())
+cca_res <- MultiCCA(x_list, ncomponents = 2)
+```
+```{r}
+length(x_list)
+length(cca_res)
+```
+
+```{r}
+scores <- list()
+for (i in seq_along(x_list)) {
+  scores[[i]] <- x_list[[i]] %*% cca_res$ws[[i]]
+}
+```
+
+Before we can plot them, we need to merge them into a data.frame and tidy.
+```{r}
+scores2 <- map2_dfr(subsets_, scores, cbind, .id = "source") %>%
+  mutate(B = str_extract(source, "yaml.{1,2}")) %>%
+  mutate(B = as.integer(gsub("yaml_", "", B)))
+head(scores2)
+
+plot_data <- scores2 %>%
+  select(B, image, split, `1`, `2`) %>%
+  melt(id.vars = c("B", "image", "split"))
+
+edge_data <- plot_data %>%
+  dcast(image + split ~ variable + B)
+
+plot_data <- plot_data %>%
+  dcast(image + split + B ~ variable)
+
+ggplot() +
+  geom_segment(
+    data = edge_data,
+    aes(x = `1_1`, xend = `1_2`, y = `2_1`, yend = `2_2`),
+    alpha = 0.3, size = 0.1
+  ) +
+  geom_point(
+    data = plot_data,
+    aes(x = `1`, y = `2`, col = as.factor(B)),
+    size = 0.4, alpha = 0.8
+  ) +
+  scale_color_brewer(palette = "Set2")
+```
+
+
+```{r}
+for (i in seq_along(scores)) {
+  colnames(scores[[i]]) <- paste0("dim", seq_len(ncol(scores[[i]])))
+  scores[[i]] <- cbind(subsets[[1]], B = i, tibble(scores[[i]]))
+}
+```
+
+```{r}
+head(metadata[[2]])
 ```
 
