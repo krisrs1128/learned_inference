@@ -4,17 +4,17 @@ output: html_notebook
 ---
 
 ```{r}
-library("readr")
+library("PMA")
 library("dplyr")
 library("ggplot2")
-library("reticulate")
-library("purrr")
 library("glmnet")
-library("PMA")
+library("purrr")
+library("readr")
 library("reshape2")
+library("reticulate")
 library("stringr")
-library("irlba")
 theme_set(theme_bw())
+source("../R/stability.R")
 ```
 First we read in all the relevant data.
 
@@ -28,36 +28,57 @@ paths <- c(
 untar_all(paths, data_dir = data_dir)
 
 # read in response data and input image paths
-output_dirs <- sapply(paths, function(z) file.path(data_dir, tools::file_path_sans_ext(basename(z))))
+output_dirs <- map(paths, ~ file.path(data_dir, tools::file_path_sans_ext(basename(.x))))
 Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
-metadata <- lapply(output_dirs, function(s) read_csv(file.path(s, "vae90", "metadata.csv")))
-subsets <- lapply(output_dirs, function(s) read_csv(file.path(s, "vae90", "features", "subset.csv")))
+metadata <- map(output_dirs, ~ read_csv(file.path(.x, "vae90", "metadata.csv")))
+subsets <- map(output_dirs, ~ read_csv(file.path(.x, "vae90", "features", "subset.csv")))
 ```
+Next, let's identify the paths to all the activation numpy files. This involves
+
+* merging all the `metadata.csv` files produced by individual runs
+* annotating the bootstrap number associated with each run
+* giving absolute and relative paths to the data
+
 ```{r}
-metadata <- lapply(output_dirs, function(s) read_csv(file.path(s, "vae90", "metadata.csv")))
-metadata <- map_dfr(
-  metadata, 
-  function(x) 
-    x %>% 
-    mutate(path = str_extract(out_path, "vae90.*npy")) %>%
-    select(-out_path, -X1),
-  .id = "bootstrap"
+metadata <- map(output_dirs, ~ read_csv(file.path(.x, "vae90", "metadata.csv"))) %>%
+  map_dfr(~ .x %>% 
+      mutate(
+        model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
+        rel_path = str_replace(out_path, "(.+)stability_data/(.+)", "\\2"),
+        data_dir = str_replace(out_path, "(.+)(vae|cnn)(.+)", "\\1"),
+        ),
+  .id = "abs_path"
 ) %>%
   mutate(
-    boot_path = tools::file_path_sans_ext(bootstrap),
+    bootstrap = str_replace(abs_path, "(.+)yaml_([0-9]+).tar.gz", "\\2"),
+    bootstrap = as.numeric(bootstrap),
+    abs_path = file.path(tools::file_path_sans_ext(abs_path), rel_path)
   ) %>%
-  tidyr::unite(path, boot_path, path, sep="/") %>%
-  select(-bootstrap) %>%
-  select(path, layer, epoch) %>%
-  arrange(path, layer, epoch)
+  select(abs_path, model, bootstrap, epoch, layer)
 
+
+#%>%
+#  mutate(
+#    boot_path = tools::file_path_sans_ext(bootstrap),
+#  ) %>%
+#  tidyr::unite(path, boot_path, path, sep="") %>%
+#  select(-bootstrap) %>%
+#  select(path, layer, epoch) %>%
+#  arrange(path, layer, epoch)
+
+head(metadata)
+```
+
+
+Now, we'll read in the actual activations associated with each of the numpy
+arrays referenced in the metadata file.
+```{r}
 np <- import("numpy")
 acts_ <- metadata %>%
   filter(epoch == "best", layer == "mu") %>%
   .[["path"]] %>%
   unique()
 acts <- map(acts_, function(x) data.frame(np$load(x)))
-length(acts)
 ```
 
 ```{r}

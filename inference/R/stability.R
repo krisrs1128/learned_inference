@@ -29,7 +29,9 @@ melt_stability <- function(res) {
 untar_all <- function(paths, data_dir = ".") {
   for (i in seq_along(paths)) {
     exdir <- file.path(data_dir, tools::file_path_sans_ext(basename(paths[[i]])))
-    untar(paths[i], exdir = exdir)
+    if (!dir.exists(exdir)) {
+      untar(paths[i], exdir = exdir)
+    }
   }
 }
 
