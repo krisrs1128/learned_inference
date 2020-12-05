@@ -23,19 +23,21 @@ melt_stability <- function(res) {
   list(Pi = mpi, coef_paths = mcoef_paths)
 }
 
+#' @export
+untar_all <- function(paths, data_dir = ".") {
+  for (i in seq_along(paths)) {
+    exdir <- file.path(data_dir, tools::file_path_sans_ext(basename(paths[[i]])))
+    untar(paths[i], exdir = exdir)
+  }
+}
+
 #' @importFrom reticulate import
 #' @export
-read_acts <- function(paths, pattern = "*mu_*", data_dir = ".") {
+read_npys <- function(paths, data_dir = ".") {
   results <- list()
   np <- import("numpy")
-  for (i in seq_along(paths)) {
-    exdir <- file.path(data_dir, basename(paths[[i]]))
-    untar(paths[i], exdir = exdir)
-    fs <- list.files(exdir, pattern, full.names = TRUE, recursive = TRUE)
-    for (f in fs) {
-      results[[f]] <- np$load(f)
-    }
+  for (f in paths) {
+    results[[f]] <- np$load(f)
   }
-
   results
 }
