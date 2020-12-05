@@ -1,19 +1,28 @@
 
+subset_matrices <- function(rdata, cols = as.character(1:40)) {
+  X <- rdata %>%
+    select(cols) %>%
+    as.matrix()
+  
+  y <- rdata %>%
+    .[["y"]]
+    
+  list(X = X, y = y)
+}
+
 #' @importFrom glmnet glmnet
 #' @export
-stability_selection <- function(X, y, B = 1000, n_lambda = 100) {
-  lambda <- glmnet(X, y)$lambda
-  
+stability_selection <- function(X, y, B = 1000, ...) {
   n <- nrow(X)
   p <- ncol(X)
   coef_paths <- array(dim = c(p + 1, length(lambda), B))
   for (b in seq_len(B)) {
     ix <- sample(seq_len(n), n / 2, replace = FALSE)
-    fit <- glmnet(X[ix, ], y[ix], lambda = lambda)
-    coef_paths[, , b] <- coef(fit)
+    fit <- glmnet(X[ix, ], y[ix], ...)
+    coef_paths[, , b] <- as.matrix(coef(fit))
   }
 
-  Pi <- apply(coef_paths, 3, function(z) abs(z) > 0)
+  Pi <- apply(coef_paths, c(1, 2), function(z) mean(abs(z) > 0))
   list(Pi = Pi, coef_paths = coef_paths)
 }
 

@@ -23,7 +23,8 @@ First we read in all the relevant data.
 data_dir <- "/Users/kris/Documents/stability_outputs/"
 paths <- c(
   file.path(data_dir, "vae90.yaml_1.tar.gz"),
-  file.path(data_dir, "vae90.yaml_2.tar.gz")
+  file.path(data_dir, "vae90.yaml_2.tar.gz"),
+  file.path(data_dir, "vae90.yaml_4.tar.gz")
 )
 untar_all(paths, data_dir = data_dir)
 
@@ -32,6 +33,7 @@ output_dirs <- map(paths, ~ file.path(data_dir, tools::file_path_sans_ext(basena
 Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
 metadata <- map(output_dirs, ~ read_csv(file.path(.x, "vae90", "metadata.csv")))
 subsets <- map(output_dirs, ~ read_csv(file.path(.x, "vae90", "features", "subset.csv")))
+names(subsets) <- output_dirs
 ```
 Next, let's identify the paths to all the activation numpy files. This involves
 
@@ -40,33 +42,20 @@ Next, let's identify the paths to all the activation numpy files. This involves
 * giving absolute and relative paths to the data
 
 ```{r}
-metadata <- map(output_dirs, ~ read_csv(file.path(.x, "vae90", "metadata.csv"))) %>%
+metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "vae90", "metadata.csv")))) %>%
   map_dfr(~ .x %>% 
       mutate(
         model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
-        rel_path = str_replace(out_path, "(.+)stability_data/(.+)", "\\2"),
-        data_dir = str_replace(out_path, "(.+)(vae|cnn)(.+)", "\\1"),
-        ),
-  .id = "abs_path"
-) %>%
-  mutate(
-    bootstrap = str_replace(abs_path, "(.+)yaml_([0-9]+).tar.gz", "\\2"),
-    bootstrap = as.numeric(bootstrap),
-    abs_path = file.path(tools::file_path_sans_ext(abs_path), rel_path)
+        rel_path = str_replace(out_path, "(.+)stability_data/(.+)", "\\2")
+        )
   ) %>%
-  select(abs_path, model, bootstrap, epoch, layer)
-
-
-#%>%
-#  mutate(
-#    boot_path = tools::file_path_sans_ext(bootstrap),
-#  ) %>%
-#  tidyr::unite(path, boot_path, path, sep="") %>%
-#  select(-bootstrap) %>%
-#  select(path, layer, epoch) %>%
-#  arrange(path, layer, epoch)
-
-head(metadata)
+  mutate(
+    bootstrap = str_replace(abs_path, "(.+)yaml_([0-9]+).tar", "\\2"),
+    bootstrap = as.numeric(bootstrap),
+    abs_path = file.path(abs_path, rel_path),
+    source = str_replace(abs_path, "(.+)(tar)(.+)", "\\1\\2")
+  ) %>%
+  select(abs_path, source, model, bootstrap, epoch, layer)
 ```
 
 
@@ -76,13 +65,13 @@ arrays referenced in the metadata file.
 np <- import("numpy")
 acts_ <- metadata %>%
   filter(epoch == "best", layer == "mu") %>%
-  .[["path"]] %>%
+  .[["abs_path"]] %>%
   unique()
-acts <- map(acts_, function(x) data.frame(np$load(x)))
+acts <- map(acts_, ~ data.frame(np$load(.x)))
 ```
 
 ```{r}
-subsets_ <- map(subsets, ~ rename(., c("ix" = "X1", "path" = "path", "split" = "split")))
+subsets_ <- map(subsets, ~ rename(., c("ix" = "X1", "rel_path" = "path")))
 acts <- map2(subsets_, acts, cbind)
 ```
 
@@ -91,115 +80,96 @@ First, we'll get the projected scores, using MultiCCA.
 ```{r}
 x_list <- map(acts, ~ .x %>% select(starts_with("X")) %>% as.matrix())
 cca_res <- MultiCCA(x_list, ncomponents = 40)
-```
-```{r}
-scores <- list()
-for (i in seq_along(x_list)) {
-  scores[[i]] <- x_list[[i]] %*% cca_res$ws[[i]]
-}
+scores <- map2(x_list, cca_res$ws, ~ .x %*% .y)
 ```
 
 Before we can plot them, we need to merge them into a data.frame and tidy.
+
 ```{r}
-scores2 <- map2_dfr(subsets_, scores, cbind, .id = "source") %>%
-  mutate(B = str_extract(source, "yaml.{1,2}")) %>%
-  mutate(B = as.integer(gsub("yaml_", "", B)))
-head(scores2)
-
+scores2 <- map2_dfr(subsets_, scores, cbind, .id = "source")
 plot_data <- scores2 %>%
-  select(B, path, split, `1`, `2`) %>%
-  melt(id.vars = c("B", "path", "split"))
+  left_join(metadata %>% select(source, bootstrap) %>% unique()) %>%
+  left_join(Xy, by = c("rel_path" = "path")) %>%
+  select(bootstrap, rel_path, split, `2`, `3`, y) %>%
+  melt(id.vars = c("bootstrap", "rel_path", "split", "y"), variable.name = "dim") %>%
+  arrange(rel_path)
+head(plot_data)
+```
 
-edge_data <- plot_data %>%
-  dcast(path + split ~ variable + B)
 
-plot_data <- plot_data %>%
-  dcast(path + split + B ~ variable)
+```{r}
+#subsample <- nrow(plot_data)
+subsample <- 800
+centroids <- plot_data[1:subsample, ] %>%
+  group_by(dim, rel_path, split, y) %>%
+  summarise(mean = mean(value)) %>%
+  mutate(dim = paste0("mean", dim)) %>%
+  dcast(rel_path + split + y ~ dim, value.var = "mean")
 
-ggplot() +
-  geom_segment(
-    data = edge_data,
-    aes(x = `1_1`, xend = `1_2`, y = `2_1`, yend = `2_2`),
-    alpha = 0.8, size = 0.1
-  ) +
+edge_data <- plot_data[1:subsample, ] %>%
+  dcast(bootstrap + rel_path + split + y ~ dim, value.var = "value") %>%
+  split(.$bootstrap) %>%
+  map_dfr(~ .x %>% left_join(centroids))
+```
+
+
+```{r, fig.width = 20}
+ggplot(edge_data) +
   geom_point(
-    data = plot_data,
-    aes(x = `1`, y = `2`, col = as.factor(B)),
-    size = 0.3, alpha = 0.8
+    data = centroids,
+    aes(x = mean3, y = mean2, col = y),
+    alpha = 0.5, size = 0.8
+    ) +
+  geom_point(
+    aes(x = `3`, y = `2`, col = y),
+    size = 0.9, alpha = 0.4
   ) +
+  geom_segment(
+    aes(x = `3`, xend = mean3, y = `2`, yend = mean2, col = y),
+    size = 0.2, alpha = 0.5
+  ) +
+  coord_fixed(0.5) +
   facet_grid(split ~ .) +
-  coord_fixed(.75) +
-  scale_color_brewer(palette = "Set2") +
+  scale_color_viridis_c() +
   theme(legend.position = "bottom")
 ```
 
-
 ```{r}
 regression_data <- scores2 %>%
-  left_join(Xy)
+  left_join(metadata %>% select(source, bootstrap) %>% unique()) %>%
+  left_join(Xy, c("rel_path" = "path"))
+
 ```
 
 ```{r}
-subset_matrices <- function(rdata, b, cols = as.character(1:40)) {
-  X <- regression_data %>%
-    filter(B == b) %>%
-    select(cols) %>%
-    as.matrix()
-  
-  y <- regression_data %>%
-    filter(B == b) %>%
-    .[["y"]]
-    
-  list(X = X, y = y)
-}
+xy <- regression_data %>%
+  split(., list(.$bootstrap, .$split)) %>%
+  map(~ subset_matrices(.))
 
-xy <- map(1:2, ~ subset_matrices(regression_data, .))
-
-for (b in 1:2) {
+for (b in seq_along(xy)) {
   fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
-  y_hat <- predict(fit, newx = X, type = "response")
+  y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
   plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
   plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]])
 }
 ```
-```{r}
-stability_selection <- function(X, y, B = 1000, n_lambda = 100) {
-  lambda <- glmnet(X, y)$lambda
-  
-  n <- nrow(X)
-  p <- ncol(X)
-  coef_paths <- array(dim = c(p + 1, length(lambda), B))
-  for (b in seq_len(B)) {
-    ix <- sample(seq_len(n), n / 2, replace = FALSE)
-    fit <- glmnet(X[ix, ], y[ix], lambda = lambda)
-    coef_paths[, , b] <- as.matrix(coef(fit))
-  }
+Now let's run stability selection on each split and bootstrap sample separately.
 
-  Pi <- apply(coef_paths, c(1, 2), function(z) mean(abs(z) > 0))
-  list(Pi = Pi, coef_paths = coef_paths)
-}
+```{r}
+lambda <- 2 ^ seq(-8, -1, length.out = 20)
+selection_data <- map(xy, ~ stability_selection(.x$X, .x$y, B = 250, lambda = lambda))
+pi_hat <- map_dfr(selection_data, ~ melt(t(.x$Pi), varnames = c("lambda", "j")), .id = "run") %>%
+  tidyr::separate(run, c("bootstrap", "split"))
 ```
 
+Below, we're plotting the number of times each feature is selected by the 250
+lasso's above, as a function of $\lambda$.
 
-```{r}
-selection_data <- map(xy, ~ stability_selection(.x$X, .x$y, B = 250))
-pi_hat <- map_dfr(selection_data, ~ melt(t(.x$Pi), varnames = c("lambda", "j")), .id = "B")
-```
-
-```{r}
+```{r, fig.height = 20, fig.width = 6}
 pi_hat <- pi_hat %>%
-  tidyr::unite(jb, j, B, remove = FALSE) %>%
-  filter(j < 21)
-ggplot(pi_hat) +
-  geom_line(aes(x = lambda, y = value, col = B, group = jb)) +
+  tidyr::unite(jb, j, bootstrap, split, remove = FALSE)
+ggplot(pi_hat %>% filter(j < 21)) +
+  geom_line(aes(x = lambda, y = value, col = bootstrap, group = jb, linetype = split)) +
   scale_color_brewer(palette = "Set2") +
-  facet_wrap(~ j)
+  facet_grid(j ~ split)
 ```
-
-todos:
-
-* Need to separate the selection process on different splits
-* show the progression across many epochs
-* Need to run with all the bootstrap samples
-* Run with more than just the VAE
-
