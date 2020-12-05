@@ -10,35 +10,84 @@ library("ggplot2")
 library("reticulate")
 library("purrr")
 library("reshape2")
-```
-
-
-```{r}
-np <- import("numpy")
-#layer_1 <- np$load("/Users/kris/Desktop/data/scratch/condor/dir_21852/stability_data/cnn/features/layer_1_best.npy")
-layer_3 <- np$load("/Users/kris/Desktop/data/scratch/condor/dir_21852/stability_data/cnn/features/layer_3_best.npy")
-final_layer <- np$load("/Users/kris/Desktop/data/scratch/condor/dir_21852/stability_data/cnn/features/linear_best.npy")
+library("stringr")
+library("irlba")
+theme_set(theme_bw())
 ```
 
 ```{r}
-layer_df <- melt(layer_3, varnames = c("sample", "feature", "spatial_x", "spatial_y"))
-linear_df <- melt(final_layer, varnames = c("sample", "feature", "spatial_x", "spatial_y"))
-```
-
-Let's visualize a few of the activations, across their spatial dimensions.
-
-```{r}
-ggplot(layer_df %>% filter(sample  < 5, feature < 5)) +
-  geom_tile(aes(x = as.factor(spatial_x), y = as.factor(spatial_y), fill = value)) +
-  scale_fill_continuous(low = "white", high = "black") +
-  facet_grid(sample ~ feature)
+paths <- c(
+  "/Users/kris/Documents/stability_outputs/vae90.yaml_2.tar.gz",
+  "/Users/kris/Documents/stability_outputs/vae90.yaml_3.tar.gz"
+)
+result <- read_acts(paths)
 ```
 
 ```{r}
-linear_mat <- linear_df %>%
-  dcast(sample ~ feature, value.var = "value") %>%
-  select(-sample) %>%
-  as.matrix()
-heatmap(linear_mat)
+scores <- svds(result, nv = 10)
+scores <- lapply(scores, function(x) x$u %*% diag(x$d))
+names(scores) <- names(result)
+scores <- scores[grepl("29", names(result))]
+scores <- lapply(scores, scale)
+cca_res <- cancor(x = scores[[1]], y = scores[[2]])
+
+coords <- list(scores[[1]] %*% cca_res$xcoef, scores[[2]] %*% cca_res$ycoef)
+names(coords) <- names(scores)
+
+mcoords <- melt(coords)
+colnames(mcoords) <- c("sample_ix", "dim", "value", "path")
+mcoords <- mcoords %>%
+  dcast(sample_ix + path ~ dim, value.var = "value")
+```
+
+```{r}
+mcoords <- mcoords %>%
+  mutate(
+    percentage = str_extract(path, "[0-9]+"),
+    B = str_extract(path, "_.{0,1}"),
+  ) %>%
+  mutate(B = as.numeric(str_extract(B, "[0-9]+"))) %>%
+  filter(grepl("29", path))
+
+mcoords_ <- mcoords %>%
+  melt(id.vars = c("sample_ix", "path", "percentage"), variable.name = "dim") %>%
+  group_by(sample_ix, dim, percentage) %>%
+  summarise(value = mean(value)) %>%
+  dcast(sample_ix + percentage ~ dim)
+
+edge_data <- mcoords %>%
+  melt(id.vars = c("sample_ix", "path", "percentage", "B"), variable.name = "dim") %>%
+  dcast(sample_ix + percentage ~ dim + B)
+
+ggplot() +
+  geom_segment(
+    data = edge_data,
+    aes(x = `1_0`, xend = `1_1`, y = `2_0`, yend = `2_1`),
+    alpha = 0.1
+  ) +
+  geom_point(
+    data = mcoords,
+    aes(x = `1`, y = `2`, col = path),
+    alpha = 0.9, size = 0.5
+  ) +
+  xlim(-.01, .01) +
+  ylim(-.01, .01)
+
+```
+
+
+
+```{r}
+v <- svd(do.call(cbind, result), nv = 10)$v
+dim(v)
+```
+
+```{r}
+cca_res <- PMA::MultiCCA(result[c(9, 4)], ncomponents = 10)
+```
+
+```{r}
+cca_res$cors
+#plot(result[[5]] %*% cca_res$ws[[1]], result[[10]] %*% cca_res$ws[[2]])
 ```
 
