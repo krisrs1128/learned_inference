@@ -27,3 +27,13 @@ coefficientRV <- function(X, Y) {
   tr <- function(X) { sum(diag(X)) }
   tr(W3 %*% W4) / (tr(W1 %*% W1) * tr(W2 %*% W2)) ^ 0.5
 }
+
+svds <- function(x_list, ...) {
+  results <- list()
+  for (i in seq_along(x_list)) {
+    svd_res <- irlba(x_list[[i]], ...)
+    results[[i]] <- list(u = svd_res$u, d = svd_res$d)
+  }
+  
+  results
+}

@@ -25,12 +25,16 @@ melt_stability <- function(res) {
 
 #' @importFrom reticulate import
 #' @export
-read_acts <- function(paths) {
+read_acts <- function(paths, pattern = "*mu_*", data_dir = ".") {
   results <- list()
   np <- import("numpy")
   for (i in seq_along(paths)) {
-    system(sprintf("tar -zxvf %s", paths[i]))
-    results[[i]] <- np$load(upath)  # how to get path to unzipped?
+    exdir <- file.path(data_dir, basename(paths[[i]]))
+    untar(paths[i], exdir = exdir)
+    fs <- list.files(exdir, pattern, full.names = TRUE, recursive = TRUE)
+    for (f in fs) {
+      results[[f]] <- np$load(f)
+    }
   }
 
   results
