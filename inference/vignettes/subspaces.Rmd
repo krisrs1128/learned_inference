@@ -16,78 +16,22 @@ theme_set(theme_bw())
 ```
 
 ```{r}
+data_dir <- "/Users/kris/Desktop"
 paths <- c(
   "/Users/kris/Documents/stability_outputs/vae90.yaml_2.tar.gz",
   "/Users/kris/Documents/stability_outputs/vae90.yaml_3.tar.gz"
 )
-result <- read_acts(paths)
+result <- read_acts(paths, data_dir = data_dir)
 ```
 
 ```{r}
-scores <- svds(result, nv = 10)
-scores <- lapply(scores, function(x) x$u %*% diag(x$d))
-names(scores) <- names(result)
-scores <- scores[grepl("29", names(result))]
-scores <- lapply(scores, scale)
-cca_res <- cancor(x = scores[[1]], y = scores[[2]])
-
-coords <- list(scores[[1]] %*% cca_res$xcoef, scores[[2]] %*% cca_res$ycoef)
-names(coords) <- names(scores)
-
-mcoords <- melt(coords)
-colnames(mcoords) <- c("sample_ix", "dim", "value", "path")
-mcoords <- mcoords %>%
-  dcast(sample_ix + path ~ dim, value.var = "value")
+output_dirs <- sapply(paths, function(z) file.path(data_dir, basename(z)))
+Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
+subsets <- lapply(output_dirs, function(s) read_csv(file.path(s, "vae90", "features", "subset.csv")))
 ```
 
 ```{r}
-mcoords <- mcoords %>%
-  mutate(
-    percentage = str_extract(path, "[0-9]+"),
-    B = str_extract(path, "_.{0,1}"),
-  ) %>%
-  mutate(B = as.numeric(str_extract(B, "[0-9]+"))) %>%
-  filter(grepl("29", path))
-
-mcoords_ <- mcoords %>%
-  melt(id.vars = c("sample_ix", "path", "percentage"), variable.name = "dim") %>%
-  group_by(sample_ix, dim, percentage) %>%
-  summarise(value = mean(value)) %>%
-  dcast(sample_ix + percentage ~ dim)
-
-edge_data <- mcoords %>%
-  melt(id.vars = c("sample_ix", "path", "percentage", "B"), variable.name = "dim") %>%
-  dcast(sample_ix + percentage ~ dim + B)
-
-ggplot() +
-  geom_segment(
-    data = edge_data,
-    aes(x = `1_0`, xend = `1_1`, y = `2_0`, yend = `2_1`),
-    alpha = 0.1
-  ) +
-  geom_point(
-    data = mcoords,
-    aes(x = `1`, y = `2`, col = path),
-    alpha = 0.9, size = 0.5
-  ) +
-  xlim(-.01, .01) +
-  ylim(-.01, .01)
-
-```
-
-
-
-```{r}
-v <- svd(do.call(cbind, result), nv = 10)$v
-dim(v)
-```
-
-```{r}
-cca_res <- PMA::MultiCCA(result[c(9, 4)], ncomponents = 10)
-```
-
-```{r}
-cca_res$cors
-#plot(result[[5]] %*% cca_res$ws[[1]], result[[10]] %*% cca_res$ws[[2]])
+head(subsets[[1]] %>% arrange(path))
+head(subsets[[2]] %>% arrange(path))
 ```
 
