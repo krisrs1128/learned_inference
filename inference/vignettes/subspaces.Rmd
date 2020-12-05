@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Stability Selection & Subspaces"
 output: html_notebook
 ---
 
@@ -9,6 +9,8 @@ library("dplyr")
 library("ggplot2")
 library("reticulate")
 library("purrr")
+library("glmnet")
+library("PMA")
 library("reshape2")
 library("stringr")
 library("irlba")
@@ -59,22 +61,16 @@ length(acts)
 ```
 
 ```{r}
-subsets_ <- map(subsets, ~ rename(., c("ix" = "X1", "image" = "path", "split" = "split")))
+subsets_ <- map(subsets, ~ rename(., c("ix" = "X1", "path" = "path", "split" = "split")))
 acts <- map2(subsets_, acts, cbind)
 ```
 
 First, we'll get the projected scores, using MultiCCA.
 
 ```{r}
-library("PMA")
 x_list <- map(acts, ~ .x %>% select(starts_with("X")) %>% as.matrix())
-cca_res <- MultiCCA(x_list, ncomponents = 2)
+cca_res <- MultiCCA(x_list, ncomponents = 40)
 ```
-```{r}
-length(x_list)
-length(cca_res)
-```
-
 ```{r}
 scores <- list()
 for (i in seq_along(x_list)) {
@@ -90,38 +86,99 @@ scores2 <- map2_dfr(subsets_, scores, cbind, .id = "source") %>%
 head(scores2)
 
 plot_data <- scores2 %>%
-  select(B, image, split, `1`, `2`) %>%
-  melt(id.vars = c("B", "image", "split"))
+  select(B, path, split, `1`, `2`) %>%
+  melt(id.vars = c("B", "path", "split"))
 
 edge_data <- plot_data %>%
-  dcast(image + split ~ variable + B)
+  dcast(path + split ~ variable + B)
 
 plot_data <- plot_data %>%
-  dcast(image + split + B ~ variable)
+  dcast(path + split + B ~ variable)
 
 ggplot() +
   geom_segment(
     data = edge_data,
     aes(x = `1_1`, xend = `1_2`, y = `2_1`, yend = `2_2`),
-    alpha = 0.3, size = 0.1
+    alpha = 0.8, size = 0.1
   ) +
   geom_point(
     data = plot_data,
     aes(x = `1`, y = `2`, col = as.factor(B)),
-    size = 0.4, alpha = 0.8
+    size = 0.3, alpha = 0.8
   ) +
-  scale_color_brewer(palette = "Set2")
+  facet_grid(split ~ .) +
+  coord_fixed(.75) +
+  scale_color_brewer(palette = "Set2") +
+  theme(legend.position = "bottom")
 ```
 
 
 ```{r}
-for (i in seq_along(scores)) {
-  colnames(scores[[i]]) <- paste0("dim", seq_len(ncol(scores[[i]])))
-  scores[[i]] <- cbind(subsets[[1]], B = i, tibble(scores[[i]]))
+regression_data <- scores2 %>%
+  left_join(Xy)
+```
+
+```{r}
+subset_matrices <- function(rdata, b, cols = as.character(1:40)) {
+  X <- regression_data %>%
+    filter(B == b) %>%
+    select(cols) %>%
+    as.matrix()
+  
+  y <- regression_data %>%
+    filter(B == b) %>%
+    .[["y"]]
+    
+  list(X = X, y = y)
+}
+
+xy <- map(1:2, ~ subset_matrices(regression_data, .))
+
+for (b in 1:2) {
+  fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
+  y_hat <- predict(fit, newx = X, type = "response")
+  plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
+  plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]])
+}
+```
+```{r}
+stability_selection <- function(X, y, B = 1000, n_lambda = 100) {
+  lambda <- glmnet(X, y)$lambda
+  
+  n <- nrow(X)
+  p <- ncol(X)
+  coef_paths <- array(dim = c(p + 1, length(lambda), B))
+  for (b in seq_len(B)) {
+    ix <- sample(seq_len(n), n / 2, replace = FALSE)
+    fit <- glmnet(X[ix, ], y[ix], lambda = lambda)
+    coef_paths[, , b] <- as.matrix(coef(fit))
+  }
+
+  Pi <- apply(coef_paths, c(1, 2), function(z) mean(abs(z) > 0))
+  list(Pi = Pi, coef_paths = coef_paths)
 }
 ```
 
+
 ```{r}
-head(metadata[[2]])
+selection_data <- map(xy, ~ stability_selection(.x$X, .x$y, B = 250))
+pi_hat <- map_dfr(selection_data, ~ melt(t(.x$Pi), varnames = c("lambda", "j")), .id = "B")
 ```
+
+```{r}
+pi_hat <- pi_hat %>%
+  tidyr::unite(jb, j, B, remove = FALSE) %>%
+  filter(j < 21)
+ggplot(pi_hat) +
+  geom_line(aes(x = lambda, y = value, col = B, group = jb)) +
+  scale_color_brewer(palette = "Set2") +
+  facet_wrap(~ j)
+```
+
+todos:
+
+* Need to separate the selection process on different splits
+* show the progression across many epochs
+* Need to run with all the bootstrap samples
+* Run with more than just the VAE
 
