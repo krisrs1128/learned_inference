@@ -12,13 +12,13 @@ subset_matrices <- function(rdata, cols = as.character(1:40)) {
 
 #' @importFrom glmnet glmnet
 #' @export
-stability_selection <- function(X, y, B = 1000, ...) {
+stability_selection <- function(X, y, B = 1000, lambda) {
   n <- nrow(X)
   p <- ncol(X)
   coef_paths <- array(dim = c(p + 1, length(lambda), B))
   for (b in seq_len(B)) {
     ix <- sample(seq_len(n), n / 2, replace = FALSE)
-    fit <- glmnet(X[ix, ], y[ix], ...)
+    fit <- glmnet(X[ix, ], y[ix], lambda = lambda)
     coef_paths[, , b] <- as.matrix(coef(fit))
   }
 
