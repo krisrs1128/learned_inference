@@ -2,7 +2,7 @@
 title: "Stability Selection & Subspaces"
 output: html_notebook
 params:
-  model_prefix: "vae90"
+  model_prefix: "vae15"
   layer: "mu"
   ncomp: 10
 ---
@@ -12,13 +12,13 @@ library("PMA")
 library("dplyr")
 library("ggplot2")
 library("glmnet")
+library("inference")
 library("purrr")
 library("readr")
 library("reshape2")
 library("reticulate")
 library("stringr")
 theme_set(theme_bw())
-source("../R/stability.R")
 ```
 First we read in all the relevant data.
 
@@ -28,8 +28,8 @@ data_dir <- "/Users/kris/Documents/stability_outputs/"
 paths <- c(
   file.path(data_dir, sprintf("%s.yaml_0.tar.gz", params$model_prefix)),
   file.path(data_dir, sprintf("%s.yaml_1.tar.gz", params$model_prefix)),
-  #file.path(data_dir, sprintf("%s.yaml_2.tar.gz", params$model_prefix)),
-  #file.path(data_dir, sprintf("%s.yaml_3.tar.gz", params$model_prefix)),
+  file.path(data_dir, sprintf("%s.yaml_2.tar.gz", params$model_prefix)),
+  file.path(data_dir, sprintf("%s.yaml_3.tar.gz", params$model_prefix)),
   file.path(data_dir, sprintf("%s.yaml_4.tar.gz", params$model_prefix))
 )
 untar_all(paths, data_dir = data_dir)
@@ -79,6 +79,14 @@ subsets_ <- map(subsets, ~ rename(., c("ix" = "X1", "rel_path" = "path")))
 acts <- map2_dfr(subsets_, acts, cbind, .id = "source") %>%
   left_join(metadata %>% select(source, bootstrap) %>% unique())
 ```
+```{r activation_histo}
+macts <- acts %>%
+  select("rel_path", starts_with("X")) %>%
+  melt(id.vars = "rel_path")
+ggplot(macts) +
+  geom_histogram(aes(x = value), bins = 200)
+ggsave(sprintf("%s_activation_histogram.png", params$model_prefix))
+```
 
 First, we'll get the projected scores, using MultiCCA.
 
@@ -89,9 +97,18 @@ acts_splits <- acts %>%
 x_list <- acts_splits %>%
   map(~ .x %>% select(starts_with("X")) %>% as.matrix())
 
+for (i in seq_along(x_list)) {
+  if (grepl("vae", params$model_prefix)) break
+  x_list[[i]] <- asinh(x_list[[i]])
+  for (j in seq_len(ncol(x_list[[i]]))) {
+    x_list[[i]][, j] <- x_list[[i]][, j] + runif(nrow(x_list[[i]]), -0.2, 0.2)
+  }
+}
+
 train_list <- x_list[grepl("train", names(x_list))]
 cca_res <- MultiCCA(train_list, ncomponents = params$ncomp)
 ```
+
 
 ```{r}
 scores <- c(
@@ -108,19 +125,21 @@ scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X"))
   left_join(Xy, c("rel_path" = "path")) 
 plot_data <- scores %>%
   melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim") %>%
-  arrange(ix)
+  arrange(ix) %>%
+  filter(ix %in% sample(max(scores$ix), 3000))
+plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
 ```
+
 Before we can plot them, we need to merge them into a data.frame and tidy.
 
 ```{r edge_data}
-subsample <- nrow(plot_data)
-centroids <- plot_data[1:subsample, ] %>%
+centroids <- plot_data %>%
   group_by(dim, rel_path, split, y) %>%
   summarise(mean = mean(value)) %>%
   mutate(dim = paste0("mean", dim)) %>%
   dcast(rel_path + split + y ~ dim, value.var = "mean")
 
-edge_data <- plot_data[1:subsample, ] %>%
+edge_data <- plot_data %>%
   dcast(bootstrap + rel_path + split + y ~ dim, value.var = "value") %>%
   split(.$bootstrap) %>%
   map_dfr(~ .x %>% left_join(centroids))
@@ -128,8 +147,7 @@ edge_data <- plot_data[1:subsample, ] %>%
 head(edge_data)
 ```
 
-
-```{r, embedding_plot, fig.width = 19}
+```{r, embedding_plot, fig.width = 8}
 ggplot(edge_data) +
   geom_point(
     data = centroids,
@@ -138,15 +156,15 @@ ggplot(edge_data) +
     ) +
   geom_point(
     aes(x = dim3, y = dim2, col = y),
-    size = 0.9, alpha = 0.1
+    size = 0.9, alpha = 0.3
   ) +
   geom_segment(
     aes(x = dim3, xend = meandim3, y = dim2, yend = meandim2, col = y),
-    size = 0.1, alpha = 0.8
+    size = 0.3, alpha = 0.8
   ) +
-  coord_fixed(0.4) +
-  facet_grid(split ~ .) +
-  scale_color_viridis_c(option = "A") +
+  coord_fixed(1) +
+  facet_grid(. ~ split) +
+  scale_color_viridis_c() +
   theme(legend.position = "bottom")
 ggsave(sprintf("embeddings_%s.png", params$model_prefix))
 ```
@@ -156,13 +174,14 @@ xy <- scores %>%
   split(., list(.$bootstrap, .$split)) %>%
   map(~ subset_matrices(., paste0("dim", 1:params$ncomp)))
 
-scores %>% head()
-
 for (b in seq_along(xy)) {
   fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
   y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
   plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
-  plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]])
+  png(sprintf("y_vs_y_hat-%s-%s.png", params$model_prefix, names(xy)[b]))
+  plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]], col = rgb(0, 0, 0, 0.6), cex = 0.5, main = names(xy)[b])
+  abline(a = 0, b = 1, col = "red")
+  dev.off()
 }
 ```
 Now let's run stability selection on each split and bootstrap sample separately.
@@ -178,7 +197,7 @@ pi_hat$lambda <- lambda[pi_hat$lambda]
 Below, we're plotting the number of times each feature is selected by the 250
 lasso's above, as a function of $\lambda$.
 
-```{r stability_plot, fig.height = 4, fig.width = 12}
+```{r stability_plot, fig.height = 3, fig.width = 8}
 pi_hat <- pi_hat %>%
   tidyr::unite(jb, j, bootstrap, split, remove = FALSE)
 pi_hat$split <- factor(pi_hat$split, levels = c("train", "dev", "test"))
@@ -193,12 +212,12 @@ ggsave(sprintf("selection_paths_%s.png", params$model_prefix))
 What is the average correlation between selected features and the underlying
 generative process?
 
-```{r, fig.width = 12, fig.height = 5}
+```{r, correlation_diagram, fig.width = 8, fig.height = 5}
 selections <- pi_hat %>% 
   filter(lambda > 0.03, lambda < 0.1) %>%
   group_by(j, split) %>%
   summarise(selection = mean(value)) %>%
-  mutate(dim = paste0("dim", j - 1)) %>%
+  mutate(dim = paste0("dim", j)) %>%
   select(-j)
   
 scores_mat <- scores %>%
@@ -218,27 +237,32 @@ for (i in seq_along(scores_mat)) {
 mcor <- do.call(rbind, mcor) %>%
   left_join(selections) %>%
   mutate(dim = gsub("dim", "", dim))
+mcor$dim <- factor(mcor$dim, levels = 1:10)
   
 ggplot(mcor) +
-  geom_text(aes(x = value, y = selection, label = dim, col = split)) +
-  scale_color_brewer(palette = "Set2") +
-  facet_wrap(~ feature)
-
-ggplot(mcor) +
-  geom_point(aes(x = feature, y = value, col = selection)) +
-  facet_grid(split ~ dim) +
+  geom_hline(yintercept = 0) +
+  geom_point(aes(x = feature, y = value, col = selection, shape = split)) +
+  facet_wrap(~ dim) +
   scale_color_viridis_c() +
   theme(
     axis.text.x = element_text(angle = 90, size = 8),
     legend.position = "bottom"
   )
+ggsave(sprintf("%s_correlation_diagram.png", params$model_prefix))
 ```
 
 
-```{r}
+```{r correlation_heatmap}
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
+png(sprintf("%s_correlation_heatmap.png", params$model_prefix))
 heatmap(cor(scores_mat))
+dev.off()
+```
+
+```{r remove_unzipped}
+paths0 <- gsub(".gz", "", paths)
+unlink(paths0)
 ```
 

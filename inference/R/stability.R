@@ -1,4 +1,5 @@
 
+#' @export
 subset_matrices <- function(rdata, cols = as.character(1:40)) {
   X <- rdata %>%
     select(cols) %>%
