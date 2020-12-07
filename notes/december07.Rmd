@@ -1,0 +1,254 @@
+---
+title: Visualizing Model Stability
+author: Kris Sankaran
+date: December 7, 2020
+output: 
+  distill::distill_article:
+    theme: "theme.css"
+---
+```{r, echo = FALSE}
+knitr::opts_chunk$set(cache = TRUE, fig.path = "dec7fig")
+```
+
+
+### Motivation
+
+> Among the seven points from GP, I would like to re-emphasize the importance of
+new sources of information. Indeed, images, videos and audios are typically
+cheap devices to record data. GP do not mention recent progress with
+autoencoders (Hinton and Salakhutdinov 2006; Vincent et al. 2010): when using
+such techniques, one would again end up with numeric features which can then be
+used for further downstream analysis using techniques from high-dimensional
+statistics or statistical machine learning (Bühlmann and van de Geer 2011;
+Hastie et al. 2015, cf.).
+
+From Peter Bühlmann's rejoinder on *Data science, big data and statistics*
+
+### Personal Applications
+
+I find this a very exciting idea. I encounter more and more problems where
+people want to incorporate raw data (images, text, sensor streams) into
+scientific workflows, but am never sure what is the best way to apply
+statistical thinking.
+
+```{r}
+knitr::include_graphics("dec7fig/glaciers.png")
+knitr::include_graphics("dec7fig/cells.png")
+```
+
+Two examples of scientific data that do not arrive in tabular form, but where
+inference would be useful.
+
+### Other Applications
+
+Learned features are already being incorporated into a variety of workflows,
+
+* DeepMicro: deep representation learning for disease prediction based on microbiome data [Nature, 2020]
+* Factorized embeddings learns rich and biologically meaningful embedding spaces using factorized tensor decomposition [Bioinformatics, 2020]
+* Using publicly available satellite imagery and deep learning to understand economic well-being in Africa [Nature Comm., 2020]
+
+### Guiding questions
+
+Can we really use high-dimensional statistics do perform inference on learned
+features?
+
+* Can we give clear illustrations that might be useful for practitioners?
+* Are there any nuances we should be aware of?
+
+### Nuances
+
+1. Using the same data for feature learning and inference can be risky
+	* What is a good trade-off?
+2. Learned features are "distributed." A single real-world feature activates a
+pattern distributed across many neurons.
+3. There is randomness in the feature learning process itself. How should
+inference account for this?
+
+### Controlled setting
+
+We’ll develop a controlled experiment to better understand the inference-on-learned-features workflow.
+
+* 50K simulated images (64 x 64 pixels) from a marked matern process
+* Number, relative abundances, sizes, and diversity of circles ("cells")
+influence a response ("survival")
+  - $\alpha, \nu$: Bandwidth and smoothness of the overall process
+  - $\alpha_r, \nu_r$: Bandwidth and smoothness of subprocess $r$
+  - $\beta_{r}$: Relative intensity of subprocess $r$.
+  - $\lambda_r$: Relative size of cells in subprocess $r$
+  - $\tau$: Temperature of overall process (controls mixing)
+  
+```{r}
+paths <- list()
+for (i in 1:110) {
+  paths[[i]] <- sprintf("/Users/kris/Documents/stability_data/pngs/image-%s.png", stringr::str_pad(i, 4, "left", 0))
+}
+
+knitr::include_graphics(unlist(paths))
+```
+
+### Experimental setup
+
+Two main factors,
+
+* Algorithm used: Unsupervised (variational autoencoder) or supervised (four
+layer convolution-relu-batch norm network).
+* Data split: 15\%, 50\% and 90\% of data for feature learning, the rest
+reserved for inference.
+
+To characterize stability, repeat each combination on $B = 5$ bootstrap
+resamples of the same training split.
+
+```{r}
+knitr::include_graphics(c("dec7fig/autoencoder_cartoon.png", "dec7fig/cnn_cartoon.png", "dec7fig/proportion_tradeoff.png"))
+```
+
+### Types of stability
+
+Across samples from the population, I think of two types of stability,
+
+* Stability in the learned subspace
+* Stability in the selected features
+
+### Feature subspace stability
+
+
+The learned features do not have a natural correspondence across bootstrap runs.
+Column 1 in the first bootstrap has nothing to do with column 1 in the second.
+
+We expect the learned feature subspaces to be similar, though.
+
+```{r}
+knitr::include_graphics("dec7fig/subspace_stability.png")
+```
+
+I specifically use the penalized matrix decomposition to find subspaces that are
+closely aligned (though I suspect this is the reason things run amok later
+on...)
+
+\begin{align*}
+v^{\ast}_{1}, \dots, v^{\ast}_{K} := &\arg\max \sum_{k < k^{\prime}} v_{k}X_{k}^{T}X_{k^{\prime}}v_{k^{\prime}} \\
+&\text{ subject to } \|v_{k}\|_{1} \leq \lambda
+\end{align*}
+
+### Feature selection stability
+
+Given our aligned features, we can try to use ideas in high-dimensional
+statistics. I will use stability selection, but really anything could go here.
+
+### VAE
+
+Here are embeddings when using 90\% of the data for training the VAE model.
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/embeddings_vae90.png")
+```
+
+We can look at the selection paths, but it seems that these features are not
+actually predictive of the response. It's also not just that the lasso has a
+small sample size -- a lasso fitted to just the embedded test data doesn't seem
+to pick up on the response.
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/selection_paths_vae90.png")
+```
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/y_vs_y_hat-vae90-0.train.png")
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/y_vs_y_hat-vae90-0.test.png")
+```
+
+That said, the learned features *do* seem at least somewhat correlated with the
+underlying generative factors. The lasso just isn't able to pick up on this.
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/vae90_correlation_diagram.png")
+```
+
+We can look at the results for the VAE using only 15\% of the data, but the
+results don't actually seem that different.
+
+* Stable embeddings
+* That can't be used for prediction
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/embeddings_vae15.png")
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/y_vs_y_hat-vae15-0.train.png")
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/y_vs_y_hat-vae15-0.test.png")
+```
+
+### CNN
+
+For the convolutional network, the MultiCCA doesn't seem to be able to align the
+features.
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/embeddings_cnn90.png")
+```
+
+At first I thought this was because the activations are so skewed. But this is
+the case even after `asinh` transforming and slightly blurring them (to remove
+the spike at 0).
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/cnn90_activation_histogram.png")
+```
+
+Unsurprisingly, the selection curves are also quite inconsistent across
+bootstrap runs.
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/selection_paths_cnn90.png")
+```
+
+Nonetheless, the latent dimensions *are* predictive and pick up some of the more
+subtle sources of variation ($\tau$ and $\beta_{2}$).
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/y_vs_y_hat-cnn90-0.train.png")
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/y_vs_y_hat-cnn90-0.test.png")
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/cnn90_correlation_diagram.png")
+```
+
+### Acceleration
+
+Running even 5 bootstrap runs for each method is already probably something most
+practitioners would not have the patience to do. Can we propose a workflow that
+gives similar results, but without the computational burden?
+
+Idea: Use random convolutional features to bypass model training altogether.
+
+```{r}
+knitr::include_graphics("/Users/kris/Desktop/conceptual/learned_inference/inference/vignettes/activating-patches.png")
+```
+
+## Aside: Stability in Topic Models
+
+Two questions that seem to come up a lot,
+
+* How can we compare many topic models at once?
+* Our best models are the least interpretable, what should we do?
+
+### Choosing $K$
+
+We spend so much energy trying to "choose K." Why don’t we instead focus on
+trying to "compare K"?
+
+This is very related to Sijia’s observation: Choosing $K$ is irrelevant when our
+data are hierarchical anyways.
+
+### Proposal
+
+* Put all the topic models in the same space using a correspondence analysis. 
+* Then use interactive visualization to compare the learned topics.
+
+
+### Conclusion
+
+> One hallmark of the statistically conscious investigator is a firm belief
+that, however the survey, experiment, or observational program actually turned
+out, it could have turned out somewhat differently… Most of us find uncertainty
+uncomfortable; the history of data analysis can be read as a succession of
+searches for certainty about uncertainty
+
+In *Data Analysis and Regression* by Tukey and Mosteller (page 25)
+
