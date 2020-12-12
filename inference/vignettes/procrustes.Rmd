@@ -112,24 +112,16 @@ for (i in seq_along(x_list)) {
 ```{r}
 x_scores <- map(x_list, ~ { 
   svd_res <- svd(.)
-  svd_res$u[, 1:10] %*% diag(svd_res$d[1:10])
+  svd_res$u[, 1:params$ncomp] %*% diag(svd_res$d[1:params$ncomp])
 })
 
-x_align <- procrustes(x_scores)$x_align
-x_align <- lapply(seq_len(dim(x_align)[3]), function(i) x_align[,, i])
-plot(x_align[[3]])
-points(x_align[[2]], col = "red")
+pres <- procrustes(x_scores, 0.5)
+M <- pres$M
+scores <- pres$x_align
+scores <- lapply(seq_len(dim(scores)[3]), function(i) scores[,, i])
 ```
 
-
-
 ```{r}
-scores <- c(
-  map2(x_list[grepl("dev", names(x_list))], cca_res$ws, ~ .x %*% .y),
-  map2(x_list[grepl("test", names(x_list))], cca_res$ws, ~ .x %*% .y),
-  map2(train_list, cca_res$ws, ~ .x %*% .y)
-)
-
 for (i in seq_along(scores)) {
   colnames(scores[[i]]) <- paste0("dim", 1:params$ncomp)
 }

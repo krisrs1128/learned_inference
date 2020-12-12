@@ -97,6 +97,10 @@ acts_splits <- acts %>%
 x_list <- acts_splits %>%
   map(~ .x %>% select(starts_with("X")) %>% as.matrix())
 
+png(sprintf("%s_svd_eigs.png", params$model_prefix))
+plot(svd(x_list[[1]])$d)
+dev.off()
+
 for (i in seq_along(x_list)) {
   if (grepl("vae", params$model_prefix)) break
   x_list[[i]] <- asinh(x_list[[i]])
@@ -191,6 +195,7 @@ lambda <- 2 ^ seq(-1, -8, length.out = 20)
 selection_data <- map(xy, ~ stability_selection(.x$X, .x$y, B = 250, lambda = lambda))
 pi_hat <- map_dfr(selection_data, ~ melt(t(.x$Pi), varnames = c("lambda", "j")), .id = "run") %>%
   tidyr::separate(run, c("bootstrap", "split"))
+pi_hat$j <- as.integer(pi_hat$j) - 1
 pi_hat$lambda <- lambda[pi_hat$lambda]
 ```
 

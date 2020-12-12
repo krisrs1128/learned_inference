@@ -57,7 +57,7 @@ read_npys <- function(paths, data_dir = ".") {
 }
 
 #' @export
-procrustes <- function(x_list, tol = 1e-4) {
+procrustes <- function(x_list, tol = 1e-3) {
   x_align <- array(dim = c(dim(x_list[[1]]), length(x_list)))
   M <- x_list[[1]]
   
@@ -65,7 +65,8 @@ procrustes <- function(x_list, tol = 1e-4) {
     # solve each problem 
     for (i in seq_along(x_list)) {
       svd_i <- svd(t(x_list[[i]]) %*% M)
-      x_align[,, i] <- x_list[[i]] %*% svd_i$u %*% t(svd_i$v)
+      beta <- sum(svd_i$d) / sum(x_list[[i]] ^ 2)
+      x_align[,, i] <- beta * x_list[[i]] %*% svd_i$u %*% t(svd_i$v)
     }
     
     # new procrustes mean
