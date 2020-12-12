@@ -9,3 +9,5 @@ notes/imgs
 Pipfi*
 *ipynb_check*
 inference/vignettes/*.png
+*html
+*cache*
