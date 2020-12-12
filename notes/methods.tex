@@ -1,0 +1,157 @@
+
+\section{Materials and Methods}
+
+Our high-level approach to studying feature stability is this,
+
+
+\begin{enumerate}
+\item Define a subset $\mathcal{D}\subset \left[n\right]$ of the data $\mathbf{X}, \mathbf{y}$, and define $B$ perturbations $\mathbf{X}_{b}\in \reals^{\left|D\right| \times p}$ and $\mathbf{y}_{b} \in \reals^{\left|D\right|}$ of this subset.
+\item For each of these perturbations $b$, train a feature extractor $T\left(\cdot; \hat{\theta}^{b}\right)$.
+\item On the complementary subset $\mathcal{D}^{C} = \left[n\right] - \mathcal{D}$, extract encodings $\mathbf{Z}_{b} = T\left(\mathbf{X}_{D^{C}}; \hat{\theta}^{b}\right)$ for each of the trained feature extractors.
+\item Dimensionality reduction and alignment. Apply a dimensionality reduction
+  $\mathbf{Z}_{b} \to \mathbf{\tilde{Z}}_{b}$ for each $b$, then we find the
+  Procrustes rotations $R_{1}, \dots, R_{B}$ that maximally align the reduced
+  encodings. We call $\mathbf{Z}^{b} :=
+  \mathbf{\tilde{Z}}_{b}R_{b}$ are aligned feature sets. (potentially varimax
+  here)
+\item Feature selection. For each $b$, compute stability selection curves
+  obtained by regressing $\mathbf{y}_{b}$ onto $\underaccent{bar}{Z}_{b}$.
+\end{enumerate}
+
+If the learned subspaces selected features are similar, then we declare that our learned features are stable and are appropriate for use in downstream scientific investigation. If, on the other hand, we notice a high-degree of instability, then we would take precautions before drawing further conclusions about the learned features.
+
+We now explain each step in detail, describing variations used to answer our earlier questions. For step (1), we define the subset $\mathcal{D}$ using a random split of the full dataset. Given the subset $\mathcal{D}$, we define perturbations $\mathbf{X}_{b}$ using the bootstrap: the rows of $\mathbf{X}_{b}$ are chosen by sampling the indices $\mathcal{D}$ with replacement.
+
+For steps (2) and (3), we train either a VAE or a CNN model on each of the bootstrap datasets. See the appendix architectural and training details. For the VAE, $\hat{\theta}\left(\mathbf{X}_{b}\right)$ are the weights of the trained encoder model and $T\left(x, \hat{\theta}\left(\mathbf{X}_{b}\right)\right)$ is set to the mean encoding $\mu_{\varphi}\left(x\right)$ of $x$ in the learned latent space. For the CNN, $\hat{\theta}\left(\mathbf{X}_{b}, \mathbf{y}_{b}\right)$ are the weights learned by the convolutional architecture. $T\left(x; \hat{\theta}\left(\mathbf{X}_{b}, \mathbf{y}_{b}\right)\right)$ is set to be the average-pooled features of the final convolutional layer — these are the features usually reserved for predictions.
+
+In step (4), we obtain $\mathbf{\tilde{Z}}_{b} \in \mathbb{R}^{\left|D\right| \times p}$ using either principal components analysis (in case $\mathbf{Z}_{b}$ are real-valued, as in the case of VAE embeddings) or nonnegative matrix factorization (in case the they are nonnegative, as in the CNN). The Procrustes rotation matrices $R_{1}, \dots, R_{b}$ are obtained by solving the optimization
+
+\begin{align}
+\min_{\left(R_{b}\right)_{1}^{B}, M} \sum_{b = 1}^{B} \|\mathbf{\tilde{Z}}_{b}R_{b} - M\|_{2}^{2}
+\end{align}
+
+This can be accomplished through an alternating algorithm, which cycles through the $B$ separate Procrustes problems (ESL Chapter 14).
+
+In step (5), the stability selection applied to the pair $\mathbf{y}_{b},
+\underaccent{bar}{\mathbf{Z}}_{B}$ yields a collection of curves
+$\Pi_{j}^{b}\left(\lambda\right)$. If feature $j$ is both predictive and stable,
+we expect $\Pi_{j}^{b}\left(\lambda\right)$ to be large across all $b$, even for
+large values of $\lambda$ (which places more penalty on nonzero coefficients).
+Note that in this final step, there are two levels of perturbation: the
+variation induced by having $b$ sets of learned features
+$\underaccent{\bar}{\mathbf{Z}}_{b}$ and the differenced across stability selection
+subsamples within each $\underaccent{\bar}{\mathbf{Z}}_{b}$.
+
+\subsection{Simulation}
+
+A simple simulation will help clarify the behavior of this procedure. We
+generate data that mimic the cells dataset analyzed in section
+\ref{sec:data\_analysis}. We first give an overview of the simulation strategy.
+The story is that we are examining a set of tumor pathology slides, with the
+hope of recovering features that are predictive of survival time. Each pathology
+slide gives a view into a cellular ecosystem — there are several types of cells,
+with different sizes, density, and affinities to one another. In the simulation,
+we first generate these underlying properties of each slide. Survival is defined
+as a linear function of these underlying properties. Then, images are generated
+that reflect these properties. The essential characteristic of this simulation
+is that the analyst only has access to the images and survival times, not the
+true predictors of the linear model. A good feature extractor $T\left(x;
+\theta\left(\mathbf{X}, \mathbf{y}\right)\right)$ should recover these important
+cell ecosystem properties from the images alone. Two images, with their
+corresponding survivals, are given in Figure \ref{fig:matern\_example}.
+
+We now give details. Our images are simulated as two-dimensional marked Log Cox Matern Process (LCMP) \cite{diggle2013}. Recall that a Matern process is a Gaussian process with covariance function
+
+\begin{align*}
+C_{\nu, \alpha}(\|x - y\|)=\sigma^{2} \frac{2^{1-\nu}}{\Gamma(\nu)}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right)^{\nu} K_{\nu}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right).
+\end{align*}
+
+$\alpha$ acts like a bandwidth parameter and $\nu$ controls the roughness of the simulated process. A LCMP process with $K$ classes is constructed as follows. First, a nonnegative process $\Lambda\left(x\right)$ is simulated along the image grid, $\Lambda\left(x\right)  \exp{\mathcal{N}\left(0, \mathbf{C}_{\nu_{\Lambda}, \alpha_{\Lambda}}\right)}$, where $\mathbf{C}_{\nu_{\Lambda}, \alpha_{\Lambda}}$ is the covariance matrix induced by $C_{\nu_{\Lambda}, \alpha_{\Lambda}}$. This represents a baseline intensity that determines the location of cells, regardless of cell type. Then, $K$ further processes are simulated, $B_{k}\left(x\right)  \exp{b_{k} + \mathcal{N}\left(0, \mathbf{C}_{\nu_{B}, \alpha_{B}}\right)} $. These processes will reflect the relative frequencies of the $k$ classes at any location $x$; the intercept $b_k$ makes a class either more or less frequent across all positions $x$.
+
+Given these intensity functions, we can simulate $N$ cell locations by drawing from an inhomogeneous Poisson process with intensity $\Lambda\left(x\right)$. For a cell at location $x$, we assign it cell type $k$ with probability $\frac{B_{k}^{\tau}\left(x\right)}{\sum_{k^\prime = 1}^{K} B^{\tau}_{k^\prime}\left(x\right)}$. Here, we have introduced a temperature parameter $\tau$ which controls the degree of mixedness between cell types at a given location.
+
+To complete the procedure for simulating images, we add two last source of
+variation — cell size. The cells from class $k$ are drawn with a random radius
+drawn from $\text{Gamma}\left(5, \lambda_{k}\right)$. In all, for each image
+$i$, we have the following underlying parameters,
+
+\begin{itemize}
+\item $N_i$: The total number of cells.
+\item $\nu_{i,\Lambda}$: The roughness of the underlying intensity process.
+\item $\alpha_{i,\Lambda}$: The roughness of the underlying intensity process.
+\item $b_{ik}$: The intercept controlling the overall frequency of class $k$.
+\item $\nu_{iB}$: The roughness of the relative intensity processes.
+\item $\alpha_{iB}$: The bandwidth of relative intensity processes.
+\item $\tau_{i}$: The temperature used in cell type assignment.
+\item $\lambda_{ik}$: The shape parameter controlling the sizes of each cell type.
+\end{itemize}
+
+These parameters are themselves all drawn from either their own univariate distributions; details are supplied in the appendix.
+These parameters are the underlying properties used to generate survival time. Specifically, we generate a survival time using 
+
+\begin{align}
+y_i &= \frac{1}{3}\left(b_{i1} - b_{i2} - b_{i3}\right) + \frac{1}{4}\left(\nu_{i\Lambda} + \alpha_{i\Lambda} + \nu_{iB} + \alpha_{iB}\right) - \tau_{i} + \frac{1}{100}\left(\lambda_{i1} - 50\right) + \epsilon_{i},
+\end{align}
+
+where $\epsilon\_{i} \sim \mathcal{N}\left(0, \sigma^2\right)$. The fractions
+before each simply adjust for differences in scale between the parameters.
+Intuitively, more and larger cell type 1’s are better for survival (image they
+are immune cells). More mixing between cell types (lower bandwidth, higher
+roughness, lower temperature); this is believed to be true in true biological
+processes.
+
+\subsection{Experiments}
+
+This simulation provides a controlled setting on which to study the stability of learned features. We concentrate on the following questions,
+
+\begin{itemize}
+\item What is the nature of the trade-off between learning and inference?
+\item In what ways are learned features different from those typically encountered in high-dimensional statistics?
+\item Do different feature learning strategies have different subspace and selection stability properties?
+\end{itemize}
+
+To motivate the first question, first note that using the same samples for feature learning and inference can lead to biased results, for the same reason that inference after model selection requires careful adjustment. Since any sample can only be used only for feature learning or inference, but not both, the question is how much of the data to provide for either task. At the extremes, it will either be difficult to learn relevant features or it will be impossible to assess their significance. Somewhere between these extremes, there must be a reasonable range of splitting proportions.
+
+The second question comes from the observation that, in traditional high-dimensional statistics, only a subset of features is assumed to be correlated with the response, while supervised feature learning algorithms are designed to ensure that the resulting features are correlated with the response, by construction. Further, within the deep learning community, it is common to speak of distributed representations, meaning that the pattern of activations across a wide set of features can be used to represent complex objects. For example, no learned feature may correspond to ``car,'' but the activation of features associated with tires, windows, and doors could be used as an equivalent, distributed representation.
+
+The last question is an attempt to summarize the effects of decisions that must be made when measuring subspace and selection stability. Specific algorithms must be used both in the feature learning and inference steps, and it is not obvious how the choice of algorithm affects downstream stability.
+
+\subsection{Design}
+
+To answer these questions, we design an experiment with two key factors,
+
+\begin{itemize}
+\item Amount of data used for learning vs. inference.
+\item Algorithm used for feature learning.
+\end{itemize}
+
+For the first factor, we study three levels: 15, 50, and 90\% of the data used for feature learning, the remainder for inference. Within the data used for feature learning, we divide data into a training set that is used for model training and a development set used to monitor model convergence. The divisions are 15 = 10 (train) + 5 (dev), 50 = 40 (train) + 10 (dev), and 90 = 80 (train) + 10 (dev). In all cases, we keep the total number of training iterations equal — we make 8 passes over the 10\% train set for every pass over the 80\% train set. For each split, our final model is saved at the training epoch that minimizes the development set error.
+
+For the second factor, we use either an unsupervised variational autoencoder or a supervised convolutional network. The autoencoder learns 64 features at its bottleneck. The convolutional network has 256 features at the final layer before prediction. We use standard implementations, the models are both less than 30 lines of code. Both models are trained using SGD with learning rates that decay every 20 epochs.
+
+For each factor combination, our experimental measurements of interest are the,
+
+\begin{itemize}
+\item Quality of Procrustes alignment across bootstrap samples.
+\item Number of selected variables along the stability selection paths,
+  $\Pi^{b}\left(\lambda\right)$ at different thresholds $\pi_{thr}$ and
+  regularization strengths $\lambda$.
+\item Average correlation between known generative parameters and selected
+  aligned features $j$, again at different values of $\pi_{thr}$ and $\lambda$.
+\end{itemize}
+
+The quality of the Procrustes alignment gives a measure of subspace stability. It is defined as the value
+
+\begin{align*}
+\frac{1}{B} sum_{b = 1}^{B} \|\underaccent{bar}{\mathbf{Z}}_{b}  - M\|_{2}^{2}
+\end{align*}
+
+where $M$ is the Procrustes averaged $\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}$.
+
+The number of selected variables and their correlation with the generative parameters summarizes both the stability and quality of selected features. If the same aligned features are repeatedly selected across bootstrap samples, then that factor combination has high selection stability. If the aligned features are highly correlated with the known generative parameters, then we can argue that the learned features have recovered the true underlying features.
+
+\subsection{Computational Approximations}
+
+In addition to asking questions on the fundamental stability of learned features, we conduct experiments to evaluate the potential to accelerate the necessary computation. Indeed, fitting a different feature extractor for each bootstrapped dataset is a computationally expensive exercise. One potential shortcut is to use a fine-tuning strategy during model training. The idea is that perhaps the majority of training time can be shared across bootstrap samples, since features learned in early layers of a neural network are unlikely to change.
+
+

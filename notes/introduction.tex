@@ -1,0 +1,101 @@
+\section{Introduction}
+
+The traditional high-dimensional inference setting assumes that all features have been fixed in advance. When given a dataset $X \in \reals^{n \times p}$, there was little reason to ask where exactly $p$ came from. However, across a variety of fields, the feature extraction process itself has become data-driven. Indeed, automatic feature learning can minimize the labor associated with manually extracting features. Consider the following examples,
+
+\begin{itemize}
+\item Spatial genomics: In addition to measuring the cell-level gene expression measurements of (tk give how many people), the study (tk give reference to stanford study) provided images describing the spatial relationships between cells. It has become possible to interrogate the ways in which collections of cells influence disease progress. (tk give study that actually uses VAE for this) A variety of features, like the amount of mixing between tumor and healthy cells, were first extracted from these images, before being used for survival analysis.
+\item Computational Sustainability: The study () used satellite imagery to measure economic development across Nigeria. The results were in close agreement to traditional government surveys, suggesting that the method could be used as a less resource-intensive proxy. That work discusses the possibility that neighborhood characteristics and degree of infrastructure development were implicitly learned by the supervised model.
+\end{itemize}
+
+This shift from human-curated to machine-generated features poses a statistical challenge: How can robust scientific inference be accomplished when the targets of inference are themselves estimated from data? This question is not a new one — (tk cite rao) described strategies for inference on learned principal component scores, (tk cite spls) studied inference for sparse partial least squares features, and (tk cite holmes) provided a bootstrap for exploratory projection pursuit. However, in light of the complexity and pervasiveness of modern feature learning algorithms, further investigation is warranted.
+
+This work presents techniques for measuring the stability of automatically learned features as well as experimental results in controlled settings. Our approach builds on literature on stability from high-dimensional inference (tk cite buhlmann, yu, etc.) and representation analysis (tk cite yosinski, raghu, etc.) from the deep learning community.
+
+\subsection{Problem Setup}
+
+Our goal is to perform formal inference on features that were algorithmically derived. The algorithm that learns to extract features, which we call an encoder, will be treated as a black box. At the start of analysis, a researcher will have acess to $n$ samples $x_i \in \reals^{p}$. We refer to the full collection using $\mathbf{X} \in \reals^{n \times p}$. Optionally, a vector $\mathbf{y}\in \reals^{n}$ of measured responses will be available. The $p$ columns of $\mathbf{X}$ are raw features, and are thought to not be directly informative. For example, each column might indicate a color channel pixel intensity in a spatial transcriptomics or satellite image. The encoder is a parameterized mapping $T\left(\cdot; \theta\right): \reals^{p} \to \reals{K}$ that takes the original $p$ raw features into $K$ derived features. For example, in the transcriptomics and economics applications, we expect the encoder to transform a vector of raw pixel intensities into a vector of features reflecting cell type or infrastructural properties, respectively.
+
+The parameter $\theta$ is typically estimated from data. An unsupervised feature extractor estimates $\theta$ via $\hat{\theta}\left(\mathbf{X}\right)$ while a supervised feature extractor uses $\hat{\theta}\left(\mathbf{X}, \mathbf{y}\right)$. 
+
+For a new observation $x^{\ast}\in \reals^{D}$, we write $z^{\ast} \in
+\reals^{K}$ as the associated derived features; we suppress dependence on
+$x^{\ast}$ from the notation. In the unsupervised case, this means $z =
+T\left(x^{\ast}; \hat{\theta}\left(\mathbf{X}\right)\right)$. The supervised
+case uses $\hat{\theta}\left(\mathbf{X}, \mathbf{y}\right)$ instead. For
+a matrix $\mathbf{X}$, will denote $\mathbf{Z}$ as the associated matrix of
+encodings.
+
+We would like to attribute an importance to each of the $k$ coordinates of $z$ with respect to a response $y$. For example, if $y$ measures the survival of the patients from which the cell images were derived, we would like to attribute survival to a high degree of mixing. Or, if $y$ measures the economic development of a neighborhood, we would like to attribute this development to the presence of certain geographic features — e.g., the cultivation of a particular crop.
+We would like to provide some statistical guarantees for these attributions. An investigator should have confidence that, if the data were collected again, and if features were again extracted by some black box, then those that would be declared important would be closely related to those learned originally. The essential challenge is that the learned features are not the same from one run to the next: there is no notion of a true or false positive learned feature.
+
+To address this issue, we distinguish between two notions of stability. To motivate subspace stability, first note that learned features do not have a natural correspondence across bootstrap runs. The $j^{th}$ column of encodings from the first bootstrap has nothing to do with the $j^{th}$ column in the second. However, we expect the learned feature subspaces to be similar.
+
+By selection stability, we mean that a given aligned feature is repeatedly discovered by a model selection procedure. Since here the features may be thought of as fixed, more standard notions of model selection consistency can be applied.
+
+\subsection{Context}
+
+Our analysis uses techniques from the feature learning, high-dimensional inference, and multiview data analysis communities. We explain why these techniques are needed and review the main ideas.
+
+\subsubsection{Multiview methods}
+Multiview data analysis techniques are concerned with the joint analysis of multiple tables $\mathbf{X}_{1}, \dots, \mathbf{X}_{B}$. They are relevant here because we hope to study the encodings $\mathbf{Z}_{1},\dots \mathbf{Z}_{B}$ that emerge from $\hat{\theta}$’s learned when using different datasets. They make it possible to study variation across feature extractors.
+
+The RV coefficient \cite{josse2016measuring} is a multiview analysis technique that measures the similarity between pairs of tables,
+
+\begin{align*}
+  RV\left(X, Y\right) &= \frac{\text{tr}\left(\Sigma_{XY}\Sigma_{YX}\right)}{\|\Sigma_{X}\|_{F}\|\Sigma_{Y}|_{F}}.
+  \end{align*}
+
+It takes values between -1 and 1 and generalizes the notion of correlation to tables of data. Geometrically, the coefficient measures the angle between two tables in the inner product space defined by $\left<X, Y\right> = tr\left(X^{T}Y\right)$.
+
+The RV coefficient allows comparison between pairs of encoding matrices. When we want to compare more than two at a time, it will be useful to consider the Penalized Matrix Decomposition (PMD) \cite{witten2009penalized}. For a collection of tables $Z_1, \dots, Z_B$, this decomposition first finds directions $u_1, \dots, u_b$ defined according to
+
+$\arg\max_{u_1, \dots, u_{b}} \sum_{\text{pairs } u_{1}, u_{b^{\prime}}} \|Z_{b}u_{b} - Z_{b^{\prime}}u_{b^{\prime}}\|_{2}^{2} + \sum_{b= 1}^{B} \lambda_{1}\|u_{b}\|_{1} + \lambda_{2}\|u_{b}\|_{2}$
+
+for some regularization parameters $\lambda_1$ and $\lambda_2$. The $u_b$ are referred to as the top PMD directions. The process can be repeated after regressing out $u_b$ from each table, resulting in a second set of directions, and so on. From a high-level, if the optimization objective is high, then there are combinations of features from each table (described by the $u_b$) that measure the same underlying phenomenon — it is a measure of linear redundancy across a collection of tables.
+
+\subsubsection{Stability}
+
+Many statistical algorithms revolve around the idea that meaningful conclusions should be stable to perturbations \cite{yu2013stability}, and, heuristically, we expect important learned features to be stable from one study to the next. To formalize this idea, we will employ stability selection, a technique originally developed to isolate statistically significant features from high-dimensional linear models  \cite{meinshausen2010stability}.
+
+For a dataset $\mathbf{X}\in \reals^{n \times p}$ and $\mathbf{y} \in \reals{n}$, stability selection proceeds as follows. First, $B$ subsamples of size $\lfloor \frac{n}{2} \rfloor$ are drawn from the data, and for each a lasso regression is run over a grid of $\lambda$ regularization parameters. Each of these regressions results in $p$ coefficient trajectories, and important features will generally become nonzero earlier on the regularization path (that is, even with large regularization $\lambda$).
+
+Once the $B$ trajectory portraits are computed, we are ready to evaluate the importance of each feature. For a given $lambda$ and feature $j$, let $\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples that had nonzero $\hat{\beta}_j\left(\lambda\right)$.  The paths $\left(\hat{\Pi}_{j}\lambda\left(\lambda\right)\right)_{j = 1}^{p}$summarize the importance of the $p$ regression features. Furthermore, these $\hat{\Pi}_{j}\left(\lambda\right)$ satisfy an FDR control property: (…)
+
+\subsubsection{Feature Learning}
+
+Our work is motivated by the adoption of automated feature extraction algorithms for use in scientific contexts. While scientific applications have drawn on data-driven features since at least \cite{rao1964}, the simplicity and versatility of deep learning-based feature extractors has made this practice especially common.
+In this work, we will examine the behavior of three particular feature learning algorithms — that is, ways of learning $T\left(\cdot; \theta\left(X\right)\right)$.
+
+The first approach is called the Variational Autoencoder (VAE). Like principal components analysis, this algorithm learns a $K$-dimensional reduction of a dataset by optimizing a reconstruction objective. However, the approach is more flexible, learning a low-dimensional, nonlinear manifold with high-density within the high-dimensional (but mostly empty) raw feature space. Formally, the algorithm first posits some generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data; $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair $\xi, \varphi$ that maximizes the variational lower bound,
+
+\begin{align*}
+\log p_{\xi}\left(x\right) \geq  \mathbb{E}_{q_{\varphi}}\left[\log p]_{\xi}(x \mid z)\right]-D_{KL}\left(q_{\varphi}(z \mid x) \| p(z)\right)
+\end{align*}
+
+where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right), \sigma^{2}_{\varphi}\left(x\right)\right)$is a probabilistic encoder, mapping raw data examples to distributions on a latent space of more meaningful features. The mean encoding$\mu_{\varphi}\left(x\right)$can be thought of as a learned representation of$x$.
+Second, we investigate features learned in a supervised way through a
+Convolutional Neural Network (CNN). For regression, a CNN optimizes the
+empirical estimate of the risk $\mathbf{E}\|y -
+f_{W_{1:L}}\left(x\right)^{T}\beta\|_{2}^{2}$ over $W_{1:L}$ and $\beta$. Here,
+$f_{W_{1:L}}$ transforms the raw input into the ``last layer''’s features, and
+is defined recursively according to
+
+\begin{align*}
+f^{l}_{W_{1:l}}\left(x\right) &= \sigma\left(W_{l}f^{l - 1}_{W\_{1:(l - 1)}}\left(x\right)\right)\\
+f^{0}\left(x\right) &= x
+\end{align*}
+
+for $\sigma\left(x\right)$defined as$\sigma\left(x\right) := x \mathbb{1}\left\{x \geq 0\right\}$and matrices$W$restricted to the set of convolution operators. Specifically, convolution operations share parameters across spatial image patches — this induces a specific structure on$W$.
+
+\subsubsection{Visualization}
+
+We borrow methods from the data and model visualization literature to characterize the stability of learned features. For individual models, we can visualize the parameters associated with each neuron using the approach of (tk cite the first people to do this). These visualizations describe the types of image patch features for which these neurons activate.
+
+Deep learning models learn distributed representations; this means that individual sources of variation will activate a range of neurons throughout the network. For this reason, it is useful to study the full representation subspaces associated with specific layers. Each sample can be represented by the coordinates of its projection onto these subspaces. To facilitate interpretation, we use a Varimax rotation; this implicitly provides a sparse representation for each sample.
+A challenge of obtaining useful observations related to the stability of learned features is that the phenomena of interest are all high-dimensional. Indeed, the original images live in a high-dimensional pixel space and it is typically necessary to learn on the order of dozens to hundreds of features in order to perform well on representation or supervised tasks. Further, the networks that must be trained in order to obtain these features typically have millions of parameters. Added to the complexity of understanding a single deep learning model are the comparisons necessary for characterizing the relationships between an ensemble of slightly perturbed models — models trained on resampled datasets and observed at differing stages of convergence.
+
+In addition to the multiview techniques described in Section \ref{sec:background}, ideas from high-dimensional data visualization will be key for providing compact descriptions of the underlying phenomena. One useful idea is that of linked brushing. This is an interactive visualization technique in which multiple low-dimensional views are linked in the way they respond to user input. A classical example is linked scatterplot brushing. Here, a range of scatterplots are displayed simultaneously. Each scatterplot displays the same underlying samples, but different coordinates are displayed in each. Highlighting a set of samples in one scatterplot highlights the same group across all scatterplots. This facilitates conditional probability interpretations — conditional on having a certain value for one set of coordinates, what is the distribution for all remaining coordinates?
+
+A second idea is the focus-plus-context principle. This allows the viewer to study a dataset at several scales simultaneously. An overview display is juxtaposed with a display that provides details on individual samples. By linking views at multiple scales, it becomes possible to ask questions that relate specific elements to their broader context.
+
+Our visualizations are made using the d3 library. We interface with them through the R package htmlwidgets. This allows us to reuse the same interactive visualization code across a range of datasets in a way that fits into the standard data science workflow.

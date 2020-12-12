@@ -1,0 +1,16 @@
+
+\section{Discussion}
+
+This study has examined the stability of algorithmically-derived, rather than hand-crafted, features. A better understanding of stability in this modern regime has consequences for how these methods can be used in real-world applications, ranging from spatial transcriptomics to satellite imagery analysis. Ultimately, we have been motivated by an old statistical idea that remains as true now as ever,
+
+\begin{quote}
+One hallmark of the statistically conscious investigator is a firm belief that, however the survey, experiment, or observational program actually turned out, it could have turned out some somewhat differently. (Mosteller & Tukey page 25)
+\end{quote}
+
+In order to accomplish this study, we have refined tools from the representational, multivariate, and visual analysis communities. These tools give a window into the workings of modern feature extraction algorithms, helping us view commonplace algorithms in a new way.
+
+Crucially, our approach does more than summarize data — it generates data. In the same way that a standard error around a mean is a new piece of data that allows more nuanced reasoning, the consolidated features and stability diagrams we have used provide new information on the stability of feature learning algorithms. 
+
+Our results raise interesting questions for further study. It is natural to ask to what extent similar behaviors are exhibited across other data domains, model types, or training regimes. For example, it would not be unusual to represent the cell data in our case study using a marked graph linking neighboring cells. Do the features learned by a graph autoencoder have similar stability properties? In other domains, we may ask whether our methods can be adapted to text or audio data.
+
+Further, there are questions that may guide us towards better stability analysis procedures. The results of the fine-tuning experiment leave the question of computational acceleration of stability analysis wide-open. Alternative approaches, based on the infinitismal jacknife or coresets, for example, may yield worthwhile speedups. The running representational device of this study — a variant of SVCCA — may also be improved, so that it is less reliant on heuristics related to the underlying subspace dimension. Our approaches to summarizing and displaying the resulting representations may be improved through a more careful application of interactive visualization principles. Finally, even at this early stage, an easily accessible computational infrastructure for performing the analysis presented in this work, through an appropriately maintained software package, cou
