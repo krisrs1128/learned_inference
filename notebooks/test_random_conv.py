@@ -66,27 +66,6 @@ model = rcf.WideNet(torch.Tensor(patches))
 # In[ ]:
 
 
-patches2 = torch.Tensor(rcf.random_patches(p, 10))
-D = model(patches2).detach()
-D = D.squeeze()
-max_ix = np.where(D[0, :] == D[0, :].max())[0][0]
-print(max_ix)
-
-
-# In[ ]:
-
-
-import matplotlib.pyplot as plt
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-plt.imshow(np.transpose(patches[max_ix], (1, 2, 0)))
-plt.show()
-plt.imshow(np.transpose(patches2[0], (1, 2, 0)))
-
-
-# In[ ]:
-
-
 loaders["train"] = initialize_loader(paths["train"][resample_ix][0], data_dir, opts, shuffle=True)
 loaders["features"] = initialize_loader(paths["train"], data_dir, opts)
 loaders["dev"] = initialize_loader(paths["dev"], data_dir, opts)
@@ -103,10 +82,11 @@ i = 0
 D = []
 for x, _ in l:
     print(i)
-    D.append(model(x))
-    i += 1
-    if i > 40:
-        break
+    with torch.no_grad():
+        D.append(model(x).cpu())
+        i += 1
+        if i > 5:
+            break
 
 
 # In[ ]:
@@ -118,7 +98,7 @@ D = torch.cat(D).squeeze()
 # In[ ]:
 
 
-xy = pd.read_csv("/Users/kris/Documents/stability_data/Xy.csv")
+xy = pd.read_csv(data_dir / "Xy.csv")
 y = xy.iloc[resample_ix.iloc[0, :]]["y"].values
 
 
@@ -132,12 +112,8 @@ y = (y - y.mean()) / y.std()
 ridge_model.fit(X = D.detach(), y = y[:len(D)])
 ridge_model.coef_
 y_hat = ridge_model.predict(X = D.detach())
-
-
-# In[ ]:
-
-
-plt.scatter(y[:len(D)], y_hat)
+print(np.mean(y[:len(D)] ** 2))
+np.mean((y[:len(D)] - y_hat[:len(D)]) ** 2)
 
 
 # In[ ]:
