@@ -5,9 +5,8 @@ from torch import nn
 import numpy as np
 
 class ConvSubset(nn.Module):
-    def __init__(self, patches):
+    def __init__(self, patches, device=None):
         super(ConvSubset, self).__init__()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.conv = nn.Conv2d(3, len(patches), patches.shape[2], bias=False)
         self.conv.weight = nn.Parameter(patches.to(self.device))
 
@@ -20,9 +19,9 @@ class WideNet(nn.Module):
         super(WideNet, self).__init__()
         self.patches = patches
         self.filter_subset = 1024
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def forward(self, x):
-        x = x.to(self.device)
         h = []
 
         for i in range(0, len(self.patches), self.filter_subset):
@@ -32,7 +31,7 @@ class WideNet(nn.Module):
         return torch.cat(h, dim=1)
 
     def forward_partial(self, x, start, end):
-        conv = ConvSubset(self.patches[start:end])
+        conv = ConvSubset(self.patches[start:end], self.device)
         pre_h = conv(x)
         return F.max_pool2d(F.relu(pre_h - 1), pre_h.shape[2])
 
