@@ -22,7 +22,9 @@ class WideNet(nn.Module):
         self.filter_subset = 1024
 
     def forward(self, x):
+        x = x.to(self.device)
         h = []
+
         for i in range(0, len(self.patches), self.filter_subset):
             h_cur = self.forward_partial(x, i, i + self.filter_subset)
             h.append(h_cur)
