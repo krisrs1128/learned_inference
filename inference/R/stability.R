@@ -80,3 +80,4 @@ procrustes <- function(x_list, tol = 1e-3) {
   
   list(x_align = x_align, M = M)
 }
+
