@@ -24,7 +24,7 @@ import torch.optim
 import yaml
 
 
-parser = argparse.ArgumentParser(description="Preprocess raw tiffs into slices")
+parser = argparse.ArgumentParser(description="Train a model for feature extraction")
 parser.add_argument("-c", "--train_yaml", default="../conf/train_cnn.yaml", type=str)
 parser.add_argument("-b", "--bootstrap", default=0, type=int)
 args = parser.parse_args()
@@ -82,5 +82,14 @@ out_paths = [
 ]
 
 # train
-optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
-st.train(model, optim, loaders, opts, out_paths, writer, loss_fn)
+if opts.train.model == "rcf":
+    ridge_model, D, y_hat = rcf.train_rcf(model, loaders["train"])
+    metadata, errors = [], {}
+    for split in ["dev", "test"]:
+        D, y_hat, y = rcf.predict_rcf(model, ridge_model, loaders[split])
+        errors[split] = np.mean((y - y_hat) ** 2)
+        np.save(out_paths[0] / f"{split}_features.csv", D)
+
+else:
+    optim = torch.optim.Adam(model.parameters(), lr=opts.train.lr)
+    st.train(model, optim, loaders, opts, out_paths, writer, loss_fn)
