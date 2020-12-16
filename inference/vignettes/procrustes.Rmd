@@ -2,13 +2,14 @@
 title: "Procrustes and Varimax Alignment"
 output: html_notebook
 params:
-  model_prefix: "vae15"
+  model_prefix: "cnn90"
   layer: "mu"
   ncomp: 10
 ---
 
 ```{r libraries}
 library("dplyr")
+library("epca")
 library("ggplot2")
 library("glmnet")
 library("inference")
@@ -39,6 +40,7 @@ Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
 metadata <- map(output_dirs, ~ read_csv(file.path(.x, params$model_prefix, "metadata.csv")))
 subsets <- map(output_dirs, ~ read_csv(file.path(.x, params$model_prefix, "features", "subset.csv")))
 names(subsets) <- output_dirs
+subsets
 ```
 Next, let's identify the paths to all the activation numpy files. This involves
 
@@ -110,15 +112,16 @@ for (i in seq_along(x_list)) {
 ```
 
 ```{r}
-x_scores <- map(x_list, ~ { 
-  svd_res <- svd(.)
-  svd_res$u[, 1:params$ncomp] %*% diag(svd_res$d[1:params$ncomp])
-})
+sparse_approx <- map(x_list, ~ sca(.)) 
+```
 
-pres <- procrustes(x_scores, 0.5)
+```{r}
+pres <- sparse_approx %>%
+  map(~ .$scores) %>%
+  procrustes(0.01)
 M <- pres$M
 scores <- pres$x_align
-scores <- lapply(seq_len(dim(scores)[3]), function(i) scores[,, i])
+scores <- lapply(seq_len(dim(scores)[3]), function(i) scores[,, i]) # split last dimension across list
 ```
 
 ```{r}
@@ -269,6 +272,6 @@ dev.off()
 
 ```{r remove_unzipped}
 paths0 <- gsub(".gz", "", paths)
-unlink(paths0)
+unlink(paths0, recursive = TRUE)
 ```
 
