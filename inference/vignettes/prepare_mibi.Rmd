@@ -9,6 +9,7 @@ library("readr")
 library("ggplot2")
 library("raster")
 library("stringr")
+library("purrr")
 library("reshape2")
 library("tidyr")
 source("../R/mibi.R")
@@ -17,61 +18,16 @@ library("SingleCellExperiment")
 
 ```{r}
 raw_data <- load_mibi("~/Desktop/data/", 3)
-```
-
-```{r}
 tiff_paths <- raw_data$tiffs
 exper <- raw_data$mibi
 qsize <- 500
-```
-
-
-```{r}
-ims <- list()
-for (i in seq_along(tiff_paths)) {
-  print(paste0("cropping ", i, "/", length(tiff_paths)))
-  r <- raster(tiff_paths[[i]])
-  ims[[i]] <- crop(r, extent(1, qsize, 1, qsize))
-}
-```
-
-```{r}
-unique(as.vector(ims[[1]]))
-```
-
-```{r}
-im_id <- str_extract(tiff_paths, "[0-9]+")
-library("purrr")
-```
-
-
-```{r}
-cur_cells <- sapply(ims$values, unique) %>%
-  melt() %>%
-  dplyr::rename(cellLabelInImage = "value", SampleID = "L1") %>%
-  unite(sample_by_cell, SampleID, cellLabelInImage, remove = F)
-
-scell <- colData(exper) %>%
-  as.data.frame() %>%
-  select(SampleID, cellLabelInImage) %>%
-  unite(sample_by_cell, SampleID, cellLabelInImage) %>%
-  .[["sample_by_cell"]]
-
-```
-
-```{r}
 raw_data <- spatial_subsample(raw_data$tiffs, raw_data$mibi)
-```
-
-```{r}
-image(raw_data$ims[[1]], asp = 1)
-colnames(colData(raw_data$exper))
-colnames(rowData(raw_data$exper))
 ```
 
 ```{r}
 rownames(rowData(raw_data$exper))
 ```
+> Interestingly, we found that expression of immunoregulatory proteins by distinct cellular subtypes correlates with the spatial architecture of the tissue as mixed and compartmentalized (Figures 3B and 3C). Predominance of PD1 expression by either CD4+ or CD8+ T cells correlates with compartmentalized or mixed TNBC, respectively (Wilcoxon Rank Sum test p = 0.022, Figures 5A–5C, STAR Methods). This relationship was not driven by the ratio of total CD8+ and CD4+ T cells in compartmentalized and mixed tumors (Figures S6I and S6J), nor was it affected by ranging the threshold used to include patients in the analysis between 10 and 100 positive cells (Figures S7A–S7C).
 
 ```{r}
 table(assay(raw_data$exper)["PD1", ] > 0)

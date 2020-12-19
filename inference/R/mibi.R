@@ -24,7 +24,7 @@ spatial_subsample <- function(tiff_paths, exper, qsize=500) {
   for (i in seq_along(tiff_paths)) {
     print(paste0("cropping ", i, "/", length(tiff_paths)))
     r <- raster(tiff_paths[[i]])
-    ims[[i]] <- crop(r, extent(1, qsize, 1, qsize))
+    ims[[tiff_paths[[i]]]] <- crop(r, extent(1, qsize, 1, qsize))
   }
   
   cur_cells <- map2_dfr(
@@ -43,4 +43,26 @@ spatial_subsample <- function(tiff_paths, exper, qsize=500) {
     ims = ims,
     exper = exper[, scell %in% cur_cells$sample_by_cell]
   )
+}
+
+extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128) {
+  j <- 1
+  x <- list()
+  y <- list()
+  for (i in seq_along(tiff_paths)) {
+    r <- raster(tiff_paths[i])
+    ix_start <- seq(1, ncol(r), by = qsize)
+    r_cells <- matching_cells(tiff_paths[i], exper)
+    
+    for (w in seq_along(ix_start)) {
+      for (h in seq_along(ix_start)) {
+        patch <- extract_patch(r, w, h, r_cells)
+        x[[j]] <- patch$x
+        y[[j]] <- patch$y
+        j <- j + 1
+      }
+    }
+  }
+  
+  list(x = x, y = c(y))
 }
