@@ -3,7 +3,7 @@ title: "Procrustes and Varimax Alignment"
 output: html_notebook
 params:
   model_prefix: "cnn90"
-  layer: "mu"
+  layer: "linear"
   ncomp: 10
 ---
 
@@ -112,7 +112,7 @@ for (i in seq_along(x_list)) {
 ```
 
 ```{r}
-sparse_approx <- map(x_list, ~ sca(.)) 
+sparse_approx <- map(x_list, ~ sca(., k = params$ncomp)) 
 ```
 
 ```{r}
@@ -265,9 +265,9 @@ ggsave(sprintf("%s_correlation_diagram.png", params$model_prefix))
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
-png(sprintf("%s_correlation_heatmap.png", params$model_prefix))
-heatmap(cor(scores_mat))
-dev.off()
+#png(sprintf("%s_correlation_heatmap.png", params$model_prefix))
+heatmap(cor(scores_mat), asp = 1)
+#dev.off()
 ```
 
 ```{r remove_unzipped}
