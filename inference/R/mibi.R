@@ -27,8 +27,9 @@ spatial_subsample <- function(tiff_paths, exper, qsize=500) {
     ims[[tiff_paths[[i]]]] <- crop(r, extent(1, qsize, 1, qsize))
   }
   
+  im_ids <- str_extract(tiff_paths, "[0-9]+")
   cur_cells <- map2_dfr(
-    ims, im_id, 
+    ims, im_ids, 
     ~ data.frame(SampleID = .y, cellLabelInImage = unique(as.vector(.x)))
     ) %>%
     unite(sample_by_cell, SampleID, cellLabelInImage, remove = F)
@@ -45,24 +46,56 @@ spatial_subsample <- function(tiff_paths, exper, qsize=500) {
   )
 }
 
-extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128) {
+subset_exper <- function(id, r, exper) {
+  scell <- colData(exper) %>%
+    as.data.frame() %>%
+    dplyr::select(SampleID, cellLabelInImage) %>%
+    unite(sample_by_cell, SampleID, cellLabelInImage) %>%
+    pull("sample_by_cell")
+  
+  sample_by_cell <- data.frame(
+    SampleID = id, 
+    cellLabelInImage = unique(as.vector(r))
+  ) %>%
+  unite(sample_by_cell, SampleID, cellLabelInImage, remove = F)
+  
+  exper[, scell %in% sample_by_cell$sample_by_cell]
+}
+
+extract_patch <- function(r, w, h, r_cells, response, qsize = 128) {
+  r <- crop(r, extent(w, w + qsize, h, h + qsize))
+  cur_cells <- colData(exper)$cellLabelInImage %in% unique(as.vector(r))
+  y <- mean(assay(exper)[response, cur_cells] > 0) # proportion of active cells
+  
+  list(x = r, y = y)
+}
+
+extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128, 
+                            out_dir = ".") {
+  im_ids <- str_extract(tiff_paths, "[0-9]+")
+  y_path <- file.path(out_dir, "y.csv")
+  
   j <- 1
-  x <- list()
-  y <- list()
   for (i in seq_along(tiff_paths)) {
+    print(i)
     r <- raster(tiff_paths[i])
     ix_start <- seq(1, ncol(r), by = qsize)
-    r_cells <- matching_cells(tiff_paths[i], exper)
+    print(ix_start)
+    r_cells <- subset_exper(im_ids[i], r, exper)
     
     for (w in seq_along(ix_start)) {
       for (h in seq_along(ix_start)) {
-        patch <- extract_patch(r, w, h, r_cells)
-        x[[j]] <- patch$x
-        y[[j]] <- patch$y
+        patch <- extract_patch(r, ix_start[w], ix_start[h], r_cells, response, qsize)
+        
+        # write results
+        raster_path <- file.path(out_dir, sprintf("patch_%s_%s-%s.tiff", i, w, h))
+        writeRaster(patch$x, file.path(raster_path), format="GTiff", overwrite=TRUE)
+        y <- data.frame(path = tiff_paths[i], i = i, w = w, h = h, y = patch$y)       
+        write.table(y, y_path, sep = ",", col.names = !file.exists(y_path), append = T)
+        
         j <- j + 1
       }
     }
   }
   
-  list(x = x, y = c(y))
 }

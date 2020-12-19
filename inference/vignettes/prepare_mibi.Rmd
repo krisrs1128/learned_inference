@@ -24,12 +24,13 @@ qsize <- 500
 raw_data <- spatial_subsample(raw_data$tiffs, raw_data$mibi)
 ```
 
-```{r}
-rownames(rowData(raw_data$exper))
-```
 > Interestingly, we found that expression of immunoregulatory proteins by distinct cellular subtypes correlates with the spatial architecture of the tissue as mixed and compartmentalized (Figures 3B and 3C). Predominance of PD1 expression by either CD4+ or CD8+ T cells correlates with compartmentalized or mixed TNBC, respectively (Wilcoxon Rank Sum test p = 0.022, Figures 5A–5C, STAR Methods). This relationship was not driven by the ratio of total CD8+ and CD4+ T cells in compartmentalized and mixed tumors (Figures S6I and S6J), nor was it affected by ranging the threshold used to include patients in the analysis between 10 and 100 positive cells (Figures S7A–S7C).
 
 ```{r}
-table(assay(raw_data$exper)["PD1", ] > 0)
+extract_patches(tiff_paths, exper, out_dir = "~/Desktop/")
 ```
 
+write_rast
+```{r}
+writeRaster(r, "~/Desktop/test.tiff", Driver = "GTiff")
+```
