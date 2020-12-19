@@ -1,0 +1,79 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library("dplyr")
+library("readr")
+library("ggplot2")
+library("raster")
+library("stringr")
+library("reshape2")
+library("tidyr")
+source("../R/mibi.R")
+library("SingleCellExperiment")
+```
+
+```{r}
+raw_data <- load_mibi("~/Desktop/data/", 3)
+```
+
+```{r}
+tiff_paths <- raw_data$tiffs
+exper <- raw_data$mibi
+qsize <- 500
+```
+
+
+```{r}
+ims <- list()
+for (i in seq_along(tiff_paths)) {
+  print(paste0("cropping ", i, "/", length(tiff_paths)))
+  r <- raster(tiff_paths[[i]])
+  ims[[i]] <- crop(r, extent(1, qsize, 1, qsize))
+}
+```
+
+```{r}
+unique(as.vector(ims[[1]]))
+```
+
+```{r}
+im_id <- str_extract(tiff_paths, "[0-9]+")
+library("purrr")
+```
+
+
+```{r}
+cur_cells <- sapply(ims$values, unique) %>%
+  melt() %>%
+  dplyr::rename(cellLabelInImage = "value", SampleID = "L1") %>%
+  unite(sample_by_cell, SampleID, cellLabelInImage, remove = F)
+
+scell <- colData(exper) %>%
+  as.data.frame() %>%
+  select(SampleID, cellLabelInImage) %>%
+  unite(sample_by_cell, SampleID, cellLabelInImage) %>%
+  .[["sample_by_cell"]]
+
+```
+
+```{r}
+raw_data <- spatial_subsample(raw_data$tiffs, raw_data$mibi)
+```
+
+```{r}
+image(raw_data$ims[[1]], asp = 1)
+colnames(colData(raw_data$exper))
+colnames(rowData(raw_data$exper))
+```
+
+```{r}
+rownames(rowData(raw_data$exper))
+```
+
+```{r}
+table(assay(raw_data$exper)["PD1", ] > 0)
+```
+
