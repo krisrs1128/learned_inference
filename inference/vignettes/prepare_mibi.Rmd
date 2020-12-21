@@ -28,11 +28,10 @@ exper <- raw_data$mibi
 
 ```{r}
 extract_patches(
-  tiff_paths, 
+  tiff_paths,
   exper,
   response = "PD1",
   out_dir = "/Users/kris/Desktop/data",
   qsize = params$qsize
 )
 ```
-
