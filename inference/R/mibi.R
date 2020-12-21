@@ -1,6 +1,6 @@
 
 load_mibi <- function(data_dir, n_paths = NULL) {
-  mibi.sce <- get(load(file.path(data_dir, "mibiSCE.rda")))
+  exper <- get(load(file.path(data_dir, "mibiSCE.rda")))
   tiff_paths <- list.files(
     file.path(data_dir, "TNBC_shareCellData"),
     "*.tiff",
@@ -11,11 +11,18 @@ load_mibi <- function(data_dir, n_paths = NULL) {
     n_paths <- length(tiff_paths)
   }
   
+  # create a cell-type column
+  colData(exper)$cell_type <- colData(exper)$tumor_group
+  immune_ix <- colData(exper)$cell_type == "Immune"
+  colData(exper)$cell_type[immune_ix] <- colData(exper)$immune_group[immune_ix]
+  colData(exper)$cell_type <- forcats::fct_lump_n(colData(exper)$cell_type, 10)
+  
+  # subset to those samples with images
   tiff_paths <- tiff_paths[1:n_paths]
   sample_names <- str_extract(tiff_paths, "[0-9]+")
   list(
     tiffs = tiff_paths,
-    mibi = mibi.sce[, colData(mibi.sce)$SampleID %in% sample_names]
+    mibi = exper[, colData(exper)$SampleID %in% sample_names]
   )
 }
 
@@ -62,16 +69,33 @@ subset_exper <- function(id, r, exper) {
   exper[, scell %in% sample_by_cell$sample_by_cell]
 }
 
+unwrap_channels <- function(r, r_cells) {
+  cell_types <- levels(r_cells$cell_type)
+  r_mat <- array(0, dim = c(dim(r)[1:2], length(cell_types)))
+  for (i in seq_along(cell_types)) {
+    cur_cells <- colData(r_cells) %>%
+      as.data.frame() %>%
+      filter(cell_type == cell_types[i]) %>%
+      pull(cellLabelInImage) %>%
+      unique()
+    
+    r_mat[,, i] <- 1 * as.matrix(r %in% cur_cells)
+  }
+  r_mat 
+}
+
 extract_patch <- function(r, w, h, r_cells, response, qsize = 128) {
   r <- crop(r, extent(w, w + qsize, h, h + qsize))
   cur_cells <- colData(exper)$cellLabelInImage %in% unique(as.vector(r))
-  y <- mean(assay(exper)[response, cur_cells] > 0) # proportion of active cells
+  r <- unwrap_channels(r, r_cells)
   
+  y <- mean(assay(exper)[response, cur_cells] > 0) # proportion of active cells
   list(x = r, y = y)
 }
 
 extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128, 
                             out_dir = ".") {
+  np <- reticulate::import("numpy")
   im_ids <- str_extract(tiff_paths, "[0-9]+")
   y_path <- file.path(out_dir, "y.csv")
   
@@ -80,7 +104,6 @@ extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128,
     print(i)
     r <- raster(tiff_paths[i])
     ix_start <- seq(1, ncol(r), by = qsize)
-    print(ix_start)
     r_cells <- subset_exper(im_ids[i], r, exper)
     
     for (w in seq_along(ix_start)) {
@@ -88,8 +111,9 @@ extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128,
         patch <- extract_patch(r, ix_start[w], ix_start[h], r_cells, response, qsize)
         
         # write results
-        raster_path <- file.path(out_dir, sprintf("patch_%s_%s-%s.tiff", i, w, h))
-        writeRaster(patch$x, file.path(raster_path), format="GTiff", overwrite=TRUE)
+        npy_path <- file.path(out_dir, sprintf("patch_%s_%s-%s.npy", i, w, h))
+        np$save(npy_path, patch$x)
+  #      writeRaster(patch$x, file.path(raster_path), format="GTiff", overwrite=TRUE)
         y <- data.frame(path = tiff_paths[i], i = i, w = w, h = h, y = patch$y)       
         write.table(y, y_path, sep = ",", col.names = !file.exists(y_path), append = T)
         
