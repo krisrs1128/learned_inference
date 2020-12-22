@@ -2,9 +2,10 @@
 title: "Procrustes and Varimax Alignment"
 output: html_notebook
 params:
-  model_prefix: "cnn90"
-  layer: "linear"
+  model_prefix: "vae15"
+  layer: "mu"
   ncomp: 10
+  sca: TRUE
 ---
 
 ```{r libraries}
@@ -40,7 +41,6 @@ Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
 metadata <- map(output_dirs, ~ read_csv(file.path(.x, params$model_prefix, "metadata.csv")))
 subsets <- map(output_dirs, ~ read_csv(file.path(.x, params$model_prefix, "features", "subset.csv")))
 names(subsets) <- output_dirs
-subsets
 ```
 Next, let's identify the paths to all the activation numpy files. This involves
 
@@ -112,7 +112,11 @@ for (i in seq_along(x_list)) {
 ```
 
 ```{r}
-sparse_approx <- map(x_list, ~ sca(., k = params$ncomp)) 
+if (params$sca) {
+  sparse_approx <- map(x_list, ~ sca(., k = params$ncomp)) 
+} else {
+  sparse_approx <- map(x_list, ~ list(scores = princomp(.)$scores[, 1:params$ncomp]))
+}
 ```
 
 ```{r}
@@ -132,9 +136,7 @@ for (i in seq_along(scores)) {
 scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X")), .y)) %>%
   left_join(Xy, c("rel_path" = "path")) 
 plot_data <- scores %>%
-  melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim") %>%
-  arrange(ix) %>%
-  filter(ix %in% sample(max(scores$ix), 3000))
+  melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim")
 plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
 ```
 
@@ -156,9 +158,9 @@ head(edge_data)
 ```
 
 ```{r, embedding_plot, fig.width = 8}
-ggplot(edge_data) +
+ggplot(edge_data %>% filter(rel_path %in% edge_data$rel_path[1:100])) +
   geom_point(
-    data = centroids,
+    data = centroids %>% filter(rel_path %in% edge_data$rel_path[1:100]),
     aes(x = meandim3, y = meandim2, col = y),
     alpha = 0.5, size = 0.8
     ) +
@@ -175,6 +177,16 @@ ggplot(edge_data) +
   scale_color_viridis_c() +
   theme(legend.position = "bottom")
 ggsave(sprintf("embeddings_%s.png", params$model_prefix))
+```
+```{r}
+edge_dists <- edge_data %>%
+  mutate(D = sqrt((dim1 - meandim1) ^ 2 + (dim2 - meandim2) ^ 2 + (dim3 - meandim3) ^ 2)) %>%
+  select(split, D)
+
+ggplot(edge_dists) +
+  geom_histogram(aes(x = log(D), fill = split), bins = 50) +
+  facet_wrap(~split, scale = "free_y")
+write_csv(edge_dists, file.path(data_dir, sprintf("edge_dists_%s.csv", params$model_prefix)))
 ```
 
 ```{r stability_baseline}
@@ -221,28 +233,56 @@ ggsave(sprintf("selection_paths_%s.png", params$model_prefix))
 What is the average correlation between selected features and the underlying
 generative process?
 
-```{r, correlation_diagram, fig.width = 8, fig.height = 5}
+```{r, correlation_data, fig.width = 8, fig.height = 5}
+lambda_thr <- lambda[8]
+
 selections <- pi_hat %>% 
-  filter(lambda > 0.03, lambda < 0.1) %>%
+  filter(lambda == lambda_thr) %>%
   group_by(j, split) %>%
   summarise(selection = mean(value)) %>%
   mutate(dim = paste0("dim", j)) %>%
   select(-j)
   
 scores_mat <- scores %>%
-  split(.$split)
+  split(., list(.$split, .$bootstrap))
 
 mcor <- list()
+cca_data <- list()
 for (i in seq_along(scores_mat)) {
   scores_i <- scores_mat[[i]] %>%
     select(starts_with("dim"), starts_with("X")) %>%
     as.matrix()
+  
   mcor[[i]] <- melt(cor(scores_i), varnames = c("dim", "feature")) %>%
     filter(!(feature %in% paste0("dim", 1:params$ncomp))) %>%
     filter(dim %in% paste0("dim", 1:params$ncomp))
   mcor[[i]]$split <- scores_mat[[i]]$split[1]
+  mcor[[i]]$bootstrap <- scores_mat[[i]]$bootstrap[1]
+  
+  dim_i <- scores_mat[[i]] %>%
+    select(starts_with("dim")) %>%
+    as.matrix()
+  x_i <- scores_mat[[i]] %>%
+    select(starts_with("X")) %>%
+    as.matrix()
+  
+  cca_data[[i]] <- data.frame(
+    k = 1:params$ncomp,
+    split = scores_mat[[i]]$split[1],
+    bootstrap = scores_mat[[i]]$bootstrap[1], 
+    rho = cancor(dim_i, x_i)$cor
+  )
 }
+```
 
+```{r}
+cca_data <- bind_rows(cca_data)
+ggplot(cca_data) +
+  geom_point(aes(x = k, y = rho, col = split))
+write_csv(cca_data, file.path(data_dir, sprintf("cca_data_%s.csv", params$model_prefix)))
+```
+
+```{r, correlation_diagram, fig.width = 8, fig.height = 5}
 mcor <- do.call(rbind, mcor) %>%
   left_join(selections) %>%
   mutate(dim = gsub("dim", "", dim))
@@ -251,7 +291,7 @@ mcor$dim <- factor(mcor$dim, levels = 1:10)
 ggplot(mcor) +
   geom_hline(yintercept = 0) +
   geom_point(aes(x = feature, y = value, col = selection, shape = split)) +
-  facet_wrap(~ dim) +
+  facet_grid(split ~ dim) +
   scale_color_viridis_c() +
   theme(
     axis.text.x = element_text(angle = 90, size = 8),
@@ -259,19 +299,41 @@ ggplot(mcor) +
   )
 ggsave(sprintf("%s_correlation_diagram.png", params$model_prefix))
 ```
-
-
 ```{r correlation_heatmap}
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
-#png(sprintf("%s_correlation_heatmap.png", params$model_prefix))
+png(sprintf("%s_correlation_heatmap.png", params$model_prefix))
 heatmap(cor(scores_mat), asp = 1)
-#dev.off()
+dev.off()
 ```
 
+```{r}
+pis <- seq(.4, 1, by = 0.05)
+selections <- list()
+for (i in seq_along(pis)) {
+  selections[[i]] <- pi_hat %>%
+    filter(j != 0) %>% # ignore intercept term
+    filter(value > pis[i], lambda == lambda_thr) %>%
+    group_by(split, bootstrap) %>%
+    summarise(n_selected = n()) %>%
+    mutate(pi_thr = pis[i])
+}
+
+selections <- bind_rows(selections) %>%
+  group_by(split, pi_thr) %>%
+  summarise(
+    min = min(n_selected),
+    max = max(n_selected),
+    median = median(n_selected)
+  )
+
+selections$model <- str_extract(params$model_prefix, "[A-z]+")
+selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
+selections$sca <- params$sca
+write_csv(selections, file.path(data_dir, sprintf("selections_%s.csv", params$model_prefix)))
+```
 ```{r remove_unzipped}
 paths0 <- gsub(".gz", "", paths)
 unlink(paths0, recursive = TRUE)
 ```
-
