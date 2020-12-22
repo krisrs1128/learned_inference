@@ -19,7 +19,7 @@ library("SingleCellExperiment")
 ```
 
 ```{r}
-raw_data <- load_mibi("~/Desktop/data/", 3)
+raw_data <- load_mibi("~/Desktop/data/", 100)
 tiff_paths <- raw_data$tiffs
 exper <- raw_data$mibi
 ```
