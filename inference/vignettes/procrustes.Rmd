@@ -176,7 +176,7 @@ ggplot(edge_data %>% filter(rel_path %in% edge_data$rel_path[1:100])) +
   facet_grid(. ~ split) +
   scale_color_viridis_c() +
   theme(legend.position = "bottom")
-ggsave(sprintf("embeddings_%s.png", params$model_prefix))
+ggsave(sprintf("embeddings_%s_%s.png", params$model_prefix, params$sca))
 ```
 ```{r}
 edge_dists <- edge_data %>%
@@ -186,7 +186,7 @@ edge_dists <- edge_data %>%
 ggplot(edge_dists) +
   geom_histogram(aes(x = log(D), fill = split), bins = 50) +
   facet_wrap(~split, scale = "free_y")
-write_csv(edge_dists, file.path(data_dir, sprintf("edge_dists_%s.csv", params$model_prefix)))
+write_csv(edge_dists, file.path(data_dir, sprintf("edge_dists_%s_%s.csv", params$model_prefix, params$sca)))
 ```
 
 ```{r stability_baseline}
@@ -198,7 +198,7 @@ for (b in seq_along(xy)) {
   fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
   y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
   plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
-  png(sprintf("y_vs_y_hat-%s-%s.png", params$model_prefix, names(xy)[b]))
+  png(sprintf("y_vs_y_hat-%s-%s-%s.png", params$model_prefix, names(xy)[b], params$sca))
   plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]], col = rgb(0, 0, 0, 0.6), cex = 0.5, main = names(xy)[b])
   abline(a = 0, b = 1, col = "red")
   dev.off()
@@ -228,7 +228,7 @@ ggplot(pi_hat %>% filter(j < 17)) +
   scale_x_continuous(trans = ggforce::trans_reverser('log10')) +
   facet_wrap(~ j, ncol = 6) +
   theme(legend.position = "bottom")
-ggsave(sprintf("selection_paths_%s.png", params$model_prefix))
+ggsave(sprintf("selection_paths_%s_%s.png", params$model_prefix, params$sca))
 ```
 What is the average correlation between selected features and the underlying
 generative process?
@@ -279,7 +279,7 @@ for (i in seq_along(scores_mat)) {
 cca_data <- bind_rows(cca_data)
 ggplot(cca_data) +
   geom_point(aes(x = k, y = rho, col = split))
-write_csv(cca_data, file.path(data_dir, sprintf("cca_data_%s.csv", params$model_prefix)))
+write_csv(cca_data, file.path(data_dir, sprintf("cca_data_%s_%s.csv", params$model_prefix, params$sca)))
 ```
 
 ```{r, correlation_diagram, fig.width = 8, fig.height = 5}
@@ -297,13 +297,13 @@ ggplot(mcor) +
     axis.text.x = element_text(angle = 90, size = 8),
     legend.position = "bottom"
   )
-ggsave(sprintf("%s_correlation_diagram.png", params$model_prefix))
+ggsave(sprintf("%s_%s_correlation_diagram.png", params$model_prefix, params$sca))
 ```
 ```{r correlation_heatmap}
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
-png(sprintf("%s_correlation_heatmap.png", params$model_prefix))
+png(sprintf("%s_%s_correlation_heatmap.png", params$model_prefix, params$sca))
 heatmap(cor(scores_mat), asp = 1)
 dev.off()
 ```
@@ -331,7 +331,7 @@ selections <- bind_rows(selections) %>%
 selections$model <- str_extract(params$model_prefix, "[A-z]+")
 selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
 selections$sca <- params$sca
-write_csv(selections, file.path(data_dir, sprintf("selections_%s.csv", params$model_prefix)))
+write_csv(selections, file.path(data_dir, sprintf("selections_%s_%s.csv", params$model_prefix, params$sca)))
 ```
 ```{r remove_unzipped}
 paths0 <- gsub(".gz", "", paths)
