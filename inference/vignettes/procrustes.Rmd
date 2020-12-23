@@ -2,8 +2,8 @@
 title: "Procrustes and Varimax Alignment"
 output: html_notebook
 params:
-  model_prefix: "vae15"
-  layer: "mu"
+  model_prefix: "cnn90"
+  layer: "linear"
   ncomp: 10
   sca: TRUE
 ---

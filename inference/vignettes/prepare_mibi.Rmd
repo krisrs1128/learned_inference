@@ -14,12 +14,11 @@ library("stringr")
 library("purrr")
 library("reshape2")
 library("tidyr")
-source("../R/mibi.R")
 library("SingleCellExperiment")
 ```
 
 ```{r}
-raw_data <- load_mibi("~/Desktop/data/", 100)
+raw_data <- load_mibi("/Users/kris/Desktop/data/", 100)
 tiff_paths <- raw_data$tiffs
 exper <- raw_data$mibi
 ```

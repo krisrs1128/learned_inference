@@ -16,8 +16,6 @@ selections <- list.files(data_dir, "selections*", full = TRUE) %>%
   map(read_csv) %>%
   bind_rows()
 
-head(selections)
-
 ggplot(selections) +
   geom_errorbar(
     aes(x = pi_thr, ymin = min, ymax = max, col = split),

@@ -101,28 +101,23 @@ We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
-n_images <- 5e4
-n_original <- rnegbin(n_images, 250, 5)
-beta_r <- 0.3 * rt(n_images * 3, 5, 0) %>%
+n_images <- 1e4
+n_original <- runif(n_images, 100, 1000)
+beta_r <- 0.3 * runif(n_images * 3, -1, 1) %>%
   matrix(ncol = 3)
-nu_r <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
-nu_r <- sample(nu_r)
-alpha_r <- rgamma(n_images, .5, .5)
-nu <- rgamma(n_images, 5, 3) # overall process is smoother on average
-alpha <- rgamma(n_images, 5, 3)
-tau <- c(rgamma(0.5 * n_images, 3, 3), rgamma(0.5 * n_images, 1, 1))
-tau <- sample(tau)
-lambdas <- runif(n_images * 3, 150, 400) %>%
+nu_r <- runif(n_images, 0, 2)
+alpha_r <- runif(n_images, 0, 2)
+nu <- runif(n_images, 0, 5) # overall process is (usually) smoother
+alpha <- runif(n_images, 0, 5)
+tau <- runif(n_images, 0, 5)
+lambdas <- runif(n_images * 3, 100, 500) %>%
   matrix(ncol = 3)
 
 # simulate the response
-eps <- 0.01
-X <- cbind(n_original, beta_r, nu_r, alpha_r, nu, alpha, tau, (lambdas[, 1] - 50))
+X <- scale(cbind(n_original, beta_r, nu_r, alpha_r, nu, alpha, tau, lambdas[, 1]))
 colnames(X) <- c("N", paste0("beta_", 1:ncol(beta_r)), "nu_r", "alpha_r", "nu", "alpha", "tau", "lambda_1")
-y <- X %*% c(1 / 5000, 1/3, -1/3, -1/3, 1/4, 1/4, 1/4, 1/4, 1, 1/800) + rnorm(n_images, 0, eps)
+y <- X %*% c(1, 1, -1, -1, .5, .5, .5, .5, .5, 1) / sqrt(ncol(X))
 y <- y - mean(y)
-
-plot(X[, 8], y)
 ```
 Let's create the directory within which to save our results.
 
