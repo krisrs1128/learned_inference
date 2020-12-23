@@ -65,7 +65,7 @@ def initialize_loader(paths, data_dir, opts, **kwargs):
 
 class CellDataset(Dataset):
     """
-    Dataset for working with tiffs of cells
+    Dataset for working with simulated cell images
     """
     def __init__(self, img_paths, xy_path=None, root=pathlib.Path(".")):
         """Initialize dataset."""
@@ -85,3 +85,21 @@ class CellDataset(Dataset):
         img = np.load(self.root / self.img_paths[i])
         y = self.xy.loc[self.img_paths[i], "y"]
         return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y])
+
+
+class MIBIDataset(Dataset):
+    """
+    Dataset for working with real MIBI-ToF data
+    """
+    def __init__(self, y_path, data_dir="."):
+        self.y = pd.read_csv(y_path)
+        self.data_dir = data_dir
+
+    def __len__(self):
+        return len(self.y)
+
+    def __getitem__(self, ix):
+        _, i, w, h, yi = self.y.iloc[ix]
+        xi = np.load(self.data_dir / "train" / f"patch_{i}_{w}-{h}.npy")
+        xi = np.transpose(xi, (2, 0, 1))
+        return torch.Tensor(xi), torch.Tensor([yi])
