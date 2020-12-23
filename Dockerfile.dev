@@ -1,6 +1,0 @@
-FROM krisrs1128/learned_inference:latest
-WORKDIR /home/kris/
-RUN rm -rf *
-COPY . /home/kris/
-WORKDIR /home/kris/learning
-ENV HOME /home/kris
