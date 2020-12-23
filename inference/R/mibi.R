@@ -1,9 +1,9 @@
 
-#' @importFrom SingleCellExperiment colData
+#' @importFrom SummarizedExperiment colData
 #' @importFrom forcats fct_lump_n
 #' @importFrom stringr str_extract
 #' @export
-load_mibi <- function(data_dir, n_paths = NULL) {
+load_mibi <- function(data_dir, n_paths = NULL, n_lev=6) {
   exper <- get(load(file.path(data_dir, "mibiSCE.rda")))
   tiff_paths <- list.files(
     file.path(data_dir, "TNBC_shareCellData"),
@@ -19,14 +19,15 @@ load_mibi <- function(data_dir, n_paths = NULL) {
   colData(exper)$cell_type <- colData(exper)$tumor_group
   immune_ix <- colData(exper)$cell_type == "Immune"
   colData(exper)$cell_type[immune_ix] <- colData(exper)$immune_group[immune_ix]
-  colData(exper)$cell_type <- fct_lump_n(colData(exper)$cell_type, 10)
+  colData(exper)$cell_type <- fct_lump_n(colData(exper)$cell_type, n_lev)
 
   # subset to those samples with images
   tiff_paths <- tiff_paths[1:n_paths]
   sample_names <- str_extract(tiff_paths, "[0-9]+")
   list(
     tiffs = tiff_paths,
-    mibi = exper[, colData(exper)$SampleID %in% sample_names]
+    mibi = exper[, colData(exper)$SampleID %in% sample_names],
+    levels = table(colData(exper)$cell_type)
   )
 }
 
@@ -35,7 +36,7 @@ load_mibi <- function(data_dir, n_paths = NULL) {
 #' @importFrom purrr map2_dfr
 #' @importFrom tidyr unite
 #' @importFrom dplyr select pull
-#' @importFrom SingleCellExperiment colData
+#' @importFrom SummarizedExperiment colData
 #' @export
 spatial_subsample <- function(tiff_paths, exper, qsize=500) {
   ims <- list()
@@ -66,7 +67,7 @@ spatial_subsample <- function(tiff_paths, exper, qsize=500) {
 
 #' @importFrom dplyr select pull
 #' @importFrom tidyr unite
-#' @importFrom SingleCellExperiment colData
+#' @importFrom SummarizedExperiment colData
 #' @export
 subset_exper <- function(id, r, exper) {
   scell <- colData(exper) %>%
@@ -85,7 +86,7 @@ subset_exper <- function(id, r, exper) {
 }
 
 #' @importFrom dplyr filter pull
-#' @importFrom SingleCellExperiment colData
+#' @importFrom SummarizedExperiment colData
 unwrap_channels <- function(r, r_cells) {
   cell_types <- levels(r_cells$cell_type)
   r_mat <- array(0, dim = c(dim(r)[1:2], length(cell_types)))
@@ -102,11 +103,11 @@ unwrap_channels <- function(r, r_cells) {
 }
 
 #' @importFrom raster extent crop
-#' @importFrom SingleCellExperiment colData
-#' @importFrom SummarizedExperiment assay
-extract_patch <- function(r, w, h, r_cells, response, qsize = 128) {
+#' @importFrom SummarizedExperiment colData assay
+extract_patch <- function(r, w, h, r_cells, response, qsize = 256, fct = 4) {
   r <- crop(r, extent(w, w + qsize, h, h + qsize))
   cur_cells <- colData(exper)$cellLabelInImage %in% unique(as.vector(r))
+  r <- aggregate(r, fct)
   r <- unwrap_channels(r, r_cells)
 
   y <- mean(assay(exper)[response, cur_cells] > 0) # proportion of active cells
@@ -114,20 +115,22 @@ extract_patch <- function(r, w, h, r_cells, response, qsize = 128) {
 }
 
 #' @importFrom raster raster extent crop
-#' @importFrom SingleCellExperiment colData
+#' @importFrom SummarizedExperiment colData
 #' @importFrom reticulate import
 #' @importFrom stringr str_extract
-extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128,
+#' @export
+extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 256,
                             out_dir = ".") {
   np <- reticulate::import("numpy")
   im_ids <- str_extract(tiff_paths, "[0-9]+")
+  print(im_ids)
   y_path <- file.path(out_dir, "y.csv")
 
-  j <- 1
   for (i in seq_along(tiff_paths)) {
     print(i)
     r <- raster(tiff_paths[i])
-    ix_start <- seq(1, ncol(r), by = qsize)
+    ix_start <- seq(0, ncol(r) - qsize/2 - 1, by = qsize/2)
+    print(ix_start)
     r_cells <- subset_exper(im_ids[i], r, exper)
 
     for (w in seq_along(ix_start)) {
@@ -139,8 +142,6 @@ extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128,
         np$save(npy_path, patch$x)
         y <- data.frame(path = tiff_paths[i], i = i, w = w, h = h, y = patch$y)
         write.table(y, y_path, sep = ",", col.names = !file.exists(y_path), append = T)
-
-        j <- j + 1
       }
     }
   }
