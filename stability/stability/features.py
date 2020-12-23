@@ -56,10 +56,10 @@ def loader_activations(loader, prefixes, device):
 
 def vae_prefixes(model):
     return {
-        "layer_1": model.encoder[0],
+        #"layer_1": model.encoder[0],
         #"layer_2": model.encoder[:2], # remove to reduce space
         #"layer_3": model.encoder[:4],
-        "layer_4": model.encoder[:6],
+        #"layer_4": model.encoder[:6],
         "mu": nn.Sequential(model.encoder, model.fc1),
         "logvar": nn.Sequential(model.encoder, model.fc2)
     }
@@ -67,10 +67,10 @@ def vae_prefixes(model):
 
 def cbr_prefixes(model):
     return {
-        "layer_1": model.cnn_layers[:3],
+        #"layer_1": model.cnn_layers[:3],
         #"layer_2": model.cnn_layers[:7],
         #"layer_3": model.cnn_layers[:11],
-        "layer_4": model.cnn_layers[:15],
+        #"layer_4": model.cnn_layers[:15],
         "linear": model.cnn_layers
     }
 
