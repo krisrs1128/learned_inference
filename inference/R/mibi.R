@@ -1,4 +1,8 @@
 
+#' @importFrom SingleCellExperiment colData
+#' @importFrom forcats fct_lump_n
+#' @importFrom stringr str_extract
+#' @export
 load_mibi <- function(data_dir, n_paths = NULL) {
   exper <- get(load(file.path(data_dir, "mibiSCE.rda")))
   tiff_paths <- list.files(
@@ -15,7 +19,7 @@ load_mibi <- function(data_dir, n_paths = NULL) {
   colData(exper)$cell_type <- colData(exper)$tumor_group
   immune_ix <- colData(exper)$cell_type == "Immune"
   colData(exper)$cell_type[immune_ix] <- colData(exper)$immune_group[immune_ix]
-  colData(exper)$cell_type <- forcats::fct_lump_n(colData(exper)$cell_type, 10)
+  colData(exper)$cell_type <- fct_lump_n(colData(exper)$cell_type, 10)
 
   # subset to those samples with images
   tiff_paths <- tiff_paths[1:n_paths]
@@ -26,6 +30,13 @@ load_mibi <- function(data_dir, n_paths = NULL) {
   )
 }
 
+#' @importFrom stringr str_extract
+#' @importFrom raster crop raster
+#' @importFrom purrr map2_dfr
+#' @importFrom tidyr unite
+#' @importFrom dplyr select pull
+#' @importFrom SingleCellExperiment colData
+#' @export
 spatial_subsample <- function(tiff_paths, exper, qsize=500) {
   ims <- list()
   for (i in seq_along(tiff_paths)) {
@@ -45,7 +56,7 @@ spatial_subsample <- function(tiff_paths, exper, qsize=500) {
     as.data.frame() %>%
     dplyr::select(SampleID, cellLabelInImage) %>%
     unite(sample_by_cell, SampleID, cellLabelInImage) %>%
-    .[["sample_by_cell"]]
+    pull("sample_by_cell")
 
   list(
     ims = ims,
@@ -53,6 +64,10 @@ spatial_subsample <- function(tiff_paths, exper, qsize=500) {
   )
 }
 
+#' @importFrom dplyr select pull
+#' @importFrom tidyr unite
+#' @importFrom SingleCellExperiment colData
+#' @export
 subset_exper <- function(id, r, exper) {
   scell <- colData(exper) %>%
     as.data.frame() %>%
@@ -69,6 +84,8 @@ subset_exper <- function(id, r, exper) {
   exper[, scell %in% sample_by_cell$sample_by_cell]
 }
 
+#' @importFrom dplyr filter pull
+#' @importFrom SingleCellExperiment colData
 unwrap_channels <- function(r, r_cells) {
   cell_types <- levels(r_cells$cell_type)
   r_mat <- array(0, dim = c(dim(r)[1:2], length(cell_types)))
@@ -84,6 +101,9 @@ unwrap_channels <- function(r, r_cells) {
   r_mat
 }
 
+#' @importFrom raster extent crop
+#' @importFrom SingleCellExperiment colData
+#' @importFrom SummarizedExperiment assay
 extract_patch <- function(r, w, h, r_cells, response, qsize = 128) {
   r <- crop(r, extent(w, w + qsize, h, h + qsize))
   cur_cells <- colData(exper)$cellLabelInImage %in% unique(as.vector(r))
@@ -93,6 +113,10 @@ extract_patch <- function(r, w, h, r_cells, response, qsize = 128) {
   list(x = r, y = y)
 }
 
+#' @importFrom raster raster extent crop
+#' @importFrom SingleCellExperiment colData
+#' @importFrom reticulate import
+#' @importFrom stringr str_extract
 extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 128,
                             out_dir = ".") {
   np <- reticulate::import("numpy")
