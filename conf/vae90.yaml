@@ -9,7 +9,7 @@ train:
   checkpoint: null
   batch_size: 128
   lr: 0.0001
-  n_epochs: 30
+  n_epochs: 60
   save_every: 10
   save_subset: 2000
   z_dim: 64

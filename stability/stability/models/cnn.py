@@ -35,7 +35,7 @@ class CBRNet(nn.Module):
         if trunc_output:
             final_layer.append(nn.ReLU(inplace=TRUE))
 
-        self.linear_layers = nn.Sequential(**final_layer)
+        self.linear_layers = nn.Sequential(*final_layer)
 
     def forward_(self, x):
         x = self.cnn_layers(x)

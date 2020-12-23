@@ -62,7 +62,7 @@ metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, param
     abs_path = file.path(abs_path, rel_path),
     source = str_replace(abs_path, "(.+)(tar)(.+)", "\\1\\2")
   ) %>%
-  select(abs_path, source, model, bootstrap, epoch, layer)
+  dplyr::select(abs_path, source, model, bootstrap, epoch, layer)
 ```
 
 
