@@ -9,7 +9,6 @@ params:
 
 ```{r}
 library("dplyr")
-library("readr")
 library("stringr")
 library("inference")
 ```

@@ -13,3 +13,6 @@ RUN Rscript -e "install.packages('devtools', repos='http://cran.us.r-project.org
 RUN Rscript -e "install.packages('BiocManager', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "BiocManager::install('SingleCellExperiment')"
 RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference')"
+RUN apt-get install -y pandoc
+RUN Rscript -e "install.packages('rmarkdown', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('stringr', repos='http://cran.us.r-project.org')"
