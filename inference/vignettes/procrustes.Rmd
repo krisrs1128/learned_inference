@@ -30,7 +30,7 @@ paths <- c(
   file.path(data_dir, sprintf("%s.yaml_0.tar.gz", params$model_prefix)),
   file.path(data_dir, sprintf("%s.yaml_1.tar.gz", params$model_prefix)),
   file.path(data_dir, sprintf("%s.yaml_2.tar.gz", params$model_prefix)),
-  file.path(data_dir, sprintf("%s.yaml_3.tar.gz", params$model_prefix)),
+#  file.path(data_dir, sprintf("%s.yaml_3.tar.gz", params$model_prefix)),
   file.path(data_dir, sprintf("%s.yaml_4.tar.gz", params$model_prefix))
 )
 untar_all(paths, data_dir = data_dir)
@@ -76,7 +76,7 @@ acts_ <- metadata %>%
   .[["abs_path"]] %>%
   unique()
 acts <- map(acts_, ~ data.frame(np$load(.x)))
-subsets_ <- map(subsets, ~ rename(., c("ix" = "X1", "rel_path" = "path")))
+subsets_ <- map(subsets, ~ dplyr::rename(., c("ix" = "X1", "rel_path" = "path")))
 acts <- map2_dfr(subsets_, acts, cbind, .id = "source") %>%
   left_join(metadata %>% select(source, bootstrap) %>% unique())
 ```
