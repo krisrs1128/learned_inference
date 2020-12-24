@@ -25,7 +25,7 @@ exper <- raw_data$mibi
 ```{r, message = FALSE, echo = FALSE}
 bname <- tiff_paths[params$j] %>%
   basename() %>%
-  str_extract("[A-z]+")
+  str_extract("p[0-9]+")
 out_dir <- file.path(params$data_dir, "tiles")
 extract_patches(tiff_paths[params$j], exper, out_dir = out_dir, qsize = params$qsize, basename = bname)
 ```
