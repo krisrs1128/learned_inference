@@ -85,15 +85,17 @@ subset_exper <- function(id, r, exper) {
   exper[, scell %in% sample_by_cell$sample_by_cell]
 }
 
-#' @importFrom dplyr filter pull
+#' @import raster
+#' @importFrom dplyr filter pull %>%
 #' @importFrom SummarizedExperiment colData
+#' @export
 unwrap_channels <- function(r, r_cells) {
   cell_types <- levels(r_cells$cell_type)
   r_mat <- array(0, dim = c(dim(r)[1:2], length(cell_types)))
   for (i in seq_along(cell_types)) {
     cur_cells <- colData(r_cells) %>%
       as.data.frame() %>%
-      filter(cell_type == cell_types[i]) %>%
+      dplyr::filter(cell_type == cell_types[i]) %>%
       pull(cellLabelInImage) %>%
       unique()
 
@@ -107,22 +109,19 @@ unwrap_channels <- function(r, r_cells) {
 #' @importFrom raster extent crop
 #' @importFrom SummarizedExperiment colData assay
 #' @export
-extract_patch <- function(r, w, h, r_cells, response, qsize = 256, fct = 4) {
+extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4) {
   r <- crop(r, extent(w, w + qsize, h, h + qsize))
   r <- aggregate(r, fct, "modal")
-  r <- unwrap_channels(r, r_cells)
+  rm <- unwrap_channels(r, r_cells)
 
   tumor_status <- colData(r_cells) %>%
     as.data.frame() %>%
     filter(cellLabelInImage %in% unique(as.vector(r))) %>%
     pull(tumorYN)
   
-  if (length(tumor_status) > 0) {
-    y <- log(sum(tumor_status) / sum(1 - tumor_status), 2)
-  } else {
-    y <- 0
-  }
-  list(x = r, y = y)
+  # log ratio tumor vs. immune (with laplace smoothing)
+  y <- log((1 + sum(tumor_status)) / (1 + sum(1 - tumor_status)), 2)
+  list(x = rm, y = y)
 }
 
 #' @importFrom raster raster extent crop
@@ -130,8 +129,7 @@ extract_patch <- function(r, w, h, r_cells, response, qsize = 256, fct = 4) {
 #' @importFrom reticulate import
 #' @importFrom stringr str_extract
 #' @export
-extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 256,
-                            out_dir = ".", basename="patch") {
+extract_patches <- function(tiff_paths, exper, qsize = 256, out_dir = ".", basename="patch") {
   np <- reticulate::import("numpy")
   im_ids <- str_extract(tiff_paths, "[0-9]+")
   y_path <- file.path(out_dir, "y.csv")
@@ -140,13 +138,12 @@ extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 256,
     r <- raster(tiff_paths[i])
     ix_start <- seq(0, ncol(r) - qsize/2 - 1, by = qsize/2)
     r_cells <- subset_exper(im_ids[i], r, exper)
-    browser()
     wh_pairs <- expand.grid(ix_start, ix_start)
     
     for (j in seq_len(nrow(wh_pairs))) {
       w <- as.integer(wh_pairs[j, 1])
       h <- as.integer(wh_pairs[j, 2])
-      patch <- extract_patch(r, w, h, r_cells, response, qsize)
+      patch <- extract_patch(r, w, h, r_cells, qsize)
 
       # write results
       npy_path <- file.path(out_dir, sprintf("%s_%s-%s.npy", basename, w, h))

@@ -4,14 +4,13 @@ output: html_notebook
 params:
   qsize: 256
   data_dir: "/Users/kris/Desktop/data"
-  j: 18
+  j: 38
 ---
 
 ```{r}
 library("dplyr")
 library("readr")
-library("ggplot2")
-library("reshape2")
+library("stringr")
 library("inference")
 ```
 
@@ -21,15 +20,12 @@ tiff_paths <- raw_data$tiffs
 exper <- raw_data$mibi
 ```
 
-> Interestingly, we found that expression of immunoregulatory proteins by distinct cellular subtypes correlates with the spatial architecture of the tissue as mixed and compartmentalized (Figures 3B and 3C). Predominance of PD1 expression by either CD4+ or CD8+ T cells correlates with compartmentalized or mixed TNBC, respectively (Wilcoxon Rank Sum test p = 0.022, Figures 5A–5C, STAR Methods). This relationship was not driven by the ratio of total CD8+ and CD4+ T cells in compartmentalized and mixed tumors (Figures S6I and S6J), nor was it affected by ranging the threshold used to include patients in the analysis between 10 and 100 positive cells (Figures S7A–S7C).
+> Interestingly, we found that expression of immunoregulatory proteins by distinct cellular subtypes correlates with the spatial architecture of the tissue as mixed and compartmentalized (Figures 3B and 3C). Predominance of PD1 expression by either CD4+ or CD8+ T cells correlate with compartmentalized or mixed TNBC, respectively (Wilcoxon Rank Sum test p = 0.022, Figures 5A–5C, STAR Methods). This relationship was not driven by the ratio of total CD8+ and CD4+ T cells in compartmentalized and mixed tumors (Figures S6I and S6J), nor was it affected by ranging the threshold used to include patients in the analysis between 10 and 100 positive cells (Figures S7A–S7C).
 
 ```{r, message = FALSE, echo = FALSE}
-library("forcats")
-library("tidyr")
-library("stringr")
-library("raster")
-library("SummarizedExperiment")
-source("../R/mibi.R")
-extract_patches(tiff_paths[params$j], exper, response = "PD1", out_dir = file.path(params$data_dir, "tiles"), qsize = params$qsize, basename = sprintf("patch_%s", params$j))
-y_data <- read_csv(file.path(params$data_dir, "tiles", "y.csv"))
+bname <- tiff_paths[params$j] %>%
+  basename() %>%
+  str_extract("[A-z]+")
+out_dir <- file.path(params$data_dir, "tiles")
+extract_patches(tiff_paths[params$j], exper, out_dir = out_dir, qsize = params$qsize, basename = bname)
 ```
