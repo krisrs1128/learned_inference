@@ -4,7 +4,7 @@ output: html_notebook
 params:
   qsize: 256
   data_dir: "/Users/kris/Desktop/data"
-  j: 1
+  j: 18
 ---
 
 ```{r}

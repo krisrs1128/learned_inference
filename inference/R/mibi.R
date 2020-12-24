@@ -109,12 +109,19 @@ unwrap_channels <- function(r, r_cells) {
 #' @export
 extract_patch <- function(r, w, h, r_cells, response, qsize = 256, fct = 4) {
   r <- crop(r, extent(w, w + qsize, h, h + qsize))
-  r <- aggregate(r, fct)
+  r <- aggregate(r, fct, "modal")
   r <- unwrap_channels(r, r_cells)
 
-  cur_cells <- colData(r_cells)$cellLabelInImage %in% unique(as.vector(r))
-  browser()
-  y <- mean(assay(r_cells)[response, cur_cells] > 0) # proportion of active cells
+  tumor_status <- colData(r_cells) %>%
+    as.data.frame() %>%
+    filter(cellLabelInImage %in% unique(as.vector(r))) %>%
+    pull(tumorYN)
+  
+  if (length(tumor_status) > 0) {
+    y <- log(sum(tumor_status) / sum(1 - tumor_status), 2)
+  } else {
+    y <- 0
+  }
   list(x = r, y = y)
 }
 
@@ -133,6 +140,7 @@ extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 256,
     r <- raster(tiff_paths[i])
     ix_start <- seq(0, ncol(r) - qsize/2 - 1, by = qsize/2)
     r_cells <- subset_exper(im_ids[i], r, exper)
+    browser()
     wh_pairs <- expand.grid(ix_start, ix_start)
     
     for (j in seq_len(nrow(wh_pairs))) {
