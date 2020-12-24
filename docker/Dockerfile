@@ -8,7 +8,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD5
 RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
 RUN apt-get install -y r-base
 RUN apt-get install -y libgdal-dev gdal-bin
-RUN Rscript -e "install.packages('sf', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('rgdal', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('devtools', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('BiocManager', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "BiocManager::install('SingleCellExperiment')"
@@ -16,3 +16,10 @@ RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference
 RUN apt-get install -y pandoc
 RUN Rscript -e "install.packages('rmarkdown', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('stringr', repos='http://cran.us.r-project.org')"
+
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get update
+RUN apt-get install -y python3.8 python3-pip
+RUN pip3 install numpy
+
+ 
