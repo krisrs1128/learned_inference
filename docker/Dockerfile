@@ -9,7 +9,6 @@ RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-c
 RUN apt-get install -y r-base
 RUN apt-get install -y libgdal-dev gdal-bin
 RUN Rscript -e "install.packages('sf', repos='http://cran.us.r-project.org')"
-RUN Rscript -e "install.packages('forcats', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('devtools', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('BiocManager', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "BiocManager::install('SingleCellExperiment')"

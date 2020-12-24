@@ -97,20 +97,24 @@ unwrap_channels <- function(r, r_cells) {
       pull(cellLabelInImage) %>%
       unique()
 
-    r_mat[,, i] <- 1 * as.matrix(r %in% cur_cells)
+    if (length(cur_cells) > 0) {
+      r_mat[,, i] <- 1 * as.matrix(r %in% cur_cells)
+    }
   }
   r_mat
 }
 
 #' @importFrom raster extent crop
 #' @importFrom SummarizedExperiment colData assay
+#' @export
 extract_patch <- function(r, w, h, r_cells, response, qsize = 256, fct = 4) {
   r <- crop(r, extent(w, w + qsize, h, h + qsize))
-  cur_cells <- colData(exper)$cellLabelInImage %in% unique(as.vector(r))
   r <- aggregate(r, fct)
   r <- unwrap_channels(r, r_cells)
 
-  y <- mean(assay(exper)[response, cur_cells] > 0) # proportion of active cells
+  cur_cells <- colData(r_cells)$cellLabelInImage %in% unique(as.vector(r))
+  browser()
+  y <- mean(assay(r_cells)[response, cur_cells] > 0) # proportion of active cells
   list(x = r, y = y)
 }
 
@@ -120,30 +124,27 @@ extract_patch <- function(r, w, h, r_cells, response, qsize = 256, fct = 4) {
 #' @importFrom stringr str_extract
 #' @export
 extract_patches <- function(tiff_paths, exper, response = "PD1", qsize = 256,
-                            out_dir = ".") {
+                            out_dir = ".", basename="patch") {
   np <- reticulate::import("numpy")
   im_ids <- str_extract(tiff_paths, "[0-9]+")
-  print(im_ids)
   y_path <- file.path(out_dir, "y.csv")
 
   for (i in seq_along(tiff_paths)) {
-    print(i)
     r <- raster(tiff_paths[i])
     ix_start <- seq(0, ncol(r) - qsize/2 - 1, by = qsize/2)
-    print(ix_start)
     r_cells <- subset_exper(im_ids[i], r, exper)
+    wh_pairs <- expand.grid(ix_start, ix_start)
+    
+    for (j in seq_len(nrow(wh_pairs))) {
+      w <- as.integer(wh_pairs[j, 1])
+      h <- as.integer(wh_pairs[j, 2])
+      patch <- extract_patch(r, w, h, r_cells, response, qsize)
 
-    for (w in seq_along(ix_start)) {
-      for (h in seq_along(ix_start)) {
-        patch <- extract_patch(r, ix_start[w], ix_start[h], r_cells, response, qsize)
-
-        # write results
-        npy_path <- file.path(out_dir, sprintf("patch_%s_%s-%s.npy", i, w, h))
-        np$save(npy_path, patch$x)
-        y <- data.frame(path = tiff_paths[i], i = i, w = w, h = h, y = patch$y)
-        write.table(y, y_path, sep = ",", col.names = !file.exists(y_path), append = T)
-      }
+      # write results
+      npy_path <- file.path(out_dir, sprintf("%s_%s-%s.npy", basename, w, h))
+      np$save(npy_path, patch$x)
+      y <- data.frame(path = tiff_paths[i], i = basename, w = w, h = h, y = patch$y)
+      write.table(y, y_path, sep = ",", col.names = !file.exists(y_path), append = T)
     }
   }
-
 }

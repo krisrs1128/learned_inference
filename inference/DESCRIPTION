@@ -15,7 +15,11 @@ LazyData: true
 Imports:
   MASS,
   dplyr,
+  forcats,
+  glmnet,
   raster,
+  reshape2,
+  reticulate,
   sf
 Suggests:
   ggplot2,
