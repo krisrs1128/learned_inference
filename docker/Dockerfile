@@ -20,6 +20,8 @@ RUN Rscript -e "install.packages('stringr', repos='http://cran.us.r-project.org'
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get update
 RUN apt-get install -y python3.8 python3-pip
-RUN pip3 install numpy
+RUN pip3 install numpy jupyterlab
 
- 
+RUN apt-get install -y git
+RUN git clone https://github.com/krisrs1128/learned_inference.git
+RUN pip3 install learned_inference/stability
