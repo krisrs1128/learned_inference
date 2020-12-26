@@ -39,7 +39,7 @@ os.makedirs(features_dir, exist_ok=True)
 # Setup model
 print(opts.train)
 if opts.train.model == "cnn":
-    model = CBRNet()
+    model = CBRNet(p_in=opts.train.p_in)
     loss_fn = cnn_loss
 elif opts.train.model == "vae":
     model = VAE(z_dim=opts.train.z_dim)

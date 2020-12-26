@@ -2,16 +2,16 @@ organization: # all relative to $DATA_DIR
   features_dir: "tnbc/features/"
   model: "tnbc/model_best.pt"
   xy: "tnbc/split.csv"
+  splits: "tnbc/split.csv"
   metadata: "tnbc/layers.csv"
 train:
-  model: "cnn"
-  checkpoint: null
   batch_size: 128
+  checkpoint: null
   lr: 0.00005
+  model: "cnn"
   n_epochs: 30
+  p_in: 7
   save_every: 10
   save_subset: 2000
 bootstrap:
-  path: "bootstraps_0.9-train.csv"
-  index: null
-  B: 20
+  path: "tnbc/bootstraps.csv"
