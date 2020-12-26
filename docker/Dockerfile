@@ -19,7 +19,7 @@ RUN Rscript -e "install.packages('stringr', repos='http://cran.us.r-project.org'
 RUN Rscript -e "install.packages('ggplot2', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('yaml', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('purrr', repos='http://cran.us.r-project.org')"
-RUN Rscript -e "install.packages('epca', repos='http://cran.us.r-project.org')"
+RUN apt-get install -y libx11-dev 
 RUN Rscript -e "devtools::install_github('fchen365/epca')"
 
 RUN add-apt-repository ppa:deadsnakes/ppa
