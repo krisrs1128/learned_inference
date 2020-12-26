@@ -16,6 +16,11 @@ RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference
 RUN apt-get install -y pandoc
 RUN Rscript -e "install.packages('rmarkdown', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('stringr', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('ggplot2', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('yaml', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('purrr', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('epca', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "devtools::install_github('fchen365/epca')"
 
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get update
