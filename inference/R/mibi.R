@@ -6,8 +6,9 @@
 load_mibi <- function(data_dir, n_paths = NULL, n_lev=6) {
   exper <- get(load(file.path(data_dir, "mibiSCE.rda")))
   tiff_paths <- list.files(
-    file.path(data_dir, "TNBC_shareCellData"),
+    file.path(data_dir),
     "*.tiff",
+    recursive = T,
     full.names = T
   )
 
@@ -114,13 +115,15 @@ extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4) {
   r <- aggregate(r, fct, "modal")
   rm <- unwrap_channels(r, r_cells)
 
-  tumor_status <- colData(r_cells) %>%
-    as.data.frame() %>%
+  immune_type <- colData(r_cells) %>% 
+    as.data.frame() %>% 
     filter(cellLabelInImage %in% unique(as.vector(r))) %>%
-    pull(tumorYN)
+    pull("immune_group") %>%
+    factor(levels = c("CD4", "CD8")) %>%
+    table()
 
   # log ratio tumor vs. immune (with laplace smoothing)
-  y <- log((1 + sum(tumor_status)) / (1 + sum(1 - tumor_status)), 2)
+  y <- log((1 + immune_type["CD8"])/(1 + immune_type["CD4"]), 2)
   list(x = rm, y = y)
 }
 

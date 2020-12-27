@@ -3,8 +3,8 @@ title: "R Notebook"
 output: html_notebook
 params:
   qsize: 256
-  data_dir: "/Users/kris/Desktop/data"
-  j: 38
+  data_dir: "/Users/kris/Documents/stability_data/tnbc"
+  j: 1
 ---
 
 ```{r}
@@ -19,7 +19,7 @@ tiff_paths <- raw_data$tiffs
 exper <- raw_data$mibi
 ```
 
-> Interestingly, we found that expression of immunoregulatory proteins by distinct cellular subtypes correlates with the spatial architecture of the tissue as mixed and compartmentalized (Figures 3B and 3C). Predominance of PD1 expression by either CD4+ or CD8+ T cells correlate with compartmentalized or mixed TNBC, respectively (Wilcoxon Rank Sum test p = 0.022, Figures 5A–5C, STAR Methods). This relationship was not driven by the ratio of total CD8+ and CD4+ T cells in compartmentalized and mixed tumors (Figures S6I and S6J), nor was it affected by ranging the threshold used to include patients in the analysis between 10 and 100 positive cells (Figures S7A–S7C).
+> While we generally observed similar enrichments across patients (e.g., enrichment of PD-1 expression on T cells), we identified several pronounced differences between patients in the cell types expressing different regulatory proteins (Figures S6G and S6H). We found that some patients have predominantly PD1+ CD4+ T cells, whereas others have predominantly PD1+ CD8+ T cells. For example, patient 35 has 368 PD1+ immune cells. Of these, 68% are CD4+ and 8% are CD8+ . Similarly, patient 14 has 390 PD1+ cells. However, of these, 7% are CD4+ and 78% are CD8+ (Figure 5A).
 
 ```{r, message = FALSE, echo = FALSE}
 bname <- tiff_paths[params$j] %>%
