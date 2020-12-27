@@ -110,7 +110,7 @@ unwrap_channels <- function(r, r_cells) {
 #' @importFrom raster extent crop
 #' @importFrom SummarizedExperiment colData assay
 #' @export
-extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4) {
+extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4, alpha = 5) {
   r <- crop(r, extent(w, w + qsize, h, h + qsize))
   r <- aggregate(r, fct, "modal")
   rm <- unwrap_channels(r, r_cells)
@@ -123,7 +123,7 @@ extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4) {
     table()
 
   # log ratio tumor vs. immune (with laplace smoothing)
-  y <- log((1 + immune_type["CD8"])/(1 + immune_type["CD4"]), 2)
+  y <- log((alpha + immune_type["CD8"])/(alpha + immune_type["CD4"]), 2)
   list(x = rm, y = y)
 }
 

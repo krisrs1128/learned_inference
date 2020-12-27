@@ -26,7 +26,6 @@ RUN Rscript -e "install.packages('stringr', repos='http://cran.us.r-project.org'
 RUN Rscript -e "install.packages('yaml', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('BiocManager', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "BiocManager::install('SingleCellExperiment')"
-RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference')"
 RUN Rscript -e "devtools::install_github('fchen365/epca')"
 
 # installing python
@@ -35,7 +34,8 @@ RUN apt-get update
 RUN apt-get install -y python3.8 python3-pip
 RUN pip3 install numpy jupyterlab
 
-# our stability package
+# our own packages (at end, so can recompile easily)
 RUN apt-get install -y git
 RUN git clone https://github.com/krisrs1128/learned_inference.git
 RUN pip3 install learned_inference/stability
+RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference')"

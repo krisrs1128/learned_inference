@@ -2,10 +2,13 @@
 title: "Procrustes and Varimax Alignment"
 output: html_notebook
 params:
-  model_prefix: "vae90"
+  data_dir: "/Users/kris/Documents/stability_outputs/"
   layer: "mu"
+  model_prefix: "vae90"
   ncomp: 10
+  python_path: "/usr/bin/python3"
   sca: TRUE
+  save_dir: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures"
 ---
 
 ```{r libraries}
@@ -25,14 +28,8 @@ First we read in all the relevant data.
 
 ```{r read_meta}
 # unzip raw experimental output
-data_dir <- "/Users/kris/Documents/stability_outputs/"
-paths <- c(
-  file.path(data_dir, sprintf("%s.yaml_0.tar.gz", params$model_prefix)),
-  file.path(data_dir, sprintf("%s.yaml_1.tar.gz", params$model_prefix)),
-  file.path(data_dir, sprintf("%s.yaml_2.tar.gz", params$model_prefix)),
-#  file.path(data_dir, sprintf("%s.yaml_3.tar.gz", params$model_prefix)),
-  file.path(data_dir, sprintf("%s.yaml_4.tar.gz", params$model_prefix))
-)
+data_dir <- params$data_dir
+paths <- list.files(data_dir, sprintf("%s*tar.gz", params$model_prefix), full.names = TRUE)
 untar_all(paths, data_dir = data_dir)
 
 # read in response data and input image paths
@@ -70,6 +67,7 @@ Now, we'll read in the actual activations associated with each of the numpy
 arrays referenced in the metadata file.
 
 ```{r read_acts}
+use_python(params$python_path)
 np <- import("numpy")
 acts_ <- metadata %>%
   filter(epoch == "best", layer == params$layer) %>%
@@ -86,7 +84,10 @@ macts <- acts %>%
   melt(id.vars = "rel_path")
 ggplot(macts) +
   geom_histogram(aes(x = value), bins = 200)
-ggsave(sprintf("%s_activation_histogram.png", params$model_prefix))
+
+save_dir <- file.path(params$save_dir, model_prefix)
+dir.create(save_dir, recursive = TRUE)
+ggsave(file.path(save_dir, "activation_histogram.png"))
 ```
 
 First, we'll get the projected scores, using MultiCCA.
@@ -98,7 +99,7 @@ acts_splits <- acts %>%
 x_list <- acts_splits %>%
   map(~ .x %>% select(starts_with("X")) %>% as.matrix())
 
-png(sprintf("%s_svd_eigs.png", params$model_prefix))
+png(file.path(save_dir, "svd_eigs.png"))
 plot(svd(x_list[[1]])$d)
 dev.off()
 
@@ -176,7 +177,9 @@ ggplot(edge_data %>% filter(rel_path %in% edge_data$rel_path[1:100])) +
   facet_grid(. ~ split) +
   scale_color_viridis_c() +
   theme(legend.position = "bottom")
-ggsave(sprintf("embeddings_%s_%s.png", params$model_prefix, params$sca))
+
+sca_label <- ifelse(params$sca, "sca", "svd")
+ggsave(file.path(save_dir, sprintf("embeddings_%s.png", is_sca)))
 ```
 ```{r}
 edge_dists <- edge_data %>%
@@ -186,7 +189,7 @@ edge_dists <- edge_data %>%
 ggplot(edge_dists) +
   geom_histogram(aes(x = log(D), fill = split), bins = 50) +
   facet_wrap(~split, scale = "free_y")
-write_csv(edge_dists, file.path(data_dir, sprintf("edge_dists_%s_%s.csv", params$model_prefix, params$sca)))
+write_csv(edge_dists, file.path(save_dir, sprintf("edge_dists_%s.csv", params$model_prefix, sca_label)))
 ```
 
 ```{r stability_baseline}
@@ -198,7 +201,7 @@ for (b in seq_along(xy)) {
   fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
   y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
   plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
-  png(sprintf("y_vs_y_hat-%s-%s-%s.png", params$model_prefix, names(xy)[b], params$sca))
+  png(file.path(save_dir, sprintf("y_vs_y_hat-%s-%s.png", names(xy)[b], save_label)))
   plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]], col = rgb(0, 0, 0, 0.6), cex = 0.5, main = names(xy)[b])
   abline(a = 0, b = 1, col = "red")
   dev.off()
@@ -228,7 +231,7 @@ ggplot(pi_hat %>% filter(j < 17)) +
   scale_x_continuous(trans = ggforce::trans_reverser('log10')) +
   facet_wrap(~ j, ncol = 6) +
   theme(legend.position = "bottom")
-ggsave(sprintf("selection_paths_%s_%s.png", params$model_prefix, params$sca))
+ggsave(file.path(save_dir, sprintf("selection_paths_%s.png", sca_label)))
 ```
 What is the average correlation between selected features and the underlying
 generative process?
@@ -279,7 +282,7 @@ for (i in seq_along(scores_mat)) {
 cca_data <- bind_rows(cca_data)
 ggplot(cca_data) +
   geom_point(aes(x = k, y = rho, col = split))
-write_csv(cca_data, file.path(data_dir, sprintf("cca_data_%s_%s.csv", params$model_prefix, params$sca)))
+write_csv(cca_data, file.path(save_dir, sprintf("cca_data_%s.csv", sca_label)))
 ```
 
 ```{r, correlation_diagram, fig.width = 8, fig.height = 5}
@@ -297,13 +300,13 @@ ggplot(mcor) +
     axis.text.x = element_text(angle = 90, size = 8),
     legend.position = "bottom"
   )
-ggsave(sprintf("%s_%s_correlation_diagram.png", params$model_prefix, params$sca))
+ggsave(file.path(save_dir, sprintf("correlation_diagram_%s.png", sca_label)))
 ```
 ```{r correlation_heatmap}
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
-png(sprintf("%s_%s_correlation_heatmap.png", params$model_prefix, params$sca))
+png(file.path(save_dir, sprintf("correlation_heatmap_%s.png", sca_label)))
 heatmap(cor(scores_mat), asp = 1)
 dev.off()
 ```
@@ -331,7 +334,7 @@ selections <- bind_rows(selections) %>%
 selections$model <- str_extract(params$model_prefix, "[A-z]+")
 selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
 selections$sca <- params$sca
-write_csv(selections, file.path(data_dir, sprintf("selections_%s_%s.csv", params$model_prefix, params$sca)))
+write_csv(selections, file.path(save_dir, sprintf("selections_%s.csv", sca_label)))
 ```
 ```{r remove_unzipped}
 paths0 <- gsub(".gz", "", paths)
