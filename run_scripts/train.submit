@@ -1,11 +1,11 @@
 condor_submit <<EOF
 #!/bin/bash
-universe = vanilla
+universe = docker
+docker_image = krisrs1128/li:122702
 log = /home/ksankaran/logs/job_\$(Cluster).log
 error = /home/ksankaran/logs/job_\$(Cluster)_\$(Process).err
 output = /home/ksankaran/logs/job_\$(Cluster)_\$(Process).out
-input = /staging/ksankaran/stability_data.tar.gz
-transfer_input_files = http://proxy.chtc.wisc.edu/SQUID/chtc/python38.tar.gz,/home/ksankaran/packages/li-packages.tar.gz
+input = stability_data.tar.gz
 executable = train.sh
 arguments = "\$(Process) \$(Cluster) ${1}"
 request_gpus = 1

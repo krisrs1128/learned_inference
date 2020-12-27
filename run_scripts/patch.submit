@@ -2,9 +2,9 @@
 
 universe = docker
 docker_image = krisrs1128/li:122702
-log = interactive.log
-error = interactive.err
-output = interactive.output
+log = /home/ksankaran/logs/patch_\$(Cluster).log
+error = /home/ksankaran/logs/patch_\$(Cluster).err
+output = /home/ksankaran/logs/patch_\$(Cluster).out
 arguments = $(Process)
 transfer_input_files = stability_data.tar.gz
 transfer_output_files = tiles_$(Process).tar.gz

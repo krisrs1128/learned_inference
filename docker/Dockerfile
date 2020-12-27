@@ -2,6 +2,7 @@ FROM ubuntu:20.04
 
 RUN apt-get update
 RUN apt-get install -y software-properties-common
+RUN apt-get install -y vim
 
 # installing R
 RUN apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
@@ -37,5 +38,5 @@ RUN pip3 install numpy jupyterlab
 # our own packages (at end, so can recompile easily)
 RUN apt-get install -y git
 RUN git clone https://github.com/krisrs1128/learned_inference.git
-RUN pip3 install learned_inference/stability
 RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference')"
+RUN pip3 install learned_inference/stability
