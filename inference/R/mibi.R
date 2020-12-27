@@ -118,7 +118,7 @@ extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4) {
     as.data.frame() %>%
     filter(cellLabelInImage %in% unique(as.vector(r))) %>%
     pull(tumorYN)
-  
+
   # log ratio tumor vs. immune (with laplace smoothing)
   y <- log((1 + sum(tumor_status)) / (1 + sum(1 - tumor_status)), 2)
   list(x = rm, y = y)
@@ -139,7 +139,7 @@ extract_patches <- function(tiff_paths, exper, qsize = 256, out_dir = ".", basen
     ix_start <- seq(0, ncol(r) - qsize/2 - 1, by = qsize/2)
     r_cells <- subset_exper(im_ids[i], r, exper)
     wh_pairs <- expand.grid(ix_start, ix_start)
-    
+
     for (j in seq_len(nrow(wh_pairs))) {
       w <- as.integer(wh_pairs[j, 1])
       h <- as.integer(wh_pairs[j, 2])
