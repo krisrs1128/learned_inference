@@ -6,7 +6,7 @@ log = interactive.log
 error = interactive.err
 output = interactive.output
 arguments = $(Process)
-transfer_input_files = tnbc.tar.gz,learned_inference.tar.gz
+transfer_input_files = stability_data.tar.gz
 transfer_output_files = tiles_$(Process).tar.gz
 executable = patch.sh
 requirements = (OpSysMajorVer =?= 7)
