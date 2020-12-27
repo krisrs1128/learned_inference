@@ -10,7 +10,7 @@ export TRAIN_YAML=${3}
 # trainig model
 cd learned_inference/notebooks/
 jupyter nbconvert --to=python model_training.ipynb
-python3 -m model_training.py
+python3 -m model_training
 
 # saving results
 cd $_CONDOR_SCRATCH_DIR/
