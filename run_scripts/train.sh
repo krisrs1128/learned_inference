@@ -13,6 +13,6 @@ python3 -m model_training
 # saving results
 cd $_CONDOR_SCRATCH_DIR/
 rm -rf $DATA_DIR/tiles/
-export OUTNAME=$(basename ${3})_${1}.tar.gz
+export OUTNAME=$(basename ${TRAIN_YAML})_${BOOTSTRAP}.tar.gz
 tar -zcvf ${OUTNAME} -C $DATA_DIR/ .
-mv ${OUTNAME} /staging/ksankaran/
+
