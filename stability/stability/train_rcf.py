@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+import sklearn.linear_model as lm
+import torch
 
 def train_rcf(model, loader, opts, out_paths, writer):
     D, y = random_features(model, loader)
@@ -10,8 +13,7 @@ def random_features(model, loader, device=None):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    D = []
-    y = []
+    D, y = [], []
     for x, _ in loader:
         x = x.to(device)
         with torch.no_grad():
