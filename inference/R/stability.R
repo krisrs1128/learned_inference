@@ -4,10 +4,10 @@ subset_matrices <- function(rdata, cols = as.character(1:40)) {
   X <- rdata %>%
     select(cols) %>%
     as.matrix()
-  
+
   y <- rdata %>%
     .[["y"]]
-    
+
   list(X = X, y = y)
 }
 
@@ -60,24 +60,77 @@ read_npys <- function(paths, data_dir = ".") {
 procrustes <- function(x_list, tol = 1e-3) {
   x_align <- array(dim = c(dim(x_list[[1]]), length(x_list)))
   M <- x_list[[1]]
-  
+
   while (TRUE) {
-    # solve each problem 
+    # solve each problem
     for (i in seq_along(x_list)) {
       svd_i <- svd(t(x_list[[i]]) %*% M)
       beta <- sum(svd_i$d) / sum(x_list[[i]] ^ 2)
       x_align[,, i] <- beta * x_list[[i]] %*% svd_i$u %*% t(svd_i$v)
     }
-    
+
     # new procrustes mean
     M_old <- M
     M <- apply(x_align, c(1, 2), mean)
     coord_change <- mean(abs(M - M_old))
-    
+
     print(coord_change)
     if (coord_change < tol) break
   }
-  
+
   list(x_align = x_align, M = M)
 }
 
+#' Plot a Grid of Images
+#'
+#' @examples
+#' paths <- list.files("~/Documents/stability_data/tiles/", full = TRUE)
+#' coordinates <- matrix(rnorm(2 * length(paths)), length(paths), 2)
+#' coordinates <- data.frame(coordinates)
+#' colnames(coordinates) <- c("x", "y")
+#' image_grid(coordinates, paths)
+#'
+#' @importFrom pdist pdist
+#' @importFrom reticulate import
+#' @importFrom ggplot2 ggplot geom_point aes coord_fixed theme_bw
+#'   annotate_raster %+%
+#' @export
+image_grid <- function(coordinates, paths, density = 15, min_dist=0.1) {
+  np <- import("numpy")
+  p <- ggplot() +
+    geom_point(
+      data = coordinates,
+      aes(x = x, y = y),
+      alpha = 0.2,
+      size = 0.7
+    ) +
+    coord_fixed() +
+    theme_bw()
+
+  # get distances between anchor points and scores
+  x_range <- c(min(coordinates$x), max(coordinates$x))
+  y_range <- c(min(coordinates$y), max(coordinates$y))
+  x_grid <- seq(x_range[1], x_range[2], length.out = density)
+  y_grid <- seq(y_range[1], y_range[2], length.out = density)
+  xy_grid <- expand.grid(x_grid, y_grid)
+  dists <- as.matrix(pdist(xy_grid, as.matrix(coordinates)))
+
+  # overlay the closest points
+  for (i in seq_len(nrow(dists))) {
+    min_ix <- which.min(dists[i, ])
+    if (dists[i, min_ix] > min_dist) next
+
+    im <- np$load(paths[min_ix])
+    print("passing")
+    p <- p +
+      annotation_raster(
+        as.raster(im),
+        xy_grid[i, 1] - 0.2,
+        xy_grid[i, 1] + 0.2,
+        xy_grid[i, 2] - 0.2,
+        xy_grid[i, 2] + 0.2
+      )
+  }
+
+  p
+}

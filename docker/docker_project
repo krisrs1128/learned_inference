@@ -6,6 +6,9 @@ RUN Rscript -e "BiocManager::install('SingleCellExperiment')"
 RUN Rscript -e "devtools::install_github('fchen365/epca')"
 RUN Rscript -e "install.packages('stars', repos='http://cran.us.r-project.org')"
 RUN Rscript -e "install.packages('yaml', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('parallel', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('doParallel', repos='http://cran.us.r-project.org')"
+RUN Rscript -e "install.packages('foreach', repos='http://cran.us.r-project.org')"
 
 # our own packages (at end, so can recompile easily)
 RUN git clone https://github.com/krisrs1128/learned_inference.git
