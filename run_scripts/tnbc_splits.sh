@@ -9,4 +9,5 @@ source learned_inference/.env
 cd learned_inference/notebooks/
 jupyter nbconvert --to=python tnbc_splits.ipynb
 python3 -m tnbc_splits
+cd $_CONDOR_SCRATCH_DIR
 tar -zcvf stability_data.tar.gz stability_data
