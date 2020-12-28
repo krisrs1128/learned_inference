@@ -1,5 +1,3 @@
-# testing R package extraction
-
 universe = docker
 docker_image = krisrs1128/li:122801
 log = /home/ksankaran/logs/patch_\$(Cluster).log

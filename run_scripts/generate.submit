@@ -1,0 +1,11 @@
+universe = docker
+docker_image = krisrs1128/li:122801
+log = /home/ksankaran/logs/generate.log
+error = /home/ksankaran/logs/generate.err
+output = /home/ksankaran/logs/generate.out
+executable = generate.sh
+request_cpus = 1
+request_memory = 2GB
+request_disk = 1GB
+
+queue 1

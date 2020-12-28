@@ -5,6 +5,44 @@ packages, defined at the top of this repository.
 
 ## Simulation
 
+First, we simulate underlying features and their associated images. This is the
+content of the `generate.Rmd` vignette,
+
+```
+Rscript -e "rmarkdown::render('learned_inference/inference/vignettes/generate.Rmd')"
+```
+
+which creates a `tiles` directory wherever you ran the script from. The script
+tries to parallelize across as many cores are accessible -- the more you can
+include, the faster it will run.
+
+Next, we assign randomly assign each patch to either a train, dev, or test
+split. The dev split is used to tune hyperparameters of the network.
+
+```
+source learned_inference/.env
+cd learned_inference/notebooks
+jupyter nbconvert --to=python save_splits.ipynb
+python3 -m save_splits
+```
+
+These data are now in a form that can be used for training,
+
+```
+export TRAIN_YAML = conf/cnn50.yaml # or whichever model you want it to be
+export BOOTSTRAP = 0 # can change for different bootstraps
+
+jupyter nbconvert --to=python model_training.ipynb
+python3 -m model_training
+```
+
+If you want to look at the logs of model training, you can log in the `logs`
+directory associated with the saved models. The tensorboard data can be loaded
+like this,
+
+```
+tensorboard --logdir=cnn50/logs/
+```
 
 ## Data Analysis
 
