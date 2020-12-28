@@ -29,14 +29,14 @@ First we read in all the relevant data.
 ```{r read_meta}
 # unzip raw experimental output
 data_dir <- params$data_dir
-paths <- list.files(data_dir, sprintf("%s*tar.gz", params$model_prefix), full.names = TRUE)
+paths <- list.files(data_dir, sprintf("%s.+tar.gz", params$model_prefix), full.names = TRUE)
 untar_all(paths, data_dir = data_dir)
 
 # read in response data and input image paths
 output_dirs <- map(paths, ~ file.path(data_dir, tools::file_path_sans_ext(basename(.x))))
 Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
-metadata <- map(output_dirs, ~ read_csv(file.path(.x, params$model_prefix, "metadata.csv")))
-subsets <- map(output_dirs, ~ read_csv(file.path(.x, params$model_prefix, "features", "subset.csv")))
+metadata <- map(output_dirs, ~ read_csv(file.path(.x, "layers.csv")))
+subsets <- map(output_dirs, ~ read_csv(file.path(.x, "features", "subset.csv")))
 names(subsets) <- output_dirs
 ```
 Next, let's identify the paths to all the activation numpy files. This involves
@@ -46,7 +46,7 @@ Next, let's identify the paths to all the activation numpy files. This involves
 * giving absolute and relative paths to the data
 
 ```{r parse_metadata}
-metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, params$model_prefix, "metadata.csv")))) %>%
+metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "metadata.csv")))) %>%
   map_dfr(~ .x %>% 
       mutate(
         model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
@@ -85,7 +85,7 @@ macts <- acts %>%
 ggplot(macts) +
   geom_histogram(aes(x = value), bins = 200)
 
-save_dir <- file.path(params$save_dir, model_prefix)
+save_dir <- file.path(params$save_dir, params$model_prefix)
 dir.create(save_dir, recursive = TRUE)
 ggsave(file.path(save_dir, "activation_histogram.png"))
 ```
@@ -135,10 +135,7 @@ for (i in seq_along(scores)) {
 }
 
 scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X")), .y)) %>%
-  left_join(Xy, c("rel_path" = "path")) 
-plot_data <- scores %>%
-  melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim")
-plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
+  left_join(Xy)
 ```
 
 Before we can plot them, we need to merge them into a data.frame and tidy.
@@ -179,7 +176,7 @@ ggplot(edge_data %>% filter(rel_path %in% edge_data$rel_path[1:100])) +
   theme(legend.position = "bottom")
 
 sca_label <- ifelse(params$sca, "sca", "svd")
-ggsave(file.path(save_dir, sprintf("embeddings_%s.png", is_sca)))
+ggsave(file.path(save_dir, sprintf("embeddings_%s.png", sca_label)))
 ```
 ```{r}
 edge_dists <- edge_data %>%
@@ -189,7 +186,7 @@ edge_dists <- edge_data %>%
 ggplot(edge_dists) +
   geom_histogram(aes(x = log(D), fill = split), bins = 50) +
   facet_wrap(~split, scale = "free_y")
-write_csv(edge_dists, file.path(save_dir, sprintf("edge_dists_%s.csv", params$model_prefix, sca_label)))
+write_csv(edge_dists, file.path(save_dir, sprintf("edge_dists_%s.csv", sca_label)))
 ```
 
 ```{r stability_baseline}
@@ -201,7 +198,7 @@ for (b in seq_along(xy)) {
   fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
   y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
   plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
-  png(file.path(save_dir, sprintf("y_vs_y_hat-%s-%s.png", names(xy)[b], save_label)))
+  png(file.path(save_dir, sprintf("y_vs_y_hat-%s-%s.png", names(xy)[b], sca_label)))
   plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]], col = rgb(0, 0, 0, 0.6), cex = 0.5, main = names(xy)[b])
   abline(a = 0, b = 1, col = "red")
   dev.off()
@@ -226,9 +223,10 @@ pi_hat <- pi_hat %>%
   tidyr::unite(jb, j, bootstrap, split, remove = FALSE)
 pi_hat$split <- factor(pi_hat$split, levels = c("train", "dev", "test"))
 ggplot(pi_hat %>% filter(j < 17)) +
-  geom_line(aes(x = lambda, y = value, col = bootstrap, group = jb, linetype = split)) +
+  geom_line(aes(x = log(lambda), y = value, col = bootstrap, group = jb, linetype = split)) +
   scale_color_brewer(palette = "Set2") +
-  scale_x_continuous(trans = ggforce::trans_reverser('log10')) +
+  scale_x_reverse() +
+  #scale_x_continuous(trans = ggforce::trans_reverser('log10')) +
   facet_wrap(~ j, ncol = 6) +
   theme(legend.position = "bottom")
 ggsave(file.path(save_dir, sprintf("selection_paths_%s.png", sca_label)))
@@ -236,7 +234,7 @@ ggsave(file.path(save_dir, sprintf("selection_paths_%s.png", sca_label)))
 What is the average correlation between selected features and the underlying
 generative process?
 
-```{r, correlation_data, fig.width = 8, fig.height = 5}
+```{r, correlation_data, eval = FALSE, fig.width = 8, fig.height = 5}
 lambda_thr <- lambda[8]
 
 selections <- pi_hat %>% 
@@ -285,7 +283,7 @@ ggplot(cca_data) +
 write_csv(cca_data, file.path(save_dir, sprintf("cca_data_%s.csv", sca_label)))
 ```
 
-```{r, correlation_diagram, fig.width = 8, fig.height = 5}
+```{r, correlation_diagram, eval = FALSE, fig.width = 8, fig.height = 5}
 mcor <- do.call(rbind, mcor) %>%
   left_join(selections) %>%
   mutate(dim = gsub("dim", "", dim))
@@ -302,7 +300,7 @@ ggplot(mcor) +
   )
 ggsave(file.path(save_dir, sprintf("correlation_diagram_%s.png", sca_label)))
 ```
-```{r correlation_heatmap}
+```{r correlation_heatmap, eval = FALSE}
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
@@ -311,7 +309,7 @@ heatmap(cor(scores_mat), asp = 1)
 dev.off()
 ```
 
-```{r}
+```{r, eval = FALSE}
 pis <- seq(.4, 1, by = 0.05)
 selections <- list()
 for (i in seq_along(pis)) {
@@ -336,7 +334,7 @@ selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
 selections$sca <- params$sca
 write_csv(selections, file.path(save_dir, sprintf("selections_%s.csv", sca_label)))
 ```
-```{r remove_unzipped}
+```{r remove_unzipped, eval = FALSE}
 paths0 <- gsub(".gz", "", paths)
 unlink(paths0, recursive = TRUE)
 ```
