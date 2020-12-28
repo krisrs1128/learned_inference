@@ -46,7 +46,7 @@ Next, let's identify the paths to all the activation numpy files. This involves
 * giving absolute and relative paths to the data
 
 ```{r parse_metadata}
-metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "metadata.csv")))) %>%
+metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "layers.csv")))) %>%
   map_dfr(~ .x %>% 
       mutate(
         model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
