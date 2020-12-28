@@ -136,6 +136,9 @@ for (i in seq_along(scores)) {
 
 scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X")), .y)) %>%
   left_join(Xy)
+plot_data <- scores %>%
+  melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim")
+plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
 ```
 
 Before we can plot them, we need to merge them into a data.frame and tidy.
