@@ -47,7 +47,7 @@ Next, let's identify the paths to all the activation numpy files. This involves
 
 ```{r parse_metadata}
 metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "layers.csv")))) %>%
-  map_dfr(~ .x %>% 
+  map_dfr(~ .x %>%
       mutate(
         model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
         rel_path = str_replace(out_path, "(.+)stability_data/(.+)", "\\2")
@@ -95,7 +95,7 @@ First, we'll get the projected scores, using MultiCCA.
 ```{r multicca}
 acts_splits <- acts %>%
   split(.$bootstrap)
-  
+
 x_list <- acts_splits %>%
   map(~ .x %>% select(starts_with("X")) %>% as.matrix())
 
@@ -114,7 +114,7 @@ for (i in seq_along(x_list)) {
 
 ```{r}
 if (params$sca) {
-  sparse_approx <- map(x_list, ~ sca(., k = params$ncomp)) 
+  sparse_approx <- map(x_list, ~ sca(., k = params$ncomp))
 } else {
   sparse_approx <- map(x_list, ~ list(scores = princomp(.)$scores[, 1:params$ncomp]))
 }
@@ -200,7 +200,13 @@ xy <- scores %>%
 for (b in seq_along(xy)) {
   fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
   y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
+
+  # glmnet plot
+  png(file.path(save_dir, sprintf("glmnet_cv-%s-%s.png", names(xy)[b], sca_label)))
   plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
+  dev.off()
+
+  # y vs prediction plot
   png(file.path(save_dir, sprintf("y_vs_y_hat-%s-%s.png", names(xy)[b], sca_label)))
   plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]], col = rgb(0, 0, 0, 0.6), cex = 0.5, main = names(xy)[b])
   abline(a = 0, b = 1, col = "red")
@@ -237,16 +243,16 @@ ggsave(file.path(save_dir, sprintf("selection_paths_%s.png", sca_label)))
 What is the average correlation between selected features and the underlying
 generative process?
 
-```{r, correlation_data, eval = FALSE, fig.width = 8, fig.height = 5}
+```{r, correlation_data, fig.width = 8, fig.height = 5}
 lambda_thr <- lambda[8]
 
-selections <- pi_hat %>% 
+selections <- pi_hat %>%
   filter(lambda == lambda_thr) %>%
   group_by(j, split) %>%
   summarise(selection = mean(value)) %>%
   mutate(dim = paste0("dim", j)) %>%
   select(-j)
-  
+
 scores_mat <- scores %>%
   split(., list(.$split, .$bootstrap))
 
@@ -256,42 +262,42 @@ for (i in seq_along(scores_mat)) {
   scores_i <- scores_mat[[i]] %>%
     select(starts_with("dim"), starts_with("X")) %>%
     as.matrix()
-  
+
   mcor[[i]] <- melt(cor(scores_i), varnames = c("dim", "feature")) %>%
     filter(!(feature %in% paste0("dim", 1:params$ncomp))) %>%
     filter(dim %in% paste0("dim", 1:params$ncomp))
   mcor[[i]]$split <- scores_mat[[i]]$split[1]
   mcor[[i]]$bootstrap <- scores_mat[[i]]$bootstrap[1]
-  
+
   dim_i <- scores_mat[[i]] %>%
     select(starts_with("dim")) %>%
     as.matrix()
   x_i <- scores_mat[[i]] %>%
     select(starts_with("X")) %>%
     as.matrix()
-  
+
   cca_data[[i]] <- data.frame(
     k = 1:params$ncomp,
     split = scores_mat[[i]]$split[1],
-    bootstrap = scores_mat[[i]]$bootstrap[1], 
+    bootstrap = scores_mat[[i]]$bootstrap[1],
     rho = cancor(dim_i, x_i)$cor
   )
 }
 ```
 
-```{r, eval = FALSE}
+```{r}
 cca_data <- bind_rows(cca_data)
 ggplot(cca_data) +
   geom_point(aes(x = k, y = rho, col = split))
 write_csv(cca_data, file.path(save_dir, sprintf("cca_data_%s.csv", sca_label)))
 ```
 
-```{r, correlation_diagram, eval = FALSE, fig.width = 8, fig.height = 5}
+```{r, correlation_diagram, fig.width = 8, fig.height = 5}
 mcor <- do.call(rbind, mcor) %>%
   left_join(selections) %>%
   mutate(dim = gsub("dim", "", dim))
 mcor$dim <- factor(mcor$dim, levels = 1:10)
-  
+
 ggplot(mcor) +
   geom_hline(yintercept = 0) +
   geom_point(aes(x = feature, y = value, col = selection, shape = split)) +
@@ -303,7 +309,7 @@ ggplot(mcor) +
   )
 ggsave(file.path(save_dir, sprintf("correlation_diagram_%s.png", sca_label)))
 ```
-```{r correlation_heatmap, eval = FALSE}
+```{r correlation_heatmap}
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
@@ -312,7 +318,7 @@ heatmap(cor(scores_mat), asp = 1)
 dev.off()
 ```
 
-```{r, eval = FALSE}
+```{r}
 pis <- seq(.4, 1, by = 0.05)
 selections <- list()
 for (i in seq_along(pis)) {
@@ -336,8 +342,4 @@ selections$model <- str_extract(params$model_prefix, "[A-z]+")
 selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
 selections$sca <- params$sca
 write_csv(selections, file.path(save_dir, sprintf("selections_%s.csv", sca_label)))
-```
-```{r remove_unzipped, eval = FALSE}
-paths0 <- gsub(".gz", "", paths)
-unlink(paths0, recursive = TRUE)
 ```
