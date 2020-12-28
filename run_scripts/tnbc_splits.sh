@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # unzip data
-tar -zxvf $_CONDOR_SCRATCH_DIR/stability_data.tar.gz
+tar -zxvf stability_data.tar.gz
 git clone https://github.com/krisrs1128/learned_inference.git
 source learned_inference/.env
 
