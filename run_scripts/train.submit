@@ -1,17 +1,17 @@
 condor_submit <<EOF
 #!/bin/bash
 universe = docker
-docker_image = krisrs1128/li:122704
+docker_image = krisrs1128/li:122705
 log = /home/ksankaran/logs/job_\$(Cluster).log
 error = /home/ksankaran/logs/job_\$(Cluster)_\$(Process).err
 output = /home/ksankaran/logs/job_\$(Cluster)_\$(Process).out
 input = stability_data.tar.gz
 executable = train.sh
-environment = "BOOTSTRAP=${Process} TRAIN_YAML=${1}"
+environment = "BOOTSTRAP=\$(Process) TRAIN_YAML=${1}"
 request_gpus = 1
 request_cpus = 1
 +WantGPULab = true
 +GPUJobLength = "short"
 request_memory = 12GB
 request_disk = 16GB
-queue 1
+queue 10
