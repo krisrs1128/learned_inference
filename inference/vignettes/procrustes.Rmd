@@ -279,7 +279,7 @@ for (i in seq_along(scores_mat)) {
 }
 ```
 
-```{r}
+```{r, eval = FALSE}
 cca_data <- bind_rows(cca_data)
 ggplot(cca_data) +
   geom_point(aes(x = k, y = rho, col = split))
