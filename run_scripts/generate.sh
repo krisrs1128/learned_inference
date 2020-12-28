@@ -14,4 +14,5 @@ jupyter nbconvert --to=python save_splits.ipynb
 python3 -m save_splits
 
 # pass to output
+cd $_CONDOR_SCRATCH_DIR
 tar -zcvf stability_data.tar.gz stability_data.tar.gz
