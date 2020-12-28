@@ -123,8 +123,12 @@ extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4, alpha = 5) {
     table()
 
   # log ratio tumor vs. immune (with laplace smoothing)
-  y <- log((alpha + immune_type["CD8"])/(alpha + immune_type["CD4"]), 2)
-  list(x = rm, y = y)
+  xy <- data.frame(
+    X.CD8 = immune_type["CD8"],
+    X.CD4 = immune_type["CD4"],
+    y = log((alpha + immune_type["CD8"])/(alpha + immune_type["CD4"]), 2)
+  )
+  list(x = rm, xy = xy)
 }
 
 #' @importFrom raster raster extent crop
@@ -151,8 +155,8 @@ extract_patches <- function(tiff_paths, exper, qsize = 256, out_dir = ".", basen
       # write results
       npy_path <- file.path(out_dir, sprintf("%s_%s-%s.npy", basename, w, h))
       np$save(npy_path, patch$x)
-      y <- data.frame(path = tiff_paths[i], i = basename, w = w, h = h, y = patch$y)
-      write.table(y, y_path, sep = ",", col.names = !file.exists(y_path), append = T)
+      xy <- cbind(data.frame(path = tiff_paths[i], i = basename, w = w, h = h), patch$xy)
+      write.table(xy, y_path, sep = ",", col.names = !file.exists(y_path), append = T)
     }
   }
 }
