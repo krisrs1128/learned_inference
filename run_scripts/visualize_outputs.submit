@@ -1,0 +1,11 @@
+#!/bin/bash
+universe = docker
+docker_image = krisrs1128/li:122705
+log = /home/ksankaran/logs/vis.log
+error = /home/ksankaran/logs/vis.err
+output = /home/ksankaran/logs/vis.out
+transfer_input_files = stability_outputs.tar.gz
+request_cpus = 1
+request_memory = 8GB
+request_disk = 1GB
+queue 1
