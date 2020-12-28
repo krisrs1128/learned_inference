@@ -101,7 +101,7 @@ We'll generate the parameters according to a few different distributions (though
 they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
-n_images <- 1e2
+n_images <- 10
 n_original <- runif(n_images, 100, 1000)
 beta_r <- 0.3 * runif(n_images * 3, -1, 1) %>%
   matrix(ncol = 3)

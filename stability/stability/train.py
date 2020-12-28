@@ -60,7 +60,7 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
             save_features(loaders["features"], model, "best", out_paths, device)
             torch.save(model.state_dict(), out_paths[2])
 
-        print(f"{epoch}/{opts.train.n_epochs} | train: {loss['train'][-1]} | dev: {loss['dev'][-1] |}")
+        print(f"{epoch}/{opts.train.n_epochs} | train: {loss['train'][-1]} | dev: {loss['dev'][-1]} |")
         scheduler.step(loss["dev"][-1])
     return loss
 
