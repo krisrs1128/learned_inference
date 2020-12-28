@@ -1,6 +1,6 @@
 organization: # all relative to $DATA_DIR
   features_dir: "cnn15/features/"
-  metadata: "cnn15/metadata.csv"
+  metadata: "cnn15/layers.csv"
   model: "cnn15/model_best.pt"
   splits: "splits_0.15-train.csv"
   xy: "Xy.csv"

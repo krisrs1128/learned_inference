@@ -5,12 +5,7 @@
 #' @export
 load_mibi <- function(data_dir, n_paths = NULL, n_lev=6) {
   exper <- get(load(file.path(data_dir, "mibiSCE.rda")))
-  tiff_paths <- list.files(
-    file.path(data_dir),
-    "*.tiff",
-    recursive = T,
-    full.names = T
-  )
+  tiff_paths <- list.files(data_dir, "*.tiff", recursive = T, full.names = T)
 
   if (is.null(n_paths)) {
     n_paths <- length(tiff_paths)
@@ -115,18 +110,21 @@ extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4, alpha = 5) {
   r <- aggregate(r, fct, "modal")
   rm <- unwrap_channels(r, r_cells)
 
-  immune_type <- colData(r_cells) %>% 
-    as.data.frame() %>% 
-    filter(cellLabelInImage %in% unique(as.vector(r))) %>%
-    pull("immune_group") %>%
-    factor(levels = c("CD4", "CD8")) %>%
-    table()
-
+  cells_filter <- colData(r_cells) %>%
+    as.data.frame() %>%
+    filter(cellLabelInImage %in% unique(as.vector(r)))
+  
+  tumor_status <- cells_filter %>%
+    pull(tumorYN)
+  browser()
+  
   # log ratio tumor vs. immune (with laplace smoothing)
   xy <- data.frame(
-    X.CD8 = immune_type["CD8"],
-    X.CD4 = immune_type["CD4"],
-    y = log((alpha + immune_type["CD8"])/(alpha + immune_type["CD4"]), 2)
+    X.tumor = mean(tumor_status),
+    X.size = mean(cells_filter$cellSize),
+    X.grade = cells_filter$GRADE[1],
+    X.TIL = cells_filter$TIL_score[1],
+    y = log((1 + sum(tumor_status)) / (1 + sum(1 - tumor_status)), 2)
   )
   list(x = rm, xy = xy)
 }
