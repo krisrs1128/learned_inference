@@ -5,6 +5,7 @@ log = /home/ksankaran/logs/vis.log
 error = /home/ksankaran/logs/vis.err
 output = /home/ksankaran/logs/vis.out
 transfer_input_files = stability_outputs.tar.gz
+executable = visualize_outputs.sh
 request_cpus = 1
 request_memory = 8GB
 request_disk = 1GB
