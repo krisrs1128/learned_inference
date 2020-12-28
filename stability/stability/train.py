@@ -43,9 +43,9 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
     """
     loss = {"dev": [], "train": []}
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    scheduler = ReduceLROnPlateau(optim, mode="max", factor=0.5, patience=2)
 
     for epoch in range(opts.train.n_epochs):
-        print(f"{epoch}/{opts.train.n_epochs}")
         model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn, device)
         loss["train"].append(lt)
         loss["dev"].append(losses(model, loaders["dev"], loss_fn))
@@ -60,6 +60,8 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
             save_features(loaders["features"], model, "best", out_paths, device)
             torch.save(model.state_dict(), out_paths[2])
 
+        print(f"{epoch}/{opts.train.n_epochs} | train: {loss['train'][-1]} | dev: {loss['dev'][-1] |}")
+        scheduler.step(loss["dev"][-1])
     return loss
 
 

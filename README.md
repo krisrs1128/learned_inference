@@ -54,18 +54,15 @@ complicated, we can run a very simple baseline, using just the pixel counts for
 various cell types.
 
 ```
+tar -zxvf stability_data.tar.gz
 cd learned_inference/notebooks/
 jupyter nbconvert --to=python tnbc_baseline.ipynb
 python3 -m tnbc_baseline
-cd ../../
 ```
 
 To train a single model, we can use the `model_training.ipynb` notebook.
 
 ```
-tar -zxvf stability_data.tar.gz
-cd learned_inference/notebooks/
-
 export TRAIN_YAML = conf/tnbc_cnn.yaml # or whichever model you want it to be
 export BOOTSTRAP = 0 # can change for different bootstraps
 
@@ -90,6 +87,8 @@ stability, using the `stability.Rmd` vignette. First, we put all the trained
 models into a `stability_outputs` folder, which the script refers to.
 
 ```
+mkdir stability_outputs/
+mv ${TRAIN_YAML}*tar.gz stability_outputs/
 Rscript -e "rmarkdown::render('learned_inference/inference/vignettes/stability.Rmd', params = list(data_dir = '../../../stability_outputs/', layer = 'linear', model_prefix = 'tnbc_cnn', sca = FALSE, save_dir = '../../../figures'))"
 ```
 
@@ -136,6 +135,7 @@ condor_submit tnbc_splits.submit
 bash train.submit conf/train_cnn.yaml # or whichever model to run
 
 # visualize
+mkdir stability_outputs/
 mv tnbc_cnn*tar.gz stability_outputs/
 tar -zcvf stability_outputs.tar.gz stability_outputs/
 condor_submit visualize_outputs.submit
