@@ -34,7 +34,7 @@ untar_all(paths, data_dir = data_dir)
 
 # read in response data and input image paths
 output_dirs <- map(paths, ~ file.path(data_dir, tools::file_path_sans_ext(basename(.x))))
-Xy <- read_csv(file.path(output_dirs[1], "Xy.csv"))
+Xy <- read_csv(file.path(output_dirs[1], "split.csv"))
 metadata <- map(output_dirs, ~ read_csv(file.path(.x, "layers.csv")))
 subsets <- map(output_dirs, ~ read_csv(file.path(.x, "features", "subset.csv")))
 names(subsets) <- output_dirs
