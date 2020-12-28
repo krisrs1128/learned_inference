@@ -126,6 +126,8 @@ condor_submit tnbc_splits.submit
 bash train.submit conf/train_cnn.yaml # or whichever model to run
 
 # visualize
+mv tnbc_cnn*tar.gz stability_outputs/
+tar -zcvf stability_outputs.tar.gz stability_outputs/
 condor_submit visualize_outputs.submit
 ```
 

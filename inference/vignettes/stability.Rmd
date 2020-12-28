@@ -1,232 +1,343 @@
 ---
-title: Stability study
+title: Stability Analysis
+output: html_notebook
 params:
-  data_dir: "/Users/kris/Desktop/data/"
-  root_dir: "/Users/kris/Desktop/conceptual/learned_inference/"
+  data_dir: "/Users/kris/Documents/stability_outputs/"
+  layer: "mu"
+  model_prefix: "vae90"
+  ncomp: 10
+  python_path: "/usr/bin/python3"
+  sca: TRUE
+  save_dir: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures"
 ---
 
-
-```{r}
-library("FactoMineR")
-library("PMA")
+```{r libraries}
 library("dplyr")
-library("glmnet")
-library("RColorBrewer")
+library("epca")
 library("ggplot2")
+library("glmnet")
+library("inference")
+library("purrr")
 library("readr")
 library("reshape2")
+library("reticulate")
 library("stringr")
-library("yaml")
-library("inference")
-theme_set(theme_bw() + theme(panel.grid = element_blank()))
+theme_set(theme_bw())
+```
+First we read in all the relevant data.
+
+```{r read_meta}
+# unzip raw experimental output
+data_dir <- params$data_dir
+paths <- list.files(data_dir, sprintf("%s.+tar.gz", params$model_prefix), full.names = TRUE)
+untar_all(paths, data_dir = data_dir)
+
+# read in response data and input image paths
+output_dirs <- map(paths, ~ file.path(data_dir, tools::file_path_sans_ext(basename(.x))))
+Xy <- read_csv(file.path(output_dirs[1], "split.csv"))
+metadata <- map(output_dirs, ~ read_csv(file.path(.x, "layers.csv")))
+subsets <- map(output_dirs, ~ read_csv(file.path(.x, "features", "subset.csv")))
+names(subsets) <- output_dirs
+```
+Next, let's identify the paths to all the activation numpy files. This involves
+
+* merging all the `metadata.csv` files produced by individual runs
+* annotating the bootstrap number associated with each run
+* giving absolute and relative paths to the data
+
+```{r parse_metadata}
+metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "layers.csv")))) %>%
+  map_dfr(~ .x %>% 
+      mutate(
+        model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
+        rel_path = str_replace(out_path, "(.+)stability_data/(.+)", "\\2")
+        )
+  ) %>%
+  mutate(
+    bootstrap = str_replace(abs_path, "(.+)yaml_([0-9]+).tar", "\\2"),
+    bootstrap = as.numeric(bootstrap),
+    abs_path = file.path(abs_path, rel_path),
+    source = str_replace(abs_path, "(.+)(tar)(.+)", "\\1\\2")
+  ) %>%
+  dplyr::select(abs_path, source, model, bootstrap, epoch, layer)
 ```
 
-Let's read in all the bootstrapped learned features. We save the full feature
-data frame in `features_list` and the purely numerical component in `z`.
+
+Now, we'll read in the actual activations associated with each of the numpy
+arrays referenced in the metadata file.
+
+```{r read_acts}
+use_python(params$python_path)
+np <- import("numpy")
+acts_ <- metadata %>%
+  filter(epoch == "best", layer == params$layer) %>%
+  .[["abs_path"]] %>%
+  unique()
+acts <- map(acts_, ~ data.frame(np$load(.x)))
+subsets_ <- map(subsets, ~ dplyr::rename(., c("ix" = "X1", "rel_path" = "path")))
+acts <- map2_dfr(subsets_, acts, cbind, .id = "source") %>%
+  left_join(metadata %>% select(source, bootstrap) %>% unique())
+```
+```{r activation_histo}
+macts <- acts %>%
+  select("rel_path", starts_with("X")) %>%
+  melt(id.vars = "rel_path")
+ggplot(macts) +
+  geom_histogram(aes(x = value), bins = 200)
+
+save_dir <- file.path(params$save_dir, params$model_prefix)
+dir.create(save_dir, recursive = TRUE)
+ggsave(file.path(save_dir, "activation_histogram.png"))
+```
+
+First, we'll get the projected scores, using MultiCCA.
+
+```{r multicca}
+acts_splits <- acts %>%
+  split(.$bootstrap)
+  
+x_list <- acts_splits %>%
+  map(~ .x %>% select(starts_with("X")) %>% as.matrix())
+
+png(file.path(save_dir, "svd_eigs.png"))
+plot(svd(x_list[[1]])$d)
+dev.off()
+
+for (i in seq_along(x_list)) {
+  if (grepl("vae", params$model_prefix)) break
+  x_list[[i]] <- asinh(x_list[[i]])
+  for (j in seq_len(ncol(x_list[[i]]))) {
+    x_list[[i]][, j] <- x_list[[i]][, j] + runif(nrow(x_list[[i]]), -0.2, 0.2)
+  }
+}
+```
 
 ```{r}
-conf <- yaml.load_file(file.path(params$root_dir, "conf", "train_boot.yaml"))
-features_dir <- file.path(params$data_dir, conf$organization$features_dir)
-features_paths <- list.files(features_dir, "*csv", full.names = TRUE)
+if (params$sca) {
+  sparse_approx <- map(x_list, ~ sca(., k = params$ncomp)) 
+} else {
+  sparse_approx <- map(x_list, ~ list(scores = princomp(.)$scores[, 1:params$ncomp]))
+}
+```
 
-features_list <- list()
-for (p in features_paths)  {
-  features_list[[p]] <- read_csv(p) %>%
-    select(path, model, img_id, everything()) %>%
-    select(-img_id, -y)
-  features_list[[p]]$ix <- gsub(".npy", "", features_list[[p]]$path) %>%
-    str_extract("[0-9]+$") %>%
-    as.integer()
-  features_list[[p]] <- features_list[[p]] %>%
-    arrange(ix)
+```{r}
+pres <- sparse_approx %>%
+  map(~ .$scores) %>%
+  procrustes(0.01)
+M <- pres$M
+scores <- pres$x_align
+scores <- lapply(seq_len(dim(scores)[3]), function(i) scores[,, i]) # split last dimension across list
+```
+
+```{r}
+for (i in seq_along(scores)) {
+  colnames(scores[[i]]) <- paste0("dim", 1:params$ncomp)
 }
 
-Xy <- read_csv(file.path(params$data_dir, conf$organization$xy))
+scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X")), .y)) %>%
+  left_join(Xy)
+plot_data <- scores %>%
+  melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim")
+plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
+```
 
-z <- lapply(features_list, function(z) as.matrix(z[, 4:67]))
-names(z) <- basename(names(features_list))
+Before we can plot them, we need to merge them into a data.frame and tidy.
 
-coul <- colorRampPalette(brewer.pal(8, "PiYG"))(25)
+```{r edge_data}
+centroids <- plot_data %>%
+  group_by(dim, rel_path, split, y) %>%
+  summarise(mean = mean(value)) %>%
+  mutate(dim = paste0("mean", dim)) %>%
+  dcast(rel_path + split + y ~ dim, value.var = "mean")
 
-for (i in seq_along(z)) {
-  png(sprintf("~/Desktop/hm_%i.png", i))
-  heatmap(cor(Xy[features_list[[i]]$ix, ], z[[i]]), col = coul)
+edge_data <- plot_data %>%
+  dcast(bootstrap + rel_path + split + y ~ dim, value.var = "value") %>%
+  split(.$bootstrap) %>%
+  map_dfr(~ .x %>% left_join(centroids))
+
+head(edge_data)
+```
+
+```{r, embedding_plot, fig.width = 8}
+ggplot(edge_data %>% filter(rel_path %in% edge_data$rel_path[1:100])) +
+  geom_point(
+    data = centroids %>% filter(rel_path %in% edge_data$rel_path[1:100]),
+    aes(x = meandim3, y = meandim2, col = y),
+    alpha = 0.5, size = 0.8
+    ) +
+  geom_point(
+    aes(x = dim3, y = dim2, col = y),
+    size = 0.9, alpha = 0.3
+  ) +
+  geom_segment(
+    aes(x = dim3, xend = meandim3, y = dim2, yend = meandim2, col = y),
+    size = 0.3, alpha = 0.8
+  ) +
+  coord_fixed(1) +
+  facet_grid(. ~ split) +
+  scale_color_viridis_c() +
+  theme(legend.position = "bottom")
+
+sca_label <- ifelse(params$sca, "sca", "svd")
+ggsave(file.path(save_dir, sprintf("embeddings_%s.png", sca_label)))
+```
+```{r}
+edge_dists <- edge_data %>%
+  mutate(D = sqrt((dim1 - meandim1) ^ 2 + (dim2 - meandim2) ^ 2 + (dim3 - meandim3) ^ 2)) %>%
+  select(split, D)
+
+ggplot(edge_dists) +
+  geom_histogram(aes(x = log(D), fill = split), bins = 50) +
+  facet_wrap(~split, scale = "free_y")
+write_csv(edge_dists, file.path(save_dir, sprintf("edge_dists_%s.csv", sca_label)))
+```
+
+```{r stability_baseline}
+xy <- scores %>%
+  split(., list(.$bootstrap, .$split)) %>%
+  map(~ subset_matrices(., paste0("dim", 1:params$ncomp)))
+
+for (b in seq_along(xy)) {
+  fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
+  y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
+  plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
+  png(file.path(save_dir, sprintf("y_vs_y_hat-%s-%s.png", names(xy)[b], sca_label)))
+  plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]], col = rgb(0, 0, 0, 0.6), cex = 0.5, main = names(xy)[b])
+  abline(a = 0, b = 1, col = "red")
   dev.off()
 }
 ```
+Now let's run stability selection on each split and bootstrap sample separately.
 
-For our first summary, we'll calculate the RV coefficients between unprojected
-pairs. I'm not sure if this is supposed to have any meaning if the columns are
-not exactly aligned. It's just a measure of the overall information content
-shared between the pairs, regardless of the column that is the source.
-
-```{r}
-rvs <- pairwise_rv(z)
-rownames(rvs) <- names(z)
-colnames(rvs) <- names(z)
-rv_order <- names(z)[hclust(dist(rvs))$order]
-
-mrvs <- melt(rvs) %>%
-  mutate(
-    Var1 = factor(Var1, levels = rv_order),
-    Var2 = factor(Var2, levels = rv_order),
-    Var1 = gsub("features_", "", Var1),
-    Var2 = gsub("features_", "", Var2),
-  )
-
-ggplot(mrvs %>% filter(value > 0)) +
-  geom_tile(aes(x = Var1, y = Var2, fill = value)) +
-  scale_fill_gradient(low = "white", high = "black") +
-  coord_fixed() +
-  theme(
-    axis.text.x = element_text(angle =  -90),
-    axis.text = element_text(size = 6),
-    axis.title =  element_blank()
-  )
-
-ggplot(mrvs %>% filter(value > 0)) +
-  geom_histogram(aes(x = value), binwidth = 0.01) +
-  labs(x = "Pairwise RV Coefficients") +
-  scale_y_continuous(expand = c(0, 0))
+```{r stability_selection}
+lambda <- 2 ^ seq(-1, -8, length.out = 20)
+selection_data <- map(xy, ~ stability_selection(.x$X, .x$y, B = 250, lambda = lambda))
+pi_hat <- map_dfr(selection_data, ~ melt(t(.x$Pi), varnames = c("lambda", "j")), .id = "run") %>%
+  tidyr::separate(run, c("bootstrap", "split"))
+pi_hat$j <- as.integer(pi_hat$j) - 1
+pi_hat$lambda <- lambda[pi_hat$lambda]
 ```
 
-Calculate pairwise RV coefficients between the projected pairs. Note an
-interesting fact: when we ust multicca on noise, the projected scores will
-appear correlated (because, of course, we optimized that).
+Below, we're plotting the number of times each feature is selected by the 250
+lasso's above, as a function of $\lambda$.
 
-```{r}
-n_comp <- 10
-cca_res <- MultiCCA(z, ncomponents = n_comp)
-
-scores <- list()
-for (b in seq_along(z)) {
-  scores[[b]] <- z[[b]] %*% cca_res$ws[[b]]
-}
-
-rvs_aligned <- pairwise_rv(scores)
-```
-
-```{r}
-rownames(rvs_aligned) <- names(z)
-colnames(rvs_aligned) <- names(z)
-rv_order <- names(z)[hclust(dist(rvs_aligned))$order]
-
-mrvs <- melt(rvs_aligned) %>%
-  mutate(
-    Var1 = factor(Var1, levels = rv_order),
-    Var2 = factor(Var2, levels = rv_order),
-    Var1 = gsub("features_", "", Var1),
-    Var2 = gsub("features_", "", Var2),
-  )
-
-ggplot(mrvs %>% filter(value > 0)) +
-  geom_tile(aes(x = Var1, y = Var2, fill = value)) +
-  scale_fill_gradient(low = "white", high = "black") +
-  coord_fixed() +
-  theme(
-    axis.text.x = element_text(angle =  -90),
-    axis.text = element_text(size = 6),
-    axis.title =  element_blank()
-  )
-
-ggplot(mrvs %>% filter(value > 0)) +
-  geom_histogram(aes(x = value), binwidth = 0.01) +
-  labs(x = "Pairwise RV Coefficients [Projected Space]") +
-  scale_y_continuous(expand = c(0, 0))
-```
-
-We can now try stability selection. This will depend on the scores. To see why
-it's important to first align the feature sets, try running `fits[[b]] <-
-glmnet(z[[b]], y)` instead of the regression onto `scores[[b]]`.
-
-```{r}
-y <- Xy[features_list[[1]]$ix, ] %>% .[["y"]]
-
-fits <- list()
-coefs <- list()
-i <- 1
-for (b in seq_along(scores)) {
-  fits[[b]] <- glmnet(scores[[b]], y)
-  for (j in seq_len(n_comp + 1)) {
-    coefs[[i]] <- data.frame(
-      lambda = fits[[b]]$lambda,
-      j = j,
-      beta_j = coef(fits[[b]])[j, ]
-    )
-    i <- i + 1
-  }
-}
-
-coefs <- bind_rows(coefs, .id = "b")
-rownames(coefs) <- NULL
-
-ggplot(coefs %>% filter(j != 1)) +
-  geom_line(aes(x = lambda, y = beta_j, group = b), alpha = 0.5) +
-  scale_x_reverse(breaks=c(0.16, 0.08, 0)) +
-  scale_y_continuous(breaks=c(-0.15, 0, 0.15)) +
-  facet_wrap(~ j, ncol = 5) +
-  labs(
-    x = expression(lambda),
-    y = expression(beta[j])
-  )
-```
-
-The features seem relatively stable. Note that the prediction performance is
-quite weak, though. Perhaps this isn't too surprising, since we trained an
-unsupervised feature extractor.
-
-```{r}
-for (b in seq_along(fits)) {
-  y_hat <- predict(fits[[b]], newx=scores[[b]])
-  plot(y, y_hat[, dim(y_hat)[2]], xlim = c(1, 9), ylim = c(2, 4), col = rgb(0, 0, 0, 0.5), cex = 0.1, main = round(fits[[b]]$lambda[dim(y_hat)[2]], 6))
-}
-```
-
-What do the bootstrapped scores look like?
-
-```{r}
-scores_df <- list()
-for (b in seq_along(scores)) {
-  scores_df[[b]] <- as.data.frame(scores[[b]]) %>%
-    mutate(ix = row_number())
-}
-
-scores_df <- bind_rows(scores_df, .id = "b")
-
-ggplot(scores_df %>% filter(as.numeric(b) < 26)) +
-  geom_point(
-    aes(x = V1, y = V2),
-    alpha = 0.1, size = .5
-  ) +
-  coord_fixed(ratio = sqrt(cca_res$cors[2] / cca_res$cors[1])) +
-  facet_wrap(~b, ncol = 5) +
-  theme(strip.text = element_blank())
-
-ggplot(scores_df %>% filter(ix < 40)) +
-  geom_point(aes(x = reorder(ix, V1, mean), y = V1))
-
-scores_means <- scores_df %>%
-  group_by(ix) %>%
-  summarise(V1 = median(V1), V2 = median(V2))
-
-ggplot(scores_df %>% filter(ix < 9)) +
-  stat_density_2d(
-    aes(x = V1, y = V2, group = ix, alpha = ..level.., fill = as.factor(ix)),
-    geom = "polygon",
-    binwidth = 0.08
-  ) +
-  geom_text(
-    data = scores_means %>% filter(ix < 9),
-    aes(x = V1, y = V2, label = ix, col = as.factor(ix)),
-    size = 8, family = "mono"
-  ) +
-  scale_fill_brewer(palette = "Set2") +
+```{r stability_plot, fig.height = 3, fig.width = 8}
+pi_hat <- pi_hat %>%
+  tidyr::unite(jb, j, bootstrap, split, remove = FALSE)
+pi_hat$split <- factor(pi_hat$split, levels = c("train", "dev", "test"))
+ggplot(pi_hat %>% filter(j < 17)) +
+  geom_line(aes(x = log(lambda), y = value, col = bootstrap, group = jb, linetype = split)) +
   scale_color_brewer(palette = "Set2") +
-  scale_alpha(range = c(0.1, 1)) +
-  labs(
-    x = "First Sparse MCCA Direction",
-    y = "Second Sparse MCCA Direction"
-  ) +
-  coord_fixed(ratio = sqrt(cca_res$cors[2] / cca_res$cors[1])) +
-  theme(legend.position =  "none", strip.text = element_blank())
+  scale_x_reverse() +
+  #scale_x_continuous(trans = ggforce::trans_reverser('log10')) +
+  facet_wrap(~ j, ncol = 6) +
+  theme(legend.position = "bottom")
+ggsave(file.path(save_dir, sprintf("selection_paths_%s.png", sca_label)))
+```
+What is the average correlation between selected features and the underlying
+generative process?
+
+```{r, correlation_data, eval = FALSE, fig.width = 8, fig.height = 5}
+lambda_thr <- lambda[8]
+
+selections <- pi_hat %>% 
+  filter(lambda == lambda_thr) %>%
+  group_by(j, split) %>%
+  summarise(selection = mean(value)) %>%
+  mutate(dim = paste0("dim", j)) %>%
+  select(-j)
+  
+scores_mat <- scores %>%
+  split(., list(.$split, .$bootstrap))
+
+mcor <- list()
+cca_data <- list()
+for (i in seq_along(scores_mat)) {
+  scores_i <- scores_mat[[i]] %>%
+    select(starts_with("dim"), starts_with("X")) %>%
+    as.matrix()
+  
+  mcor[[i]] <- melt(cor(scores_i), varnames = c("dim", "feature")) %>%
+    filter(!(feature %in% paste0("dim", 1:params$ncomp))) %>%
+    filter(dim %in% paste0("dim", 1:params$ncomp))
+  mcor[[i]]$split <- scores_mat[[i]]$split[1]
+  mcor[[i]]$bootstrap <- scores_mat[[i]]$bootstrap[1]
+  
+  dim_i <- scores_mat[[i]] %>%
+    select(starts_with("dim")) %>%
+    as.matrix()
+  x_i <- scores_mat[[i]] %>%
+    select(starts_with("X")) %>%
+    as.matrix()
+  
+  cca_data[[i]] <- data.frame(
+    k = 1:params$ncomp,
+    split = scores_mat[[i]]$split[1],
+    bootstrap = scores_mat[[i]]$bootstrap[1], 
+    rho = cancor(dim_i, x_i)$cor
+  )
+}
+```
+
+```{r, eval = FALSE}
+cca_data <- bind_rows(cca_data)
+ggplot(cca_data) +
+  geom_point(aes(x = k, y = rho, col = split))
+write_csv(cca_data, file.path(save_dir, sprintf("cca_data_%s.csv", sca_label)))
+```
+
+```{r, correlation_diagram, eval = FALSE, fig.width = 8, fig.height = 5}
+mcor <- do.call(rbind, mcor) %>%
+  left_join(selections) %>%
+  mutate(dim = gsub("dim", "", dim))
+mcor$dim <- factor(mcor$dim, levels = 1:10)
+  
+ggplot(mcor) +
+  geom_hline(yintercept = 0) +
+  geom_point(aes(x = feature, y = value, col = selection, shape = split)) +
+  facet_grid(split ~ dim) +
+  scale_color_viridis_c() +
+  theme(
+    axis.text.x = element_text(angle = 90, size = 8),
+    legend.position = "bottom"
+  )
+ggsave(file.path(save_dir, sprintf("correlation_diagram_%s.png", sca_label)))
+```
+```{r correlation_heatmap, eval = FALSE}
+scores_mat <- scores %>%
+  select(starts_with("dim"), starts_with("X")) %>%
+  as.matrix()
+png(file.path(save_dir, sprintf("correlation_heatmap_%s.png", sca_label)))
+heatmap(cor(scores_mat), asp = 1)
+dev.off()
+```
+
+```{r, eval = FALSE}
+pis <- seq(.4, 1, by = 0.05)
+selections <- list()
+for (i in seq_along(pis)) {
+  selections[[i]] <- pi_hat %>%
+    filter(j != 0) %>% # ignore intercept term
+    filter(value > pis[i], lambda == lambda_thr) %>%
+    group_by(split, bootstrap) %>%
+    summarise(n_selected = n()) %>%
+    mutate(pi_thr = pis[i])
+}
+
+selections <- bind_rows(selections) %>%
+  group_by(split, pi_thr) %>%
+  summarise(
+    min = min(n_selected),
+    max = max(n_selected),
+    median = median(n_selected)
+  )
+
+selections$model <- str_extract(params$model_prefix, "[A-z]+")
+selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
+selections$sca <- params$sca
+write_csv(selections, file.path(save_dir, sprintf("selections_%s.csv", sca_label)))
+```
+```{r remove_unzipped, eval = FALSE}
+paths0 <- gsub(".gz", "", paths)
+unlink(paths0, recursive = TRUE)
 ```
