@@ -49,8 +49,18 @@ This new version of the `stability_data.tar.gz` archive now has a file called
 has a column `split` ensuring that each patient is fully contained in one of the
 train / dev / test splits.
 
-This is the archive that we can use for model training. To train a single model,
-we can use the `model_training.ipynb` notebook.
+This is the archive that we can use for model training. Before doing anything
+complicated, we can run a very simple baseline, using just the pixel counts for
+various cell types.
+
+```
+cd learned_inference/notebooks/
+jupyter nbconvert --to=python tnbc_baseline.ipynb
+python3 -m tnbc_baseline
+cd ../../
+```
+
+To train a single model, we can use the `model_training.ipynb` notebook.
 
 ```
 tar -zxvf stability_data.tar.gz
