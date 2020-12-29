@@ -7,11 +7,13 @@ organization: # all relative to $DATA_DIR
 train:
   batch_size: 128
   checkpoint: null
+  factor: 0.5
   lr: 0.001
-  momentum: 0.9
   model: "cnn"
+  momentum: 0.9
   n_epochs: 60
   p_in: 3
+  patience: 5
   save_every: 20
   save_subset: 2000
 bootstrap:
