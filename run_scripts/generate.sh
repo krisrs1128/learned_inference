@@ -6,6 +6,7 @@ source learned_inference/.env
 # generate raw tiles
 Rscript -e "rmarkdown::render('learned_inference/inference/vignettes/generate.Rmd')"
 mkdir stability_data
+mv learned_inference/inference/vignettes/*.csv stability_data/
 mv learned_inference/inference/vignettes/tiles stability_data/
 
 # randomly assign to train / dev / test
