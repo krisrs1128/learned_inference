@@ -6,7 +6,7 @@ from pathlib import Path
 import random
 import os
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
 import re
 import pandas as pd
 import numpy as np
@@ -58,8 +58,11 @@ def random_split(ids, split_ratio):
     return pd.DataFrame(splits_df)
 
 
-def initialize_loader(paths, data_dir, opts, **kwargs):
+def initialize_loader(paths, data_dir, opts, num_samples=None, **kwargs):
     cell_data = CellDataset(paths, data_dir / opts.organization.xy, data_dir)
+    if num_samples is not None:
+        cell_data = Subset(cell_data, np.arange(num_samples))
+
     return DataLoader(cell_data, batch_size=opts.train.batch_size, **kwargs)
 
 

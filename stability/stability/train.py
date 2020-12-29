@@ -48,8 +48,8 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
 
     for epoch in range(opts.train.n_epochs):
         model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn, device)
-        loss["train"].append(lt)
-        loss["dev"].append(losses(model, loaders["dev"], loss_fn))
+        loss["train"].append(np.mean(lt))
+        loss["dev"].append(np.mean(losses(model, loaders["dev"], loss_fn)))
         log_epoch(epoch, model, loss, loaders, writer, device)
 
         # periodically save features
