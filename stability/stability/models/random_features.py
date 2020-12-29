@@ -8,7 +8,7 @@ class ConvSubset(nn.Module):
     def __init__(self, patches, device=None):
         super(ConvSubset, self).__init__()
         self.conv = nn.Conv2d(3, len(patches), patches.shape[2], bias=False)
-        self.conv.weight = nn.Parameter(patches.to(self.device))
+        self.conv.weight = nn.Parameter(patches.to(device))
 
     def forward(self, x):
         return self.conv(x)
@@ -49,4 +49,5 @@ def random_patches(paths, k=2048, patch_size=12, im_size=64):
             patches.append(im[ix[0]:(ix[0] + patch_size), ix[1]:(ix[1] + patch_size)])
 
     patches = np.stack(patches, axis=0)
-    return np.transpose(patches, (0, 3, 1, 2))
+    patches = np.transpose(patches, (0, 3, 1, 2))
+    return torch.Tensor(patches)
