@@ -4,7 +4,7 @@ log = /home/ksankaran/logs/generate.log
 error = /home/ksankaran/logs/generate.err
 output = /home/ksankaran/logs/generate.out
 executable = generate.sh
-request_cpus = 2
+request_cpus = 12
 request_memory = 24GB
 request_disk = 2GB
 
