@@ -13,5 +13,5 @@ RUN Rscript -e "install.packages('yaml', repos='http://cran.us.r-project.org')"
 
 # our own packages (at end, so can recompile easily)
 RUN git clone https://github.com/krisrs1128/learned_inference.git
-RUN pip3 install learned_inference/stability
 RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference')"
+RUN pip3 install learned_inference/stability

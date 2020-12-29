@@ -6,7 +6,7 @@ source learned_inference/.env
 # generate raw tiles
 Rscript -e "rmarkdown::render('learned_inference/inference/vignettes/generate.Rmd')"
 mkdir stability_data
-mv tiles stability_data/
+mv learned_inference/inference/vignettes/tiles stability_data/
 
 # randomly assign to train / dev / test
 cd learned_inference/notebooks
@@ -15,4 +15,4 @@ python3 -m save_splits
 
 # pass to output
 cd $_CONDOR_SCRATCH_DIR
-tar -zcvf stability_data.tar.gz stability_data.tar.gz
+tar -zcvf stability_data.tar.gz stability_dattar -zcvf stability_data.tar.gz stability_data

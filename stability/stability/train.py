@@ -6,6 +6,7 @@ python3 -m train -c ../conf/train.yaml
 from addict import Dict
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 from .features import save_features
