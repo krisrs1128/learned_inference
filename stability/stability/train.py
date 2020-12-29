@@ -21,7 +21,7 @@ import yaml
 
 
 def log_stage(stage, epoch, model, loss, loader, writer, device):
-    writer.add_scalar(f"loss/{stage}", np.mean(loss[epoch]), epoch)
+    writer.add_scalar(f"loss/{stage}", loss[epoch], epoch)
     x, _ = next(iter(loader))
 
     if "VAE" in str(model.__class__):
@@ -44,7 +44,7 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
     """
     loss = {"dev": [], "train": []}
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    scheduler = ReduceLROnPlateau(optim, mode="max", factor=0.5, patience=2)
+    scheduler = ReduceLROnPlateau(optim, mode="max", factor=opts.train.factor, patience=opts.train.patience)
 
     for epoch in range(opts.train.n_epochs):
         model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn, device)
