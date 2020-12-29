@@ -133,7 +133,7 @@ Now we can simulate all the images.
 library("parallel")
 library("doParallel")
 library("foreach")
-cl <- makeCluster(2)
+cl <- makeCluster(12)
 registerDoParallel(cl)
 
 pkgs <- c("inference", "dplyr", "MASS", "stringr", "sf", "raster", "reticulate")
