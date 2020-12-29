@@ -2,12 +2,13 @@
 import sklearn.linear_model as lm
 import torch
 
-def train_rcf(model, loader, opts, out_paths, writer):
+def train_elnet(model, loader, **kwargs)::
     D, y = random_features(model, loader)
-    ridge_model = lm.Ridge()
-    ridge_model.fit(X = D, y = y)
-    y_hat = ridge_model.predict(X = D)
-    return ridge_model, D, y_hat
+    elnet_model = lm.Elnet(**kwargs)
+    elnet_model.fit(X = D, y = y)
+    y_hat = elnet_model.predict(X = D)
+    return elnet_model, D, y_hat
+
 
 def random_features(model, loader, device=None):
     if device is None:
@@ -24,7 +25,18 @@ def random_features(model, loader, device=None):
     y = torch.cat(y).squeeze()
     return D, y
 
-def predict_rcf(model, ridge_model, loader):
+
+def predict_rcf(model, elnet_model, loader):
     D, y = random_features(model, loader)
-    y_hat = ridge_model.predict(X = D)
+    y_hat = elnet_model.predict(X = D)
     return D, y_hat, y
+
+
+def train_rcf(elnet_model, opts, out_paths, writer):
+    metadata, errors = [], {}
+    for split in ["dev", "test"]:
+        _, y_hat, y = predict_rcf(model, elnet_model, loaders[split])
+        errors[split] = np.mean((y - y_hat) ** 2)
+        np.save(out_paths[0] / f"{split}_features.csv", D)
+
+    D = random_features(loaders["features"])
