@@ -15,4 +15,3 @@ cd $DATA_DIR
 rm -rf $DATA_DIR/tiles/
 export OUTNAME=$(basename ${TRAIN_YAML})_${BOOTSTRAP}.tar.gz
 tar -zcvf ${OUTNAME} -C $DATA_DIR/ .
-
