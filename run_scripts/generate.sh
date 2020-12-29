@@ -15,4 +15,4 @@ python3 -m save_splits
 
 # pass to output
 cd $_CONDOR_SCRATCH_DIR
-tar -zcvf stability_data.tar.gz stability_dattar -zcvf stability_data.tar.gz stability_data
+tar -zcvf stability_data_sim.tar.gz stability_data

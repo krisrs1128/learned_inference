@@ -1,10 +1,10 @@
 universe = docker
-docker_image = krisrs1128/li:122807
+docker_image = krisrs1128/li:122901
 log = /home/ksankaran/logs/generate.log
 error = /home/ksankaran/logs/generate.err
 output = /home/ksankaran/logs/generate.out
 executable = generate.sh
-request_cpus = 2
+request_cpus = 12
 request_memory = 24GB
 request_disk = 2GB
 
