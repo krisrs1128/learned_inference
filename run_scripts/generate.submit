@@ -1,5 +1,5 @@
 universe = docker
-docker_image = krisrs1128/li:122901
+docker_image = krisrs1128/li:122902
 log = /home/ksankaran/logs/generate.log
 error = /home/ksankaran/logs/generate.err
 output = /home/ksankaran/logs/generate.out
