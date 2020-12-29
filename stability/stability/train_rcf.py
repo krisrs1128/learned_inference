@@ -57,7 +57,7 @@ def train_rcf(model, loaders, out_paths, **kwargs):
 
     # save features reweighted by coefficient
     k_path = Path(out_paths[0]) / "selected_best.npy"
-    pos_ix = np.where(np.abs(elnet_model.coef_) > 0)
+    pos_ix = np.where(np.abs(elnet_model.coef_) > 0)[0]
     np.save(k_path, D[:, pos_ix].cpu().numpy())
     metadata.append({"epoch": "best", "layer": "selected", "out_path": k_path})
     pd.DataFrame(metadata).to_csv(out_paths[1])
