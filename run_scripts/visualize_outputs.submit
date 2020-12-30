@@ -5,7 +5,7 @@ log = /home/ksankaran/logs/vis.log
 error = /home/ksankaran/logs/vis.err
 output = /home/ksankaran/logs/vis.out
 transfer_input_files = stability_outputs.tar.gz
-environment = "PREFIX=${1} LAYER=${2} sca=${3}"
+environment = "PREFIX=${1} LAYER=${2} SCA=${3}"
 executable = visualize_outputs.sh
 request_cpus = 1
 request_memory = 8GB
