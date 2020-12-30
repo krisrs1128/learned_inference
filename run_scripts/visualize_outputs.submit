@@ -1,6 +1,6 @@
 #!/bin/bash
 universe = docker
-docker_image = krisrs1128/li:122904
+docker_image = krisrs1128/li:123002
 log = /home/ksankaran/logs/vis.log
 error = /home/ksankaran/logs/vis.err
 output = /home/ksankaran/logs/vis.out
