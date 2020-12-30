@@ -1,10 +1,11 @@
-#!/bin/bash
+condor_submit <<EOF
 universe = docker
 docker_image = krisrs1128/li:123002
 log = /home/ksankaran/logs/vis.log
 error = /home/ksankaran/logs/vis.err
 output = /home/ksankaran/logs/vis.out
 transfer_input_files = stability_outputs.tar.gz
+environment = "PREFIX=${1} LAYER=${2} sca=${3}"
 executable = visualize_outputs.sh
 request_cpus = 1
 request_memory = 8GB
