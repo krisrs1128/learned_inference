@@ -8,14 +8,13 @@ train:
   batch_size: 64
   checkpoint: null
   factor: 0.5
-  lr: 0.00001
+  lr: 0.000001
   model: "vae"
-  momentum: 0.1
-  n_epochs: 100
+  n_epochs: 500
   p_in: 7
   patience: 20
-  save_every: 50
+  save_every: 500
   save_subset: 2000
-  z_dim: 128
+  z_dim: 64
 bootstrap:
   path: "bootstraps.csv"
