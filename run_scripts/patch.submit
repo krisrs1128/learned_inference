@@ -1,8 +1,8 @@
 universe = docker
 docker_image = krisrs1128/li:122807
-log = /home/ksankaran/logs/patch_\$(Cluster).log
-error = /home/ksankaran/logs/patch_\$(Cluster).err
-output = /home/ksankaran/logs/patch_\$(Cluster).out
+log = /home/ksankaran/logs/patch_$(Cluster).log
+error = /home/ksankaran/logs/patch_$(Cluster).err
+output = /home/ksankaran/logs/patch_$(Cluster).out
 environment = "B=$(Process)"
 transfer_input_files = tnbc_raw.tar.gz
 executable = patch.sh
