@@ -4,6 +4,7 @@ Train VAE on multichannel cell tiffs
 python3 -m train -c ../conf/train.yaml
 """
 from addict import Dict
+from pathlib import Path
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -12,8 +13,8 @@ from .features import save_features
 from .models.vae import vae_loss
 import numpy as np
 import os
+import logging
 import pandas as pd
-import pathlib
 import torch
 import torch.nn.functional as F
 import yaml
@@ -45,6 +46,9 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     scheduler = ReduceLROnPlateau(optim, mode="max", factor=opts.train.factor, patience=opts.train.patience)
 
+    logging.basicConfig(filename=Path(out_paths[0]) / "logs" / "train.log", level=logging.DEBUG)
+    logging.info(f"Using device: {str(device)}")
+
     for epoch in range(opts.train.n_epochs):
         model, optim, lt = train_epoch(model, loaders["train"], optim, loss_fn, device)
         loss["train"].append(np.mean(lt))
@@ -60,8 +64,9 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
             save_features(loaders["features"], model, "best", out_paths, device)
             torch.save(model.state_dict(), out_paths[2])
 
-        print(f"{epoch}/{opts.train.n_epochs} | train: {loss['train'][-1]} | dev: {loss['dev'][-1]} |")
+        logging.info(f"{epoch}/{opts.train.n_epochs}\t{loss['train'][-1]}\t{loss['dev'][-1]}|")
         scheduler.step(loss["dev"][-1])
+
     return loss
 
 

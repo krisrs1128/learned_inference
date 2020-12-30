@@ -87,4 +87,16 @@ class CellDataset(Dataset):
     def __getitem__(self, i):
         img = np.load(self.root / self.img_paths[i])
         y = self.xy.loc[self.img_paths[i], "y"]
-        return torch.Tensor(img.transpose(2, 0, 1)), torch.Tensor([y])
+
+        # random reflections
+        for j in range(2):
+            if np.random.random() < 0.5:
+                img = np.flip(img, axis=j)
+
+        # random 0 / 90 / 180 / 270 rotation
+        k = np.random.randint(4)
+        for j in range(k):
+            img = np.rot90(img, j)
+
+        img = img.transpose(2, 0, 1).copy()
+        return torch.Tensor(img), torch.Tensor([y])
