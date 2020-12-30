@@ -8,11 +8,11 @@ train:
   batch_size: 128
   checkpoint: null
   factor: 0.5
-  lr: 0.0005
+  lr: 0.00005
   model: "vae"
   momentum: 0.1
   n_epochs: 100
-  p_in: 4
+  p_in: 7
   patience: 20
   save_every: 50
   save_subset: 2000

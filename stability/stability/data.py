@@ -99,5 +99,4 @@ class CellDataset(Dataset):
             img = np.rot90(img, j)
 
         img = img.transpose(2, 0, 1).copy()
-        img = img[[3, 4, 6, 2]]
         return torch.Tensor(img), torch.Tensor([y])
