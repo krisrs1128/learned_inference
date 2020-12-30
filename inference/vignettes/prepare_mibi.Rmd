@@ -3,6 +3,7 @@ title: "R Notebook"
 output: html_notebook
 params:
   qsize: 256
+  k_channels: 4
   data_dir: "/Users/kris/Documents/tnbc_raw"
   out_dir: "/Users/kris/Documents/stability_data"
   j: 1
@@ -15,7 +16,7 @@ library("inference")
 ```
 
 ```{r}
-raw_data <- load_mibi(params$data_dir, 41)
+raw_data <- load_mibi(params$data_dir, 41, n_lev = params$k_channels)
 tiff_paths <- raw_data$tiffs
 exper <- raw_data$mibi
 ```

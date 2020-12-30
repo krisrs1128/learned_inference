@@ -25,7 +25,9 @@ def log_stage(stage, epoch, model, loss, loader, writer, device):
     x, _ = next(iter(loader))
 
     if "VAE" in str(model.__class__):
-      x_hat  = model(x.to(device))["x_hat"].mean(axis=(1), keepdim=True)
+      if epoch == 0:
+          writer.add_image(f"x/{stage}", make_grid(x.mean(axis=(1), keepdim=True)), epoch)
+      x_hat = model(x.to(device))["x_hat"].mean(axis=(1), keepdim=True)
       writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
     else:
       y_hat = model(x.to(device))["y_hat"]
@@ -64,7 +66,7 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
             save_features(loaders["features"], model, "best", out_paths, device)
             torch.save(model.state_dict(), out_paths[2])
 
-        logging.info(f"{epoch}/{opts.train.n_epochs}\t{loss['train'][-1]}\t{loss['dev'][-1]}|")
+        logging.info(f"\t{epoch}/{opts.train.n_epochs}\t{loss['train'][-1]}\t{loss['dev'][-1]}")
         scheduler.step(loss["dev"][-1])
 
     return loss

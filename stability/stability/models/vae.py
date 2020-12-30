@@ -108,7 +108,6 @@ def vae_loss(x, y, output, vq_coef=1):
     return mse + vq_coef*vq_loss
 
 
-
 class NearestEmbed(nn.Module):
     def __init__(self, num_embeddings, embeddings_dim):
         super(NearestEmbed, self).__init__()
@@ -120,7 +119,6 @@ class NearestEmbed(nn.Module):
         x - (batch_size, emb_size, *)
         """
         return nearest_embed(x, self.weight.detach() if weight_sg else self.weight)
-
 
 
 class NearestEmbedFunc(Function):

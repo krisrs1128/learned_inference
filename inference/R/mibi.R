@@ -3,7 +3,7 @@
 #' @importFrom forcats fct_lump_n
 #' @importFrom stringr str_extract
 #' @export
-load_mibi <- function(data_dir, n_paths = NULL, n_lev=6) {
+load_mibi <- function(data_dir, n_paths = NULL, n_lev = 6) {
   exper <- get(load(file.path(data_dir, "mibiSCE.rda")))
   tiff_paths <- list.files(data_dir, "*.tiff", recursive = T, full.names = T)
 
