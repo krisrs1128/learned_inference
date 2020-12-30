@@ -5,7 +5,7 @@ organization: # all relative to $DATA_DIR
   splits: "Xy.csv"
   metadata: "layers.csv"
 train:
-  batch_size: 128
+  batch_size: 64
   checkpoint: null
   factor: 0.5
   lr: 0.0001
