@@ -96,7 +96,7 @@ class VAE(nn.Module):
         emb, _ = self.emb(sample)
         return self.decode(emb.view(size, self.z_dim, self.f, self.f)).cpu()
 
-def vae_loss(x, y, output, vq_coef=1):
+def vae_loss(x, y, output, vq_coef=1, commit_coef=0.5):
     x_hat = output["x_hat"]
     z_e = output["z_e"]
     emb = output["emb"]
@@ -105,7 +105,7 @@ def vae_loss(x, y, output, vq_coef=1):
     mse = F.mse_loss(x_hat, x)
     vq_loss = torch.mean(torch.norm((emb - z_e.detach())**2, 2, 1))
     commit_loss = torch.mean(torch.norm((emb.detach() - z_e)**2, 2, 1))
-    return mse + vq_coef*vq_loss
+    return mse + vq_coef*vq_loss + commit_coef*commit_loss
 
 
 class NearestEmbed(nn.Module):

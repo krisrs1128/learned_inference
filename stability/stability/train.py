@@ -26,7 +26,7 @@ def log_stage(stage, epoch, model, loss, loader, writer, device):
 
     if "VAE" in str(model.__class__):
       if epoch == 0:
-          writer.add_image(f"x", make_grid(x[:, [3, 4, 6]]), epoch)
+          writer.add_image(f"x/{stage}", make_grid(x[:, [3, 4, 6]]), epoch)
       x_hat = model(x.to(device))["x_hat"][:, [3, 4, 6]]
       writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
     else:
