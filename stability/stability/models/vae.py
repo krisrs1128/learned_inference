@@ -32,7 +32,7 @@ class ResBlock(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, z_dim, k=10, bn=True, vq_coef=1, commit_coef=0.5, p_in=3, **kwargs):
+    def __init__(self, z_dim, k=10, bn=False, vq_coef=1, commit_coef=0.5, p_in=3, **kwargs):
         super(VAE, self).__init__()
 
         self.encoder = nn.Sequential(
