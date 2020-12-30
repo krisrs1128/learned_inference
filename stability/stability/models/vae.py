@@ -27,14 +27,17 @@ class VAE(nn.Module):
         self.device = device
 
         self.encoder = nn.Sequential(
-            nn.Conv2d(p_in, 64, kernel_size=4, stride=2),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(p_in, 32, kernel_size=4, stride=2),
+#            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+#            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 128, kernel_size=4, stride=2),
-            nn.BatchNorm2d(128),
+#            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Conv2d(128, 256, kernel_size=4, stride=2),
-            nn.BatchNorm2d(256),
+#            nn.BatchNorm2d(256),
             nn.ReLU(),
             Flatten()
         )
@@ -46,13 +49,16 @@ class VAE(nn.Module):
         self.decoder = nn.Sequential(
             UnFlatten(),
             nn.ConvTranspose2d(h_dim, 128, kernel_size=5, stride=2),
-            nn.BatchNorm2d(128),
+ #           nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.ConvTranspose2d(128, 64, kernel_size=5, stride=2),
-            nn.BatchNorm2d(64),
+ #           nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, p_in, kernel_size=6, stride=2),
-            nn.Sigmoid(),
+            nn.ConvTranspose2d(64, 32, kernel_size=6, stride=2),
+ #           nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.ConvTranspose2d(32, p_in, kernel_size=6, stride=2),
+            nn.Sigmoid()
         )
 
     def reparameterize(self, mu, logvar):

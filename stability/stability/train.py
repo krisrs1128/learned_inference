@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchvision.utils import make_grid
-from torchvision.utils import save_image
 from .features import save_features
 from .models.vae import vae_loss
 import numpy as np
@@ -25,7 +24,7 @@ def log_stage(stage, epoch, model, loss, loader, writer, device):
     x, _ = next(iter(loader))
 
     if "VAE" in str(model.__class__):
-      x_hat  = model(x.to(device))["x_hat"]
+      x_hat  = model(x.to(device))["x_hat"].mean(axis=(1), keepdim=True)
       writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
     else:
       y_hat = model(x.to(device))["y_hat"]
