@@ -123,7 +123,6 @@ extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4, alpha = 5) {
     X.tumor = mean(tumor_status),
     X.size = mean(cells_filter$cellSize),
     X.grade = cells_filter$GRADE[1],
-    X.TIL = cells_filter$TIL_score[1],
     y = log((1 + sum(tumor_status)) / (1 + sum(1 - tumor_status)), 2)
   )
   list(x = rm, xy = xy)
