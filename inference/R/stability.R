@@ -93,7 +93,7 @@ procrustes <- function(x_list, tol = 1e-3) {
 #' @importFrom pdist pdist
 #' @importFrom reticulate import
 #' @importFrom ggplot2 ggplot geom_point aes coord_fixed theme_bw
-#'   annotate_raster %+%
+#'   annotation_raster %+%
 #' @export
 image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, channels = c(1, 2, 3)) {
   np <- import("numpy")
