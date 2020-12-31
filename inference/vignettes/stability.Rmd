@@ -158,6 +158,8 @@ head(edge_data)
 ```
 
 ```{r, embedding_plot, fig.width = 8}
+sca_label <- ifelse(params$sca, "sca", "svd")
+
 for (filt_rows in c(TRUE, FALSE)) {
   if (filt_rows) {
     edge_data_sub <- edge_data %>%
@@ -193,28 +195,6 @@ for (filt_rows in c(TRUE, FALSE)) {
   }
 }
   
-sca_label <- ifelse(params$sca, "sca", "svd")
-```
-
-
-```{r, embedding_plot_density, fig.width = 8}
-density_data <- plot_data %>% 
-  dcast(rel_path + y + split + bootstrap ~ dim, value.var = "value") %>%
-  split(.$split) %>%
-  map_dfr(~ head(.x, 150))
-density_data$rel_path <- as.numeric(as.factor(density_data$rel_path))
-
-ggplot(density_data) +
-  stat_density_2d(
-    aes(x = dim1, y = dim2, group = rel_path, fill = y),
-    geom = "polygon",
-    alpha = 0.1,
-    binwidth = 0.2
-  ) +
-  scale_fill_viridis_c() +
-  facet_wrap(~ split) +
-  coord_fixed() +
-  theme(legend.position = "bottom")
 ```
 
 ```{r}
@@ -224,6 +204,7 @@ edge_dists <- edge_data %>%
 
 ggplot(edge_dists) +
   geom_histogram(aes(x = log(D), fill = split), bins = 50) +
+  scale_color_brewer(palette = "Set2") +
   facet_wrap(~split, scale = "free_y")
 write_csv(edge_dists, file.path(save_dir, sprintf("edge_dists_%s.csv", sca_label)))
 ```
@@ -267,13 +248,21 @@ lasso's above, as a function of $\lambda$.
 pi_hat <- pi_hat %>%
   tidyr::unite(jb, j, bootstrap, split, remove = FALSE)
 pi_hat$split <- factor(pi_hat$split, levels = c("train", "dev", "test"))
-ggplot(pi_hat %>% filter(j < 17)) +
-  geom_line(aes(x = log(lambda), y = value, col = bootstrap, group = jb, linetype = split)) +
+ggplot(pi_hat %>% filter(j > 0)) +
+  geom_line(aes(x = log(lambda), y = value, col = split, group = jb)) +
   scale_color_brewer(palette = "Set2") +
   scale_x_reverse() +
+  labs(
+    x = expression(log(lambda)),
+    y = expression(hat(Pi)^{b}~(lambda))
+  ) +
   #scale_x_continuous(trans = ggforce::trans_reverser('log10')) +
-  facet_wrap(~ j, ncol = 6) +
-  theme(legend.position = "bottom")
+  scale_y_continuous(breaks = c(0.1, 0.5, 0.9)) +
+  facet_wrap(~ j, ncol = 5) +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank()
+  )
 ggsave(file.path(save_dir, sprintf("selection_paths_%s.png", sca_label)))
 ```
 What is the average correlation between selected features and the underlying
@@ -298,7 +287,7 @@ for (i in seq_along(scores_mat)) {
   scores_i <- scores_mat[[i]] %>%
     select(starts_with("dim"), starts_with("X")) %>%
     as.matrix()
-
+  
   mcor[[i]] <- melt(cor(scores_i), varnames = c("dim", "feature")) %>%
     filter(!(feature %in% paste0("dim", 1:params$ncomp))) %>%
     filter(dim %in% paste0("dim", 1:params$ncomp))
