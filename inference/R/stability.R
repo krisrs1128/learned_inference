@@ -95,7 +95,7 @@ procrustes <- function(x_list, tol = 1e-3) {
 #' @importFrom ggplot2 ggplot geom_point aes coord_fixed theme_bw
 #'   annotate_raster %+%
 #' @export
-image_grid <- function(coordinates, paths, density = 15, min_dist=0.1) {
+image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, channels = c(1, 2, 3)) {
   np <- import("numpy")
   p <- ggplot() +
     geom_point(
@@ -116,12 +116,14 @@ image_grid <- function(coordinates, paths, density = 15, min_dist=0.1) {
   dists <- as.matrix(pdist(xy_grid, as.matrix(coordinates)))
 
   # overlay the closest points
+  used_ix <- c()
   for (i in seq_len(nrow(dists))) {
     min_ix <- which.min(dists[i, ])
     if (dists[i, min_ix] > min_dist) next
+    if (min_ix %in% used_ix) next
+    used_ix <- c(used_ix, min_ix)
 
-    im <- np$load(paths[min_ix])
-    print("passing")
+    im <- np$load(paths[min_ix])[,, channels]
     p <- p +
       annotation_raster(
         as.raster(im),

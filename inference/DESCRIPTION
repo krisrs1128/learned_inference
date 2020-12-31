@@ -17,11 +17,12 @@ Imports:
   dplyr,
   forcats,
   glmnet,
+  pdist,
   raster,
   reshape2,
   reticulate,
-  tidyr,
   sf
+  tidyr,
 Suggests:
   ggplot2,
   dplyr,

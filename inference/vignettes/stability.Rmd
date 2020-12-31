@@ -3,12 +3,13 @@ title: Stability Analysis
 output: html_notebook
 params:
   data_dir: "/Users/kris/Documents/stability_outputs/"
-  layer: "mu"
-  model_prefix: "vae90"
+  layer: "linear"
+  model_prefix: "tnbc_cnn"
   ncomp: 10
   python_path: "/usr/bin/python3"
-  sca: TRUE
+  sca: FALSE
   save_dir: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures"
+  tiles_dir: "/Users/kris/Documents/stability_data/"
 ---
 
 ```{r libraries}
@@ -78,6 +79,7 @@ subsets_ <- map(subsets, ~ dplyr::rename(., c("ix" = "X1", "rel_path" = "path"))
 acts <- map2_dfr(subsets_, acts, cbind, .id = "source") %>%
   left_join(metadata %>% select(source, bootstrap) %>% unique())
 ```
+
 ```{r activation_histo}
 macts <- acts %>%
   select("rel_path", starts_with("X")) %>%
@@ -106,9 +108,6 @@ dev.off()
 for (i in seq_along(x_list)) {
   if (grepl("vae", params$model_prefix)) break
   x_list[[i]] <- asinh(x_list[[i]])
-  for (j in seq_len(ncol(x_list[[i]]))) {
-    x_list[[i]][, j] <- x_list[[i]][, j] + runif(nrow(x_list[[i]]), -0.2, 0.2)
-  }
 }
 ```
 
@@ -123,7 +122,7 @@ if (params$sca) {
 ```{r}
 pres <- sparse_approx %>%
   map(~ .$scores) %>%
-  procrustes(0.01)
+  procrustes(0.005)
 M <- pres$M
 scores <- pres$x_align
 scores <- lapply(seq_len(dim(scores)[3]), function(i) scores[,, i]) # split last dimension across list
@@ -159,28 +158,65 @@ head(edge_data)
 ```
 
 ```{r, embedding_plot, fig.width = 8}
-ggplot(edge_data %>% filter(rel_path %in% edge_data$rel_path[1:100])) +
-  geom_point(
-    data = centroids %>% filter(rel_path %in% edge_data$rel_path[1:100]),
-    aes(x = meandim3, y = meandim2, col = y),
-    alpha = 0.5, size = 0.8
-    ) +
-  geom_point(
-    aes(x = dim3, y = dim2, col = y),
-    size = 0.9, alpha = 0.3
-  ) +
-  geom_segment(
-    aes(x = dim3, xend = meandim3, y = dim2, yend = meandim2, col = y),
-    size = 0.3, alpha = 0.8
-  ) +
-  coord_fixed(1) +
-  facet_grid(. ~ split) +
-  scale_color_viridis_c() +
-  theme(legend.position = "bottom")
-
+for (filt_rows in c(TRUE, FALSE)) {
+  if (filt_rows) {
+    edge_data_sub <- edge_data %>%
+      split(.$split) %>%
+      map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:150]))
+  } else {
+    edge_data_sub <- edge_data
+  }
+  
+  for (j1 in seq_len(params$ncomp)) {
+    for (j2 in seq_len(j1 - 1)) {
+      ggplot(edge_data_sub) +
+        geom_point(
+          data = centroids %>% filter(rel_path %in% edge_data_sub$rel_path),
+          aes_string(x = paste0("meandim", j1), y = paste0("meandim", j2), col = "y"),
+          alpha = .5, size = 0.6
+          ) +
+        geom_point(
+          aes_string(x = paste0("dim", j1), y = paste0("dim", j2), col = "y"),
+          size = 0.4, alpha = 0.8, shape = 4
+        ) +
+        geom_segment(
+          aes_string(x = paste0("meandim", j1), xend = paste0("dim", j1), y = paste0("meandim", j2), yend = paste0("dim", j2), col = "y"),
+          size = 0.3, alpha = 0.8
+        ) +
+        coord_fixed(1) +
+        facet_grid(. ~ split) +
+        scale_color_viridis_c() +
+        labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
+        theme(legend.position = "bottom")
+      ggsave(file.path(save_dir, sprintf("embeddings_%s-%s-%s_%s.png", sca_label, j1, j2, filt_rows)))
+    }
+  }
+}
+  
 sca_label <- ifelse(params$sca, "sca", "svd")
-ggsave(file.path(save_dir, sprintf("embeddings_%s.png", sca_label)))
 ```
+
+
+```{r, embedding_plot_density, fig.width = 8}
+density_data <- plot_data %>% 
+  dcast(rel_path + y + split + bootstrap ~ dim, value.var = "value") %>%
+  split(.$split) %>%
+  map_dfr(~ head(.x, 150))
+density_data$rel_path <- as.numeric(as.factor(density_data$rel_path))
+
+ggplot(density_data) +
+  stat_density_2d(
+    aes(x = dim1, y = dim2, group = rel_path, fill = y),
+    geom = "polygon",
+    alpha = 0.1,
+    binwidth = 0.2
+  ) +
+  scale_fill_viridis_c() +
+  facet_wrap(~ split) +
+  coord_fixed() +
+  theme(legend.position = "bottom")
+```
+
 ```{r}
 edge_dists <- edge_data %>%
   mutate(D = sqrt((dim1 - meandim1) ^ 2 + (dim2 - meandim2) ^ 2 + (dim3 - meandim3) ^ 2)) %>%
@@ -343,3 +379,19 @@ selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
 selections$sca <- params$sca
 write_csv(selections, file.path(save_dir, sprintf("selections_%s.csv", sca_label)))
 ```
+
+
+```{r}
+paths <- file.path(params$tiles_dir, centroids$rel_path)
+for (j1 in seq_len(params$ncomp)) {
+  for (j2 in seq_len(j1 - 1)) {
+    cur_cols <- paste0("meandim", c(j1, j2))
+    coords <- centroids %>%
+      select(one_of(cur_cols))
+    colnames(coords) <- c("x", "y")
+    image_grid(coords, paths, min_dist = .05, density = 10, channels = c(4, 5, 7))
+    ggsave(file.path(save_dir, sprintf("image_grid-%s-%s-%s.png", sca_label, j1, j2)))
+  }
+}
+```
+
