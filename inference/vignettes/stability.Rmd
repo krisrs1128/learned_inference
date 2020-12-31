@@ -389,7 +389,11 @@ for (j1 in seq_len(params$ncomp)) {
     coords <- centroids %>%
       select(one_of(cur_cols))
     colnames(coords) <- c("x", "y")
-    image_grid(coords, paths, min_dist = .05, density = 10, channels = c(4, 5, 7))
+    image_grid(coords, paths, min_dist = .05, density = 10, channels = c(4, 5, 7)) +
+      labs(
+        x = sprintf("Learned Feature %s", j1),
+        y = sprintf("Learned Feature %s", j2)
+      )
     ggsave(file.path(save_dir, sprintf("image_grid-%s-%s-%s.png", sca_label, j1, j2)))
   }
 }
