@@ -21,8 +21,8 @@ Imports:
   raster,
   reshape2,
   reticulate,
-  sf
-  tidyr,
+  sf,
+  tidyr
 Suggests:
   ggplot2,
   dplyr,
