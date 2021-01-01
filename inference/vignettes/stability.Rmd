@@ -5,7 +5,7 @@ params:
   data_dir: "/Users/kris/Documents/stability_outputs/"
   layer: "linear"
   model_prefix: "tnbc_cnn"
-  ncomp: 10
+  ncomp: 20
   python_path: "/usr/bin/python3"
   sca: FALSE
   save_dir: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures"
