@@ -176,7 +176,7 @@ bash train.submit conf/train_cnn.yaml # or whichever model to run
 mkdir stability_outputs/
 mv tnbc_cnn*tar.gz stability_outputs/
 tar -zcvf stability_outputs.tar.gz stability_outputs/
-condor_submit visualize_outputs.submit
+bash visualize_outputs.submit tnbc_cnn linear FALSE # model name, layer of learned features, whether to use sparse components
 ```
 
 You have to wait until each job is finished before launching the next. The

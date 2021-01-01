@@ -1,0 +1,39 @@
+
+\section{Context}
+
+\subsubsection{Procrustes Analysis}
+Multiview data analysis techniques are concerned with the joint analysis of multiple tables $\mathbf{X}_{1}, \dots, \mathbf{X}_{B}$. They are relevant here because we hope to study the encodings $\mathbf{Z}_{1},\dots \mathbf{Z}_{B}$ that emerge from $\hat{\theta}$’s learned when using different datasets. They make it possible to study variation across feature extractors.
+
+\subsubsection{Stability}
+
+Many statistical algorithms revolve around the idea that meaningful conclusions should be stable to perturbations \cite{yu2013stability}, and, heuristically, we expect important learned features to be stable from one study to the next. To formalize this idea, we will employ stability selection, a technique originally developed to isolate statistically significant features from high-dimensional linear models  \cite{meinshausen2010stability}.
+
+For a dataset $\mathbf{X}\in \reals^{n \times p}$ and $\mathbf{y} \in \reals{n}$, stability selection proceeds as follows. First, $B$ subsamples of size $\lfloor \frac{n}{2} \rfloor$ are drawn from the data, and for each a lasso regression is run over a grid of $\lambda$ regularization parameters. Each of these regressions results in $p$ coefficient trajectories, and important features will generally become nonzero earlier on the regularization path (that is, even with large regularization $\lambda$).
+
+Once the $B$ trajectory portraits are computed, we are ready to evaluate the importance of each feature. For a given $lambda$ and feature $j$, let $\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples that had nonzero $\hat{\beta}_j\left(\lambda\right)$.  The paths $\left(\hat{\Pi}_{j}\lambda\left(\lambda\right)\right)_{j = 1}^{p}$summarize the importance of the $p$ regression features. Furthermore, these $\hat{\Pi}_{j}\left(\lambda\right)$ satisfy an FDR control property: (…)
+
+\subsubsection{Feature Learning}
+
+Our work is motivated by the adoption of automated feature extraction algorithms for use in scientific contexts. While scientific applications have drawn on data-driven features since at least \cite{rao1964}, the simplicity and versatility of deep learning-based feature extractors has made this practice especially common.
+In this work, we will examine the behavior of three particular feature learning algorithms — that is, ways of learning $T\left(\cdot; \theta\left(X\right)\right)$.
+
+The first approach is called the Variational Autoencoder (VAE). Like principal components analysis, this algorithm learns a $K$-dimensional reduction of a dataset by optimizing a reconstruction objective. However, the approach is more flexible, learning a low-dimensional, nonlinear manifold with high-density within the high-dimensional (but mostly empty) raw feature space. Formally, the algorithm first posits some generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data; $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair $\xi, \varphi$ that maximizes the variational lower bound,
+
+\begin{align*}
+\log p_{\xi}\left(x\right) \geq  \mathbb{E}_{q_{\varphi}}\left[\log p]_{\xi}(x \mid z)\right]-D_{KL}\left(q_{\varphi}(z \mid x) \| p(z)\right)
+\end{align*}
+
+where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right), \sigma^{2}_{\varphi}\left(x\right)\right)$is a probabilistic encoder, mapping raw data examples to distributions on a latent space of more meaningful features. The mean encoding$\mu_{\varphi}\left(x\right)$can be thought of as a learned representation of$x$.
+Second, we investigate features learned in a supervised way through a
+Convolutional Neural Network (CNN). For regression, a CNN optimizes the
+empirical estimate of the risk $\mathbf{E}\|y -
+f_{W_{1:L}}\left(x\right)^{T}\beta\|_{2}^{2}$ over $W_{1:L}$ and $\beta$. Here,
+$f_{W_{1:L}}$ transforms the raw input into the ``last layer''’s features, and
+is defined recursively according to
+
+\begin{align*}
+f^{l}_{W_{1:l}}\left(x\right) &= \sigma\left(W_{l}f^{l - 1}_{W\_{1:(l - 1)}}\left(x\right)\right)\\
+f^{0}\left(x\right) &= x
+\end{align*}
+
+for $\sigma\left(x\right)$defined as$\sigma\left(x\right) := x \mathbb{1}\left\{x \geq 0\right\}$and matrices$W$restricted to the set of convolution operators. Specifically, convolution operations share parameters across spatial image patches — this induces a specific structure on$W$.
