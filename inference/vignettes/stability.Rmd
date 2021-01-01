@@ -5,7 +5,7 @@ params:
   data_dir: "/Users/kris/Documents/stability_outputs/"
   layer: "linear"
   model_prefix: "tnbc_cnn"
-  ncomp: 20
+  ncomp: 10
   python_path: "/usr/bin/python3"
   sca: FALSE
   save_dir: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures"
@@ -113,7 +113,7 @@ for (i in seq_along(x_list)) {
 
 ```{r}
 if (params$sca) {
-  sparse_approx <- map(x_list, ~ sca(., k = params$ncomp))
+  sparse_approx <- map(x_list, ~ sca(., k = max(params$ncomp, 20))[, 1:params$ncomp])
 } else {
   sparse_approx <- map(x_list, ~ list(scores = princomp(.)$scores[, 1:params$ncomp]))
 }
