@@ -170,7 +170,9 @@ tar -zcvf stability_data.tar.gz stability_data/
 
 # define train / test splits and train
 condor_submit tnbc_splits.submit
-bash train.submit conf/train_cnn.yaml # or whichever model to run
+bash train.submit conf/tnbc_cnn.yaml
+bash train.submit conf/tnbc_vae.yaml
+bash train.submit conf/tnbc_rcf.yaml
 
 # visualize
 mkdir stability_outputs/
