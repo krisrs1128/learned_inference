@@ -14,7 +14,7 @@ This question is not a new one — \cite{rao1955estimation} discussed tests for 
 It’s worth asking why the approaches cited above haven’t become already become standard practice the scientific workflow. Why isn’t the bootstrap already used to quantify the importance of cell type mixing in cancer progression, or the role of infrastructure development in economic growth? We suspect that the main reasons are,
 
 \begin{itemize}
-\item The learned features are effective for computational tasks, but not for human understanding. This is a result of the fact that deep learning representations are « distributed » \cite{mcclelland1986parallel}. Practically, this means that any pattern observed by the algorithm, will be encoded by a pattern of activations across a large number of more elementary features, not any specialized feature that recognizes just that pattern. A deep learning algorithm is able ot recognize a highway in a satellite image not because it has a single high-level feature for recognizing highways, but because it can merge evidence from across neurons (another word for an elementary learned feature) that activate when particular color, shape, and edge features are present. This approach turns out to be much more effective for tasks like classification and simulation, but poses a challenge for human inspection.
+\item The learned features are effective for computational tasks, but not for human understanding. This is a result of the fact that deep learning representations are ``distributed'' \cite{mcclelland1986parallel}. Practically, this means that any pattern observed by the algorithm, will be encoded by a pattern of activations across a large number of more elementary features, not any specialized feature that recognizes just that pattern. A deep learning algorithm is able ot recognize a highway in a satellite image not because it has a single high-level feature for recognizing highways, but because it can merge evidence from across neurons (another word for an elementary learned feature) that activate when particular color, shape, and edge features are present. This approach turns out to be much more effective for tasks like classification and simulation, but poses a challenge for human inspection.
 \item From one run to the next, the learned features don’t stay the same. This is unlike in principal components analysis, say, where the learned components are ordered in a natural way. If the deep learning features were more specialized, it might be possible to recognize the same feature across two runs, and then match them. However, the features are distributed, so it isn’t easy to say that any given neuron from the first run matches any other neuron(s) in the second. Coupled with the fact that there are regularly hundreds of neurons in any single layer of the model, it’s easy to see why an investigator might give up any hope of finding anything useful from bootstrapping their models.
 \item It’s impractical to bootstrap methods that take hours to run, even if they could be done in parallel. Moreover, it’s unclear what information should be compared across bootstraps — the model parameters, the learned feature activations, or summary statistics about the features — and different choices have a major impact on the memory footprint of the proposal.
 \item Some form of sample-splitting must take place, to ensure that the significance of features is not determined using the same data that was used to learn them. However, it’s unclear how the splitting should be carried out. How much data should be used for feature learning, and how much for inference? 
@@ -53,7 +53,7 @@ To make this more precise, suppose that the $b^{th}$ run of the feature learning
 \mathbf{Z}_{b} &= \begin{pmatrix}
 z^{b}_{1} \\
 \vdots \\
-z_{b}^{n}_
+z_{b}^{n}
 \end{pmatrix} \in \reals^{n \times K}
 \end{align}
 
@@ -62,7 +62,7 @@ and define an alignment function $\mathcal{A}$ which takes learned to aligned fe
 \mathcal{A}: \mathbf{Z}_{1}, \dots, \mathbf{Z}_{B} \to \mathbf{M}, \left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}\right).
 \end{align*}
 
-We think of $\mathbf{M}$ as the average of all $B$ representations and $\underaccent{\bar}{\mathbf{Z}_{b}}$ as the version of the $b^{th}$ learned representation after they have been put into a common coordinate system. In this work, $\mathcal{A}$ is just a Procrustes analysis. With this notation, we can now define subspace stability.
+We think of $\mathbf{M}$ as the average of all $B$ representations and $\underaccent{\bar}{\mathbf{Z}}_{b}$ as the version of the $b^{th}$ learned representation after they have been put into a common coordinate system. In this work, $\mathcal{A}$ is just a Procrustes analysis. With this notation, we can now define subspace stability.
 
 \begin{definition}
 The \textit{subspace stability} of $B$ learned representations $\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}$ with respect to an alignment function $\mathcal{A}$ is the distance from all aligned features and their average,
@@ -71,7 +71,13 @@ The \textit{subspace stability} of $B$ learned representations $\mathbf{Z}_{1}, 
 \end{align*}
 \end{definition}
 
-By selection stability, we mean that a given aligned feature is repeatedly discovered by a model selection procedure. At this point, the features can be thought of as fixed; we are back in the more familiar statistical setting. That is, let $\mathcal{S}$ be a selection function, which takes $\underaccent{\bar}{\mathbf{Z}}_{b}$ and a response $y$ and returns a subset $S_{b} \subseteq \{1, \dots, K\}$ of features that are important for understanding variation in $y$.
+By selection stability, we mean that a given aligned feature is repeatedly
+discovered by a model selection procedure. At this point, the features can be
+thought of as fixed; we are back in the more familiar statistical setting. That
+is, let $\mathcal{S}$ be a selection function, which takes
+$\underaccent{\bar}{\mathbf{Z}}_{b}$ and a response $y$ and returns a subset
+$S_{b} \subseteq \{1, \dots, K\}$ of features that are important for
+understanding variation in $y$.
 
 \begin{definition}
 The \textit{selection stability} of the $k^{th}$ aligned feature with respect to the selection function $\mathcal{S}$ is the fraction
