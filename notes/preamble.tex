@@ -1,5 +1,5 @@
 \usepackage{url}
-\usepackage{amssymb, amsfonts, amsmath}
+\usepackage{amssymb, amsfonts, amsmath, amsthm}
 \usepackage{graphicx, natbib}
 \usepackage{accents}
 
@@ -95,6 +95,8 @@
 %~~~~~~~~~~~~~~~
 % Theorem-like environments
 %~~~~~~~~~~~~~~~
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
 
 %-----------------------
 % Probability sets
@@ -115,3 +117,4 @@
 \newcommand{\toprob}{\xrightarrow{\mathbb{P}}}
 \newcommand{\laweq}{\overset{\mathcal{L}}{=}}
 \newcommand{\F}{\mathcal{F}}
+

@@ -29,7 +29,53 @@ This work discusses these questions, providing definitions to guide future probl
 \item We find that, as long as the learned features lead to strong performance on a validation set, then it makes little difference how the samples are split. The fact that a relatively small fraction of the data can be reserved for inference is a consequence of the fact that the learned feature subspaces are effectively low dimensional; we do not need to perform inference on an overwhelming of orthogonal features.
 \end{itemize}
 
-Section \ref{sec:psetup} provides a precise definition of our problem setting. Section \ref{sec:context} summarizes the key technical tools used in this study. We present a generic algorithm for measuring feature subspace stability in Section \ref{sec:algorithm}, and we study its properties through a simulation in Section \ref{sec:simulation}. We conclude with an application to a spatial proteomics dataset in \ref{sec:dataset}.
-\subsection{Context}
+Section \ref{sec:psetup} provides a description of our problem setting. Section \ref{sec:context} summarizes the key technical tools used in this study. We present a generic algorithm for measuring feature subspace stability in Section \ref{sec:algorithm}, and we study its properties through a simulation in Section \ref{sec:simulation}. We conclude with an application to a spatial proteomics dataset in \ref{sec:dataset}.
 
-Our analysis uses techniques from the feature learning, high-dimensional inference, and multiview data analysis communities. We explain why these techniques are needed and review the main ideas.
+\section{Problem Setup}
+\label{sec:psetup}
+
+Our goal is to perform formal inference on features that were algorithmically derived. The features are derived from $n$ samples $x\_i \in \mathcal{X}$. For example, each $x_{i}$ might be a spatial proteomics or satellite image. They could also be more general data types, like the audio recording for the $i^{th}$ speaker or the graph for the $i^{th}$ molecule. Optionally, a vector $\mathbf{y}\in \reals^{n}$ of measured responses will be available.
+
+\begin{definition}
+A \textit{feature learner} is a parameterized mapping $T\left(\cdot;
+\theta\right): \mathcal{X} \to \reals^{K}$ which takes data from the raw input
+domain $\mathcal{X}$ and represents it using a vector in $\reals^{K}$.
+\end{definition}
+
+For example, in the transcriptomics and economics applications, we expect the encoder to transform a vector of raw pixel intensities into a vector of features reflecting cell type or infrastructural properties, respectively. The parameter $\theta$ is estimated from data. An unsupervised feature extractor estimates $\theta$ via $\hat{\theta}\left(x_{1}, \dots, x_{n}\right)$ while a supervised feature extractor uses $\hat{\theta}\left(x_{1}, \dots, x_{n}, y_{1}, \dots, y_{n}\right)$. To cover both cases, we will just write $\hat{\theta}$. For ease of notation, we will write $z_{i} = T\left(x_{i}; \hat{\theta}\right)$ to denote the learned features associated with the $i^{th}$ observation.
+
+It is tempting to attribute an importance to each of the $k$ coordinates of $z$ with respect to a response $y$. For example, if $y$ measures food security level of a region, we would like to attribute this development to the presence of certain geographic features — e.g., the cultivation of a particular crop. The problem is to provide some sort of statistical guarantee for these attributions. An investigator should have confidence that, if the data were collected again, and if features were again extracted by some black box, then those that would be declared important would be closely related to those learned originally. The essential challenge is that the learned features are not the same from one run to the next; the $j^{th}$ feature from run 1 has nothing to do with the $j^{th}$ feature from run 2.
+
+To address this issue, we distinguish between two notions of stability, which we call subspace and selection stability, respectively. The idea of subspace stability is that, even if there is no direct correspondence between learned features across runs, they may all reflect the same underlying latent features. Different runs of the feature learning algorithm return different bases for nearly the same subspace.
+To make this more precise, suppose that the $b^{th}$ run of the feature learning algorithm produces,
+
+\begin{align}
+\mathbf{Z}_{b} &= \begin{pmatrix}
+z^{b}_{1} \\
+\vdots \\
+z_{b}^{n}_
+\end{pmatrix} \in \reals^{n \times K}
+\end{align}
+
+and define an alignment function $\mathcal{A}$ which takes learned to aligned features,
+\begin{align*}
+\mathcal{A}: \mathbf{Z}_{1}, \dots, \mathbf{Z}_{B} \to \mathbf{M}, \left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}\right).
+\end{align*}
+
+We think of $\mathbf{M}$ as the average of all $B$ representations and $\underaccent{\bar}{\mathbf{Z}_{b}}$ as the version of the $b^{th}$ learned representation after they have been put into a common coordinate system. In this work, $\mathcal{A}$ is just a Procrustes analysis. With this notation, we can now define subspace stability.
+
+\begin{definition}
+The \textit{subspace stability} of $B$ learned representations $\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}$ with respect to an alignment function $\mathcal{A}$ is the distance from all aligned features and their average,
+\begin{align*}
+\frac{1}{B} \sum_{b = 1}^{B} \|\underaccent{\bar}{\mathbf{Z}}_{b} - \mathbf{M}\|^{2}_{2}.
+\end{align*}
+\end{definition}
+
+By selection stability, we mean that a given aligned feature is repeatedly discovered by a model selection procedure. At this point, the features can be thought of as fixed; we are back in the more familiar statistical setting. That is, let $\mathcal{S}$ be a selection function, which takes $\underaccent{\bar}{\mathbf{Z}}_{b}$ and a response $y$ and returns a subset $S_{b} \subseteq \{1, \dots, K\}$ of features that are important for understanding variation in $y$.
+
+\begin{definition}
+The \textit{selection stability} of the $k^{th}$ aligned feature with respect to the selection function $\mathcal{S}$ is the fraction
+\begin{align*}
+\frac{1}{B}\sum_{b = 1}^{B} \indic{k \in \mathcal{S}\left(\underaccent{\bar}{\mathbf{Z}}_{b}, y\right)}.
+\end{align*}
+\end{definition}

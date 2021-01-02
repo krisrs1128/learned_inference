@@ -1,34 +1,59 @@
 
 \section{Context}
 
+We briefly summarize the methods used in this work.
+
 \subsubsection{Procrustes Analysis}
-Multiview data analysis techniques are concerned with the joint analysis of multiple tables $\mathbf{X}_{1}, \dots, \mathbf{X}_{B}$. They are relevant here because we hope to study the encodings $\mathbf{Z}_{1},\dots \mathbf{Z}_{B}$ that emerge from $\hat{\theta}$’s learned when using different datasets. They make it possible to study variation across feature extractors.
+Procrustes Analysis gives a way of aligning multiple tables. Given two tables $\mathbf{X}$ and $\mathbf{Y}$, the Procrustes problem finds the rotation matrix $\mathbf{R}$ solving the optimization,
+
+\begin{align*}
+\min_{\mathbf{R} \mathcal{O}} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{2},
+\end{align*}
+
+where $\mathcal{O}$ denotes the space of orthogonal matrices. Using the associated Lagrangian,
+
+\begin{align*}
+\max_{\mathbf{R}, \mathbf{\Lambda} \succ 0}_ \|\mathbf{X} - \mathbf{Y}\|_{2}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
+\end{align*}
+
+the solution can be shown to be $\hat{\mathbf{R}} = \mathbf{U}^{T}\mathbf{V}$ for $\mathbf{U}$ and $\mathbf{V}$ obtained by the SVD of $\mathbf{X}^{T}\mathbf{Y}$. More generally, for $B$ matrices $\mathbf{X}_{1}_, \dots, \mathbf{X}_{B}$, the generalized procrustes problem finds $B$ rotations $\mathbf{R}_{1}, \dots, \mathbf{R}_{B}$ and mean matrix $\mathbf{M}$ solving
+
+\begin{align*}
+\min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}, M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{2}^{2}._
+\end{align*}
+
+While there is no closed form solution, the optimization can be solved by cyclically updating each $\mathbf{R}_{b}$ via standard Procrustes problems and then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b} \mathbf{R}_{b}$.
 
 \subsubsection{Stability}
 
-Many statistical algorithms revolve around the idea that meaningful conclusions should be stable to perturbations \cite{yu2013stability}, and, heuristically, we expect important learned features to be stable from one study to the next. To formalize this idea, we will employ stability selection, a technique originally developed to isolate statistically significant features from high-dimensional linear models  \cite{meinshausen2010stability}.
+Many statistical algorithms revolve around the idea that meaningful conclusions should be stable to perturbations \cite{yu2013stability}. In this work, we make use of stability selection, a technique for evaluating significance in high-dimensional linear models \cite{meinshausen2010stability}.
 
-For a dataset $\mathbf{X}\in \reals^{n \times p}$ and $\mathbf{y} \in \reals{n}$, stability selection proceeds as follows. First, $B$ subsamples of size $\lfloor \frac{n}{2} \rfloor$ are drawn from the data, and for each a lasso regression is run over a grid of $\lambda$ regularization parameters. Each of these regressions results in $p$ coefficient trajectories, and important features will generally become nonzero earlier on the regularization path (that is, even with large regularization $\lambda$).
+For a dataset $\mathbf{X}\in \reals^{n \times p}$ and $\mathbf{y} \in \reals{n}$, stability selection proceeds as follows. First, $B$ subsamples of size $\lfloor \frac{n}{2} \rfloor$ are drawn from the data, and for each a lasso regression is run over a grid of $\lambda$ regularization parameters. Each of these regressions results in $p$ coefficient trajectories, and important features will generally become nonzero earlier on the regularization path (that is, even with large regularization $\lambda$). For a given $lambda$ and feature $j$, let $\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples that had nonzero $\hat{\beta}_j\left(\lambda\right)$.  The paths $\left(\hat{\Pi}_{j}\lambda\left(\lambda\right)\right)_{j = 1}^{p}$summarize the importance of the $p$ regression features. For a given stringency threshold $\pi_{thr}$, the procedure selects features $\hat{S} = \{j : \max_{\lambda} \hat{\Pi}_{j}\left(\lambda\right) \geq \pi_{thr}\}$.
 
-Once the $B$ trajectory portraits are computed, we are ready to evaluate the importance of each feature. For a given $lambda$ and feature $j$, let $\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples that had nonzero $\hat{\beta}_j\left(\lambda\right)$.  The paths $\left(\hat{\Pi}_{j}\lambda\left(\lambda\right)\right)_{j = 1}^{p}$summarize the importance of the $p$ regression features. Furthermore, these $\hat{\Pi}_{j}\left(\lambda\right)$ satisfy an FDR control property: (…)
+Let $q_{\Lambda} = \Eabsarg{\hat{S}_{\Lambda}}$ denote the expected number of
+selected features. It can be shown that, assuming some conditions on the
+selection procedure $\hat{S}$, and requiring a stringency $\pi_{thr} \geq
+\frac{1}{2}$, the expected number of falsely selected features is bounded by
+$\frac{1}{2\pi_{thr} - 1} \frac{q_{\Lambda}^2}{p}$. The term
+$\frac{q_{\Lambda}^2}{p}$ is like the typical fraction of selected features; the
+coefficient $\frac{q_{\Lambda}}{2\pi_{thr} - 1}$ describes the fraction of those
+that are expected to be false positives._
 
 \subsubsection{Feature Learning}
 
-Our work is motivated by the adoption of automated feature extraction algorithms for use in scientific contexts. While scientific applications have drawn on data-driven features since at least \cite{rao1964}, the simplicity and versatility of deep learning-based feature extractors has made this practice especially common.
-In this work, we will examine the behavior of three particular feature learning algorithms — that is, ways of learning $T\left(\cdot; \theta\left(X\right)\right)$.
-
-The first approach is called the Variational Autoencoder (VAE). Like principal components analysis, this algorithm learns a $K$-dimensional reduction of a dataset by optimizing a reconstruction objective. However, the approach is more flexible, learning a low-dimensional, nonlinear manifold with high-density within the high-dimensional (but mostly empty) raw feature space. Formally, the algorithm first posits some generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data; $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair $\xi, \varphi$ that maximizes the variational lower bound,
+In this work, we will examine the behavior of three particular feature learning algorithms. The first approach is called the Variational Autoencoder (VAE). Like principal components analysis, this algorithm learns a $K$-dimensional reduction of a dataset by optimizing a reconstruction objective. Formally, the algorithm first posits some generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data; $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair $\xi, \varphi$ maximizing the lower bound,
 
 \begin{align*}
 \log p_{\xi}\left(x\right) \geq  \mathbb{E}_{q_{\varphi}}\left[\log p]_{\xi}(x \mid z)\right]-D_{KL}\left(q_{\varphi}(z \mid x) \| p(z)\right)
 \end{align*}
 
-where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right), \sigma^{2}_{\varphi}\left(x\right)\right)$is a probabilistic encoder, mapping raw data examples to distributions on a latent space of more meaningful features. The mean encoding$\mu_{\varphi}\left(x\right)$can be thought of as a learned representation of$x$.
+where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right), \sigma^{2}_{\varphi}\left(x\right)\right)$ maps raw data examples to distributions in a latent space of more meaningful features. This optimization problem is nonconvex, and is typically solved through a variant of stochastic gradient descent.
+
 Second, we investigate features learned in a supervised way through a
 Convolutional Neural Network (CNN). For regression, a CNN optimizes the
 empirical estimate of the risk $\mathbf{E}\|y -
 f_{W_{1:L}}\left(x\right)^{T}\beta\|_{2}^{2}$ over $W_{1:L}$ and $\beta$. Here,
-$f_{W_{1:L}}$ transforms the raw input into the ``last layer''’s features, and
+$f_{W_{1:L}}$ transforms the raw input into the \`\`last layer''’s features, and
 is defined recursively according to
 
 \begin{align*}
@@ -36,4 +61,14 @@ f^{l}_{W_{1:l}}\left(x\right) &= \sigma\left(W_{l}f^{l - 1}_{W\_{1:(l - 1)}}\lef
 f^{0}\left(x\right) &= x
 \end{align*}
 
-for $\sigma\left(x\right)$defined as$\sigma\left(x\right) := x \mathbb{1}\left\{x \geq 0\right\}$and matrices$W$restricted to the set of convolution operators. Specifically, convolution operations share parameters across spatial image patches — this induces a specific structure on$W$.
+for $\sigma\left(x\right)$defined as$\sigma\left(x\right) := x \mathbb{1}\left\{x \geq 0\right\}$ and matrices $W$ restricted to the set of convolution operators. Like in the VAE, this optimization is nonconvex and is typically found through first-order optimization methods.
+
+Third, we consider a random convolutional features (RCF) model. Here, a random sample of $P$ training examples $x_{i_1}, \dots, x_{i_P} \in \reals^{w \times h \times c}$ are selected; we are assuming the $x_{i}$ are $c$-channel images with dimension $w\times h$. For each sample, a random $s \times s$ patch is extracted; call the collection $w_{1}, \dots, w_{p} \in \reals^{s \times s \times c}$. For any $c$-channel image $x$, the $p^{th}$ feature $z$ is found by convolving $x$ with $w_{p}$ and averaging over all the associated coordinates.
+
+To train an RCF, the training data are first featurized into $Z \in \reals^{n \times P}$ using random image patches, as described above. Then, a ridge regression model is trained, solving
+
+\begin{align*}
+\hat{\beta} := \arg \min_{\beta} _\|y - Z\beta\|_{2}^{2} + \lambda \|\beta\|_{2}
+\end{align*}*
+
+For a new example $x^{\ast}$, the same image patches $w_{1}, \dots, w_{p}$ are used to create a featurization $z^{\ast}$, and predictions are made with $z^{\ast}^{T}\hat{\beta}$. Unlike either the VAE or CNN, this model does not require gradient based training, and it can serve as a fast (and often effective) baseline.
