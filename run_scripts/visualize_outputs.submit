@@ -8,6 +8,6 @@ transfer_input_files = stability_outputs.tar.gz,stability_data.tar.gz
 environment = "PREFIX=${1} LAYER=${2} SCA=${3}"
 executable = visualize_outputs.sh
 request_cpus = 1
-request_memory = 8GB
-request_disk = 1GB
+request_memory = 12GB
+request_disk = 4GB
 queue 1
