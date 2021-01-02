@@ -1,12 +1,69 @@
 
 \section{Materials and Methods}
 
-Our high-level approach to feature stability analysis is given in Algorithms \ref{alg:features} through \ref{alg:selection}.
+Our approach to feature stability analysis is given in Algorithms
+\ref{alg:features} through \ref{alg:selection}. We'll first motivate the general
+setup, and then we will explain specific choices used in the next section's
+experiments.
+
+The three algorithms do the following,
+\begin{enumerate}
+  \item Train a feature learning algorithm on $B$ perturbed versions of the
+    dataset $\mathcal{D}$. This yields $B$ sets of learned features
+    $\mathbf{Z}_{b}$.
+  \item Use an alignment function $\mathcal{A}$ to represent the learned
+    features in a shared coordinate system. These aligned features are called
+    $\underaccent{\bar}{\mathbf{Z}}_{b}$.
+  \item Using the aligned features, evaluate the importance of each feature
+    dimension using a selection mechanism $\mathcal{S}$.
+\end{enumerate}
+
+The only subtlety is that the feature learning and selection steps are performed
+on different subsets of $\mathcal{D}$. The indices used for feature learning are
+$I$ while those used for selection stability are $I^{C}$. This is needed to
+maintain validity of inference -- if the same samples were used for selection
+and learning, features would appear more important than they are.
+
+For our perturbation function $\mathcal{P}$, we train new feature learners on
+bootstrap resampled versions of the training dataset
+$\mathcal{D}\left[I\right]$. Other perturbation functions could be interesting
+-- how do learned features change when discarding (potentially influential)
+subsets of training data? For example, learning features on different temporal
+or spatial subsets of a dataset may reveal a drift in the important features
+over time or space. Alternatively, though our notation does not capture this
+case, it would be possible to perturb the model training procedure, using
+different hyperparameters. It would be of interest to trace out the dependence
+of the learned features on the mechanics of learning procedure.
+
+For the alignment $\mathcal{A}$, we first reduce the dimensionality of each
+$\mathbf{Z}_{b}$ to $K$ dimensions, call this $\tilde{\mathbf{Z}}_{b}$. Then, we
+solve a generalized Procrustes problem, finding $\mathbf{R}_{b}$'s so that the
+$\underaccent{\bar}{\mathbf{Z}}_{b} := \tilde{\mathbf{Z}}_{b}\mathbf{R}_{b}$ are
+all closely aligned to a matrix $\mathbf{M}$. For the dimensionality reduction
+step, we consider both ordinary and sparse principal components analysis.
+
+Though we do not consider it in this work, a variety of other alignment
+procedures could be considered. For example, the initial dimensionality
+reduction could be performed with the subsequent alignment in mind; this could
+be accomplished using a form of multiple canonical correlation analysis.
+Combinations of features could also be approximately matched across feature
+learners, using a form of optimal transport. This would derive meta-features
+that all activate on similar input samples.
+
+For the selection mechanism, we use stability selection. This means that our
+selection mechanism $\mathcal{S}$ is parameterized by lasso regularization
+strength $\lambda$ and selection stringency $\pi_{thr}$. In our experiments, we
+display the full selection curves $\hat{\Pi}^{b}_{j}\left(\lambda\right)$ for
+each set of aligned features. From these curves, selection sets
+$S_{b}\left(\lambda, \pi_{thr}\right)$. However, for clarity, we this suppress
+dependence on $\lambda$ and $\pi_{thr}$ in Algorithm \ref{alg:selection}. Note
+that, while we focus on stability selection, any selective inference procedure
+$\mathcal{S}$ could be used.
 
 \begin{algorithm}[H]
 \SetAlgoLined
-\KwResult{Sets of learned features $\mathbf{Z}_{b}$ for $\mathcal{D}$. Indices
-  $I\subset\left[n\right]$ used for feature learning.}
+\KwResult{Sets of learned features $\left(\mathbf{Z}_{b}\right)_{b = 1}^{B}$ for
+  $\mathcal{D}$. Indices $I\subset\left[n\right]$ used for feature learning.}
 Inputs: Dataset $\mathcal{D} = \left(x_{i}, y_{i}\right)_{i = 1}^{n}$. Candidate
 feature learners $\{T\left(\cdot; \theta\right)\}_{\theta \in \Theta}$ and
 training criterion $\mathcal{L}$. Perturbation process $\mathcal{P}$.
@@ -22,39 +79,52 @@ training criterion $\mathcal{L}$. Perturbation process $\mathcal{P}$.
 3. Train $B$ feature learners,
 
 \For{$b = 1, \dots, B$}{
-  $\hat{\theta}\left(\mathcal{D}_{b}\right)\right) = \arg\min_{\theta \in \Theta}\mathcal{L}\left(D_{b}, T\left(\cdot, \theta\right)\right)$ \\
+  $\hat{\theta}\left(\mathcal{D}_{b}\right) = \arg\min_{\theta \in \Theta}\mathcal{L}\left(D_{b}, T\left(\cdot, \theta\right)\right)$ \\
   $\mathbf{Z}_{b} = T\left(\mathcal{D}, \hat{\theta}\left(\mathcal{D}_{b}\right)\right)$ \\
 }
+\caption{Feature Learning}
+\label{alg:features}
 \end{algorithm}
 
+\begin{algorithm}[H]
+  \SetAlgoLined
+  \KwResult{Aligned features $\left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots,
+    \mathbf{Z}_{B}\right)$. Subspace stability score $SS_{\mathcal{A}}$.}
+  Inputs: Learned features $\left(\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}\right)$.
+  Alignment strategy $\mathcal{A}$.
 
-%\label{alg:features}
+  1. Align features,
+  \begin{align*}
+    M, \left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}\right) = \mathcal{A}\left(\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}\right)
+  \end{align*}
 
-%Feature Subspace Stability
-%\label{alg:fss}
-%Inputs: $B$ sets of learned features, $\left(\mathcal{Z}_{b}, \mathcal{Z}_{b}^{C}\right)_{b = 1}^{B}$. Alignment strategy $\mathcal{A}$. Selection mechanism $\mathcal{S}$.
-%1. Merge learned features, 
-%$for b = 1, \dots, B$
-%	$\mathbf{Z}_{b}^{All} = \left[\mathbf{Z}_{b} \\ \mathbf{Z}_{b}^{C}\right]$.
-%3. Align features,$M, \left(\underaccent{\bar}{\mathbf{Z}^{All}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}^{All}}_{B}\right) = \mathcal{A}\left(\mathbf{Z}^{All}_{1}, \dots, \mathbf{Z}^{All}_{B}\right)$.
-%4. Compute feature subspace stability,
-%\begin{align*}
-%FSS_{\mathcal{A}}_\left(\mathbf{Z}^{All}_{1}, \dots, \mathbf{Z}^{All}_{B}\right) = \frac{1}{B} \sum_{b = 1}^{B} \|\underaccent{\bar}{\mathbf{Z}}^{All}_{b} - \mathbf{M}\|^{2}_{2}.
-%\end{align*}*
-%5. Split aligned features,
-%$for b = 1, \dots, B$,
-%	$\left[\underaccent{\bar}{\mathbf{Z}}_{b} \\ \underaccent{\bar}{\mathbf{Z}}_{b}^{C}\right] = \underaccent{\mathbf{Z}}_{b}^{All}$.
+  2. Compute feature subspace stability,
+  \begin{align*}
+    FSS_{\mathcal{A}}\left(\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}\right) = \frac{1}{B} \sum_{b = 1}^{B} \|\underaccent{\bar}{\mathbf{Z}}_{b} - \mathbf{M}\|^{2}_{2}.
+  \end{align*}
+  \caption{Feature Subspace Stability}
+  \label{alg:fss}
+\end{algorithm}
 
-%Returns: Aligned features $\left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}\right)$. Feature subspace stability score $FSS_{\mathcal{A}}$.
+\begin{algorithm}[H]
+  \SetAlgoLined
+  \KwResult{Selection stability scores for all aligned dimensions $SS_{1}, \dots, SS_{K}$.}
+  Inputs: Reserved indices $I^{C}$. Selection mechanism $\mathcal{S}$. Aligned
+  features $\left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots,
+  \underaccent{\bar}{\mathbf{Z}}_{B}\right)$, where each
+  $\underaccent{\bar}{\mathbf{Z}}_{b} \in \reals^{n \times K}$.
 
-% Selection Stability
-%\label{alg:selection}
-%Inputs: Aligned, reserved set features $\left(\underaccent{\bar}{\mathbf{Z}^{C}}_{b}\right)_{b = 1}^{B}$. Selection mechanism $\mathcal{S}$.
-%1. Define $B$ selection sets, 
-%$for b = 1, \dots, B$
-%$S_{b} = \mathcal{S}\left(\underaccent{\bar}{\mathbf{Z}^{C}}_{b}, y\right)$
-%2. For each column of the learned features, compute a selection score,
-%$for k = 1, \dots, K$
-%$SS_{k} = \frac{1}{B} \sum_{b = 1}^{B} \indic{k \in S_{b}}$
-%Return: Selection stability scores $SS_{1}, \dots, SS_{k}$.
+  1. Define selection sets,
 
+  \For{$b = 1, \dots, B$}{
+    $S_{b} = \mathcal{S}\left(\underaccent{\bar}{\mathbf{Z}}_{b}\left[I^{C}\right]\right)$
+  }
+
+  2. Compute selection scores,
+
+  \For{$k = 1, \dots, K$}{
+    $SS_{k} = \frac{1}{B}\sum_{b = 1}^{B} \indic{k \in S_{b}}$
+  }
+  \caption{Selection Stability}
+  \label{alg:selection}
+\end{algorithm}

@@ -28,7 +28,19 @@ While there is no closed form solution, the optimization can be solved by cyclic
 
 Many statistical algorithms revolve around the idea that meaningful conclusions should be stable to perturbations \cite{yu2013stability}. In this work, we make use of stability selection, a technique for evaluating significance in high-dimensional linear models \cite{meinshausen2010stability}.
 
-For a dataset $\mathbf{X}\in \reals^{n \times p}$ and $\mathbf{y} \in \reals{n}$, stability selection proceeds as follows. First, $B$ subsamples of size $\lfloor \frac{n}{2} \rfloor$ are drawn from the data, and for each a lasso regression is run over a grid of $\lambda$ regularization parameters. Each of these regressions results in $p$ coefficient trajectories, and important features will generally become nonzero earlier on the regularization path (that is, even with large regularization $\lambda$). For a given $lambda$ and feature $j$, let $\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples that had nonzero $\hat{\beta}_j\left(\lambda\right)$.  The paths $\left(\hat{\Pi}_{j}\lambda\left(\lambda\right)\right)_{j = 1}^{p}$summarize the importance of the $p$ regression features. For a given stringency threshold $\pi_{thr}$, the procedure selects features $\hat{S} = \{j : \max_{\lambda} \hat{\Pi}_{j}\left(\lambda\right) \geq \pi_{thr}\}$.
+For a dataset $\mathbf{X}\in \reals^{n \times p}$ and $\mathbf{y} \in
+\reals^{n}$, stability selection proceeds as follows. First, $B$ subsamples of
+size $\lfloor \frac{n}{2} \rfloor$ are drawn from the data, and for each a lasso
+regression is run over a grid of $\lambda$ regularization parameters. Each of
+these regressions results in $p$ coefficient trajectories, and important
+features will generally become nonzero earlier on the regularization path (that
+is, even with large regularization $\lambda$). For a given $\lambda$ and feature
+$j$, let $\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples
+that had nonzero $\hat{\beta}_j\left(\lambda\right)$. The paths
+$\left(\hat{\Pi}_{j}\lambda\left(\lambda\right)\right)_{j = 1}^{p}$summarize the
+importance of the $p$ regression features. For a given stringency threshold
+$\pi_{thr}$, the procedure selects features $\hat{S} = \{j : \max_{\lambda}
+\hat{\Pi}_{j}\left(\lambda\right) \geq \pi_{thr}\}$.
 
 Let $q_{\Lambda} = \Eabsarg{\hat{S}_{\Lambda}}$ denote the expected number of
 selected features. It can be shown that, assuming some conditions on the
@@ -75,10 +87,12 @@ extracted; call the collection $w_{1}, \dots, w_{p} \in \reals^{s \times s
 by convolving $x$ with $w_{p}$ and averaging over all the associated
 coordinates.
 
-To train an RCF, the training data are first featurized into $Z \in \reals^{n \times P}$ using random image patches, as described above. Then, a ridge regression model is trained, solving
+To train an RCF, the training data are first featurized into $\mathbf{Z} \in
+\reals^{n \times P}$ using random image patches, as described above. Then, a
+ridge regression model is trained, solving
 
 \begin{align*}
-\hat{\beta} := \arg \min_{\beta} \|y - Z\beta\|_{2}^{2} + \lambda \|\beta\|_{2}
+\hat{\beta} := \arg \min_{\beta} \|y - \mathbf{Z}\beta\|_{2}^{2} + \lambda \|\beta\|_{2}
 \end{align*}
 
 For a new example $x^{\ast}$, the same image patches $w_{1}, \dots, w_{p}$ are used to create a featurization $z^{\ast}$, and predictions are made with $z^{\ast T}\hat{\beta}$. Unlike either the VAE or CNN, this model does not require gradient based training, and it can serve as a fast (and often effective) baseline.

@@ -1,11 +1,112 @@
 
 \section{Simulation}
 
-questions of interest
+We use a simulation experiment to understand properties of the proposed
+algorithms. Our key questions are,
 
-associated design
+\begin{enumerate}
+\item When we vary the relative sizes of $I$ and $I^{C}$, we expect a trade-off
+  between feature learning and inferential quality. What is the nature of that
+  trade-off?
+\item How different are the features learned by supervised and unsupervised
+  feature learning algorithms $T\left(\cdot; \theta\right)$?
+\item Does the choice of dimensionality reduction used in $\mathcal{A}$ affect
+  downstream inferences?
+\item Is it ever possible to substitute the RCF feature learner for either of
+  the more time-consuming VAE or CNN models?
+\end{enumerate}
 
-results prereference
+To answer these questions, we evaluate our proposal using a full factorial with
+three factors,
+
+\begin{enumerate}
+\item Relative sizes of $I$ and $I^{C}$: We use $\absarg{I} \in \left\{0.15n, 0.5n, 0.8n\right\}$.
+\item Dimensionality reduction procedure: We use both PCA and sparse PCA.
+\item Algorithm used: We train CNN, VAE and RCF models.
+\end{enumerate}
+
+\subsection{Simulated Data}
+
+The key ingredient in this simulation is the construction of a dataset where all
+``true'' features are directly controlled. To motivate the simulation, imagine
+that we are examining a set of tumor pathology slides, with the hope of
+recovering features that are predictive of survival time. Each pathology slide
+gives a view into a cellular ecosystem — there are several types of cells, with
+different sizes, density, and affinities to one another.
+
+In the simulation, we first generate these underlying properties of each slide.
+Survival is defined as a linear function of these underlying properties. Then,
+images are generated that reflect these properties. The essential characteristic
+of this simulation is that the analyst only has access to the images and
+survival times, not the true predictors of the linear model. A good feature
+extractor $T\left(x; \hat{\theta}\left(\mathcal{D}\right)\right)$ should recover
+these important cell ecosystem properties from the images alone. Two images,
+with their corresponding survivals, are given in Figure
+\ref{fig:matern_example}.
+
+We now give details. Our images are simulated as two-dimensional marked Log Cox
+Matern Process (LCMP) \cite{diggle2013}. Recall that a Matern process is a
+Gaussian process with covariance function
+
+\begin{align*}
+C_{\nu, \alpha}(\|x - y\|)=\sigma^{2} \frac{2^{1-\nu}}{\Gamma(\nu)}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right)^{\nu} K_{\nu}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right).
+\end{align*}
+
+$\alpha$ acts like a bandwidth parameter and $\nu$ controls the roughness of the
+simulated process. A LCMP process with $K$ classes is constructed as follows.
+First, a nonnegative process $\Lambda\left(x\right)$ is simulated along the
+image grid, $\Lambda\left(x\right) \exp{\mathcal{N}\left(0,
+  \mathbf{C}_{\nu_{\Lambda}, \alpha_{\Lambda}}\right)}$, where
+$\mathbf{C}_{\nu_{\Lambda}, \alpha_{\Lambda}}$ is the covariance matrix induced
+by $C_{\nu_{\Lambda}, \alpha_{\Lambda}}$. This represents a baseline intensity
+that determines the location of cells, regardless of cell type. Then, $K$
+further processes are simulated, $B_{k}\left(x\right) \exp{b_{k} +
+  \mathcal{N}\left(0, \mathbf{C}_{\nu_{B}, \alpha_{B}}\right)} $. These
+processes will reflect the relative frequencies of the $k$ classes at any
+location $x$; the intercept $b_k$ makes a class either more or less frequent
+across all positions $x$.
+
+Given these intensity functions, we can simulate $N$ cell locations by drawing
+from an inhomogeneous Poisson process with intensity $\Lambda\left(x\right)$.
+For a cell at location $x$, we assign it cell type $k$ with probability
+$\frac{B_{k}^{\tau}\left(x\right)}{\sum_{k^\prime = 1}^{K}
+  B^{\tau}_{k^\prime}\left(x\right)}$. Here, we have introduced a temperature
+parameter $\tau$ which controls the degree of mixedness between cell types at a
+given location.
+
+To complete the procedure for simulating images, we add two last source of
+variation — cell size. The cells from class $k$ are drawn with a random radius
+drawn from $\text{Gamma}\left(5, \lambda_{k}\right)$. In all, for each image
+$i$, we have the following underlying parameters,
+
+\begin{itemize}
+\item $N_i$: The total number of cells.
+\item $\nu_{i,\Lambda}$: The roughness of the underlying intensity process.
+\item $\alpha_{i,\Lambda}$: The roughness of the underlying intensity process.
+\item $b_{ik}$: The intercept controlling the overall frequency of class $k$.
+\item $\nu_{iB}$: The roughness of the relative intensity processes.
+\item $\alpha_{iB}$: The bandwidth of relative intensity processes.
+\item $\tau_{i}$: The temperature used in cell type assignment.
+\item $\lambda_{ik}$: The shape parameter controlling the sizes of each cell type.
+\end{itemize}
+
+These parameters are themselves all drawn from uniform distributions between
+preset ranges; details are supplied in the appendix. These parameters are the
+underlying properties used to generate survival time. Specifically, we generate
+a survival time using
+
+\begin{align*}
+y_i &= \frac{1}{3}\left(b_{i1} - b_{i2} - b_{i3}\right) + \frac{1}{4}\left(\nu_{i\Lambda} + \alpha_{i\Lambda} + \nu_{iB} + \alpha_{iB}\right) - \tau_{i} + \frac{1}{100}\left(\lambda_{i1} - 50\right) + \epsilon_{i},
+\end{align*}
+
+where $\epsilon\_{i} \sim \mathcal{N}\left(0, \sigma^2\right)$. The fractions
+before each simply adjust for differences in scale between the parameters.
+Intuitively, more and larger cell type 1’s are better for survival (image they
+are immune cells). More mixing between cell types (lower bandwidth, higher
+roughness, lower temperature); this is believed to be true in true biological
+processes.
+
+\subsection{Results}
 
 figure 1
 
