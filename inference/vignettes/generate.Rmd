@@ -65,17 +65,10 @@ tau <- 1.5 # temperature for the marking (0 -> uniform, inf -> hard assignment)
 lambdas <- c(20, 50, 100) # rate parameters in gamma controlling size
 ```
 
-```{r}
+```{r, fig.width = 7, fig.height = 3}
+set.seed(10)
 result <- sim_wrapper(x, n_original, nu, alpha, beta_r, nu_r, alpha_r, tau, lambdas)
-marks <- result$marks %>%
-  mutate(variable = paste0("X", mark))
-mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
-ggplot() +
-  geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-  geom_point(aes(x = X1, y = X2, col = mark, size=size), marks) +
-  facet_wrap(~ variable) +
-  coord_fixed() +
-  scale_radius(range = c(.1, 5))
+plot_matern(result)
 ```
 
 # Simulating Images
@@ -119,6 +112,16 @@ colnames(X) <- c("N", paste0("beta_", 1:ncol(beta_r)), "nu_r", "alpha_r", "nu", 
 y <- X %*% c(1, 1, -1, -1, .5, .5, .5, .5, .5, 1) / sqrt(ncol(X))
 y <- y - mean(y)
 ```
+
+```{r}
+for (i in c(4, 10, 12)) {
+  result <- sim_wrapper(x, X[i, 1], X[i, 5], X[i, 6], X[i, 2], X[i, 3], X[i, 4], X[i, 7], X[i, 8])
+  plot_matern(result) %>%
+    print()
+}
+```
+
+
 Let's create the directory within which to save our results.
 
 ```{r}
