@@ -99,7 +99,9 @@ acts_splits <- acts %>%
   split(.$bootstrap)
 
 x_list <- acts_splits %>%
-  map(~ .x %>% select(matches("X[0-9]+")) %>% as.matrix())
+  map(~ .x %>% select(matches("X[0-9]+"))) %>%
+  map(~ .x %>% select_if(~ sum(is.na(.)) == 0)) %>% # different runs can have different # cols
+  map(as.matrix)
 
 png(file.path(save_dir, "svd_eigs.png"))
 plot(svd(x_list[[1]])$d)
