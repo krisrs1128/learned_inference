@@ -4,7 +4,6 @@ output: html_notebook
 ---
 
 ```{r}
-library("RStoolbox")
 library("dplyr")
 library("ggplot2")
 library("gridExtra")
@@ -77,7 +76,7 @@ y <- y - mean(y)
 ```
 
 ```{r, eval = FALSE}
-plot_ix <- order(y)[c(1:5, 5000:5005, 9995:10000)]
+plot_ix <- order(y)[c(1:2, 5000:5001, 9999:10000)]
 plot_list <- list()
 raster_list <- list()
 
@@ -94,10 +93,10 @@ for (i in seq_along(plot_ix)) {
 grid.arrange(
   plot_list[[1]], raster_list[[1]],
   plot_list[[2]], raster_list[[2]],
-  plot_list[[9]], raster_list[[9]],
-  plot_list[[10]], raster_list[[10]],
-  plot_list[[14]], raster_list[[14]],
-  plot_list[[15]], raster_list[[15]],
+  plot_list[[3]], raster_list[[3]],
+  plot_list[[4]], raster_list[[4]],
+  plot_list[[5]], raster_list[[5]],
+  plot_list[[6]], raster_list[[6]],
   ncol = 4,
   widths = c(4, 1, 4, 1)
 )

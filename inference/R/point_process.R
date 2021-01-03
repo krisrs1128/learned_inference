@@ -169,7 +169,7 @@ make_raster <- function(marks, n_channels=3) {
 #'   scale_y_continuous theme element_blank
 #' @export
 plot_raster <- function(r) {
-  ggRGB() +
+  ggRGB(r) +
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
     theme(
@@ -200,10 +200,10 @@ plot_matern <- function(result) {
     coord_fixed() +
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    scale_color_brewer(palette = "Set3") +
+    scale_color_manual(values = c("red", "green", "blue")) +
     scale_fill_continuous(low = "white", high = "black") +
     labs(x = "", y = "") +
-    scale_size(range = c(0.1, 5)) +
+    scale_size(range = c(0.05, 2)) +
     theme(
       legend.position = "none",
       axis.text = element_blank(), 
