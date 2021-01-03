@@ -164,56 +164,23 @@ make_raster <- function(marks, n_channels=3) {
   stack(r)
 }
 
+#' @importFrom RStoolbox ggRGB
+#' @importFrom ggplot2 %+% scale_x_continuous
+#'   scale_y_continuous theme element_blank
 #' @export
-plot_matern <- function(result) {
-  marks <- result$marks %>%
-    mutate(variable = paste0("X", mark)) %>%
-    filter(X1 > 0.05, X1 < 1) %>%
-    filter(X2 > 0.06, X2 < 1)
-  
-  mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
-  mprobs$variable <- sapply(mprobs$variable, function(x) { gsub("X", "Process ", x) })
-  marks$variable <- sapply(marks$variable, function(x) { gsub("X", "Process ", x) })
-  
-  ggplot() +
-    geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-    geom_point(aes(x = X1, y = X2, col = mark, size=size), marks) +
-    facet_wrap(~ variable) +
-    coord_fixed() +
-    scale_x_continuous() +
-    scale_y_continuous() +
-    scale_color_brewer(palette = "Set3") +
-    labs(x = "", y = "") +
-    scale_size(range = c(0.1, 5)) +
-    theme(legend.position = "none")
-}
-
-
-plot_matern <- function(result) {
-  marks <- result$marks %>%
-    mutate(variable = paste0("X", mark)) %>%
-    filter(X1 > 0.05, X1 < 1) %>%
-    filter(X2 > 0.06, X2 < 1)
-  
-  mprobs <- melt(result$probs, id.vars = c("Var1", "Var2"))
-  mprobs$variable <- sapply(mprobs$variable, function(x) { gsub("X", "Process ", x) })
-  marks$variable <- sapply(marks$variable, function(x) { gsub("X", "Process ", x) })
-  
-  ggplot() +
-    geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-    geom_point(aes(x = X1, y = X2, col = mark, size=size), marks) +
-    facet_wrap(~ variable) +
-    coord_fixed() +
-    scale_x_continuous() +
-    scale_y_continuous() +
-    scale_color_brewer(palette = "Set3") +
-    labs(x = "", y = "") +
-    scale_size(range = c(0.1, 5)) +
-    theme(legend.position = "none")
+plot_raster <- function(r) {
+  ggRGB() +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme(
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title = element_blank()
+    )
 }
 
 #' @importFrom ggplot2 ggplot geom_point aes coord_fixed %+% scale_x_continuous
-#'   scale_y_continuous labs geom_tile facet_wrap scale_size theme
+#'   scale_y_continuous labs geom_tile facet_wrap scale_size theme element_blank
 #' @importFrom reshape2 melt
 #' @importFrom dplyr %>% mutate filter
 #' @export
@@ -237,5 +204,9 @@ plot_matern <- function(result) {
     scale_fill_continuous(low = "white", high = "black") +
     labs(x = "", y = "") +
     scale_size(range = c(0.1, 5)) +
-    theme(legend.position = "none")
+    theme(
+      legend.position = "none",
+      axis.text = element_blank(), 
+      axis.ticks = element_blank()
+    )
 }

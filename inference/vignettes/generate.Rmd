@@ -4,8 +4,10 @@ output: html_notebook
 ---
 
 ```{r}
-library("ggplot2")
+library("RStoolbox")
 library("dplyr")
+library("ggplot2")
+library("gridExtra")
 library("inference")
 library("readr")
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
@@ -75,12 +77,31 @@ y <- y - mean(y)
 ```
 
 ```{r, eval = FALSE}
-plot_ix <- order(y)[c(1:5, 5000:5005, 9995:1000)]
-for (j in test_ix) {
-  sim_wrapper(x, n_original[j], nu[j], alpha[j], beta_r[j, ], nu_r[j], alpha_r[j], tau[j], lambdas[j, ]) %>%
-    plot_matern() %>%
-    print()
+plot_ix <- order(y)[c(1:5, 5000:5005, 9995:10000)]
+plot_list <- list()
+raster_list <- list()
+
+for (i in seq_along(plot_ix)) {
+  j <- plot_ix[i]
+  res <- sim_wrapper(x, n_original[j], nu[j], alpha[j], beta_r[j, ], nu_r[j], alpha_r[j], tau[j], lambdas[j, ])
+  raster_list[[i]] <- plot_raster(make_raster(res$marks, 3))
+  plot_list[[i]] <- plot_matern(res)
 }
+```
+
+
+```{r, eval = FALSE, fig.height = 5, fig.width = 10}
+grid.arrange(
+  plot_list[[1]], raster_list[[1]],
+  plot_list[[2]], raster_list[[2]],
+  plot_list[[9]], raster_list[[9]],
+  plot_list[[10]], raster_list[[10]],
+  plot_list[[14]], raster_list[[14]],
+  plot_list[[15]], raster_list[[15]],
+  ncol = 4,
+  widths = c(4, 1, 4, 1)
+)
+
 ```
 
 
