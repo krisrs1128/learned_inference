@@ -1,5 +1,5 @@
 universe = docker
-docker_image = krisrs1128/li:123003
+docker_image = krisrs1128/li:010201
 log = /home/ksankaran/logs/patch_$(Cluster).log
 error = /home/ksankaran/logs/patch_$(Cluster).err
 output = /home/ksankaran/logs/patch_$(Cluster).out
