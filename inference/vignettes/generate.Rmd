@@ -6,7 +6,6 @@ output: html_notebook
 ```{r}
 library("dplyr")
 library("ggplot2")
-library("gridExtra")
 library("inference")
 library("readr")
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
@@ -90,6 +89,7 @@ for (i in seq_along(plot_ix)) {
 
 
 ```{r, eval = FALSE, fig.height = 5, fig.width = 10}
+library("gridExtra")
 grid.arrange(
   plot_list[[1]], raster_list[[1]],
   plot_list[[2]], raster_list[[2]],
