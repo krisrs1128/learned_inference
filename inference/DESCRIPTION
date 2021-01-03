@@ -17,6 +17,7 @@ Imports:
   RStoolbox,
   dplyr,
   forcats,
+  ggplot2,
   glmnet,
   pdist,
   raster,
@@ -25,8 +26,6 @@ Imports:
   sf,
   tidyr
 Suggests:
-  ggplot2,
-  dplyr,
-  reshape2
+  gridExtra
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
