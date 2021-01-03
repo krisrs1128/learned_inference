@@ -1,7 +1,46 @@
 
-\section{Case Study}
+\section{Data Analysis}
 
-motivation for study
+We illustrate the use of this methodology on a real data analysis example. These
+spatial proteomics data\footnote{The data are
+  \href{https://www.angelolab.com/mibi-data}{publicly available}} were reported
+in the study \citep{keren2018structured} and describe the relationship between
+the spatial organization of cancer tumors and the progression of the disease. In
+a standard proteomics study, the expression levels for a set of proteins is
+measured for a collection of cells, but the distances between cells is unknown.
+In contrast, these data provide (1) for each patient, an image delineating cells
+and (2) the protein expression levels associated with each cell in the images.
+
+We will work only with the spatial cellular imagery, not the protein expression
+levels. This allows us to study the mechanics of feature learning within the
+images without having to worry about linking the expression and image data. What
+we lose in terms of scientific interestingness we gain in implementation
+simplicity. Our complete data are therefore 41 $2048 \times 2048$-dimensional
+images, each taken from a separate patient. We associate each pixel with one of
+7 categories of tumor and immune cell types.
+
+To setup a prediction problem, we first split each image into $512 \times 512$
+patches. These patches are our $x_{i}$. Patches from 32 of the patients are
+reserved form feature learning. Four among these 32 are used as a validation
+split, to tune parameters of the feature learning algorithms. As a response
+variable, we use $y_{i} = \log\left(\frac{\#\{\text{Tumor cells in }x_{i}\}}{\#\{\text{Immune cells in }x_i\}}\right)$.
+
+As a baseline, we compare against a ridge regression with pixelwise composition
+features. Specifically, we train a model with $y$ as a response and the average
+number of pixels belonging to each of the cell-type categories as a (length 7)
+feature vector. This allows us to gauge whether the model has learned more
+interesting features useful for counting cells, like cell size and boundaries,
+rather than simply referring to raw pixel values. Indeed, we find that the
+baseline achieves a test set performance of 1.58, which is noticeably worse than
+the performances of models trained on aligned features
+$\underaccent{\bar}{\mathbf{Z}}_{b}\left[I^{C}\right]$, reported in Figure
+\ref{fig:performance}.
+
+Stability curves associated with the learned features from the CNN, VAE, and RCF
+models are shown in Figure \ref{fig:tnbc_stability}. Figure
+\ref{fig:tnbc_features} can be used to interpret different feature dimensions.
+
+
 
 data used in study
 

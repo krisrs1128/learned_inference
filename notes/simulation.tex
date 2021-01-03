@@ -101,12 +101,18 @@ y_i &= \frac{1}{3}\left(b_{i1} - b_{i2} - b_{i3}\right) + \frac{1}{4}\left(\nu_{
 
 where $\epsilon\_{i} \sim \mathcal{N}\left(0, \sigma^2\right)$. The fractions
 before each simply adjust for differences in scale between the parameters.
-Intuitively, more and larger cell type 1’s are better for survival (image they
-are immune cells). More mixing between cell types (lower bandwidth, higher
-roughness, lower temperature); this is believed to be true in true biological
-processes.
+Intuitively, more and larger cell type 1’s, as well as higher mixing between
+cell types, is considered better for survival.
 
 \subsection{Results}
+
+* Learned features are indeed distributed. But they are also highly correlated,
+especially for the CNN.
+  - average correlation diagram and cca figure
+  - The other summary diagram?
+* SCA features are easily alignable than PCA features
+* The VAE features are not often selected. The feature learning processes are
+not interchangeable.
 
 figure 1
 
