@@ -107,6 +107,7 @@ dev.off()
 
 for (i in seq_along(x_list)) {
   if (grepl("vae", params$model_prefix)) break
+  sigma_sqs <- apply(x_list[[i]], 2, var)
   x_list[[i]][, sigma_sqs == 0] <-  runif(length(x_list[[i]][, sigma_sqs == 0]))
   x_list[[i]] <- asinh(x_list[[i]])
 }
