@@ -76,7 +76,7 @@ y <- y - mean(y)
 ```
 
 ```{r, eval = FALSE}
-plot_ix <- order(y)[c(1:2, 5004:5005, 9999:10000)]
+plot_ix <- order(y)[c(1:2, c(4998, 5004), c(9998, 10000))]
 plot_list <- list()
 raster_list <- list()
 
