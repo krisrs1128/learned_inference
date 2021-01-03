@@ -107,6 +107,7 @@ dev.off()
 
 for (i in seq_along(x_list)) {
   if (grepl("vae", params$model_prefix)) break
+  x_list[[i]][is.na(x_list[[i]])] <- 0
   sigma_sqs <- apply(x_list[[i]], 2, var)
   x_list[[i]][, sigma_sqs == 0] <-  runif(length(x_list[[i]][, sigma_sqs == 0]))
   x_list[[i]] <- asinh(x_list[[i]])
@@ -117,13 +118,13 @@ for (i in seq_along(x_list)) {
 if (params$sca) {
   sparse_approx <- map(x_list, ~ sca(., k = max(params$ncomp, 20)))
 } else {
-  sparse_approx <- map(x_list, ~ princomp)
+  sparse_approx <- map(x_list, ~ princomp(.))
 }
 ```
 
 ```{r}
 pres <- sparse_approx %>%
-  map(~ .$scores) %>%
+  map(~ .$scores[, 1:params$ncomp]) %>%
   procrustes(0.005)
 M <- pres$M
 scores <- pres$x_align
