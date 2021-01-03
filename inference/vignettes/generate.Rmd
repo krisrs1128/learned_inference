@@ -4,53 +4,14 @@ output: html_notebook
 ---
 
 ```{r}
-library("MASS")
-library("dplyr")
 library("ggplot2")
+library("dplyr")
 library("inference")
-library("raster")
 library("readr")
-library("reshape2")
-library("sf")
-library("stars")
-library("stringr")
-set.seed(123)
-
 theme_set(theme_bw() + theme(panel.grid=element_blank()))
-scale_x_continuous <- function(...) {
-  ggplot2::scale_x_continuous(..., expand = c(0, 0))
-}
-scale_y_continuous <- function(...) {
-  ggplot2::scale_y_continuous(..., expand = c(0, 0))
-}
-scale_fill_continuous <- function(...) {
-  ggplot2::scale_fill_continuous(..., low="white", high="black")
-}
 ```
 
-First, we'll show how to simulate a single image.
-
-```{r}
-x <- expand.grid(seq(0.05, 1, 0.05), seq(0.05, 1, 0.05))
-intensity <- matern_process(x)
-z <- inhomogeneous_process(1000, intensity)
-ggplot() +
-  geom_tile(aes(x = Var1, y = Var2, fill = z), intensity) +
-  geom_point(mapping = aes(x = X1, y = X2), data.frame(z), col = "red") +
-  coord_fixed()
-
-probs <- relative_intensities(x, 4, nu = 1)
-mprobs <- melt(probs, id.vars = c("Var1", "Var2"))
-marks <- mark_process(z, probs, tau = 1) %>%
-  mutate(variable = paste0("X", mark))
-ggplot() +
-  geom_tile(aes(x = Var1, y = Var2, fill=value), mprobs) +
-  geom_point(aes(x = X1, y = X2, col = mark, size=size), marks) +
-  facet_wrap(~ variable) +
-  coord_fixed()
-```
-
-Now, let's think about how we want to link the parameters of image generation to
+Let's think about how we want to link the parameters of image generation to
 something like a survival time. This is a specification of all the parameters.
 
 ```{r}
@@ -95,28 +56,29 @@ they won't be too wild), depending on whether they are allowed to be negative.
 
 ```{r}
 n_images <- 1e4
-n_original <- runif(n_images, 100, 1000)
-beta_r <- 0.3 * runif(n_images * 3, -1, 1) %>%
+n_original <- runif(n_images, 50, 1000)
+beta_r <- 0.3 * runif(n_images * 3, -.5, .5) %>%
   matrix(ncol = 3)
-nu_r <- runif(n_images, 0, 2)
-alpha_r <- runif(n_images, 0, 2)
-nu <- runif(n_images, 0, 5) # overall process is (usually) smoother
-alpha <- runif(n_images, 0, 5)
-tau <- runif(n_images, 0, 5)
+nu_r <- runif(n_images, 0, 3)
+alpha_r <- runif(n_images, 0, 3)
+nu <- runif(n_images, 0, 8) # overall process is (usually) smoother
+alpha <- runif(n_images, 0, 8)
+tau <- runif(n_images, 0, 3)
 lambdas <- runif(n_images * 3, 100, 500) %>%
   matrix(ncol = 3)
 
 # simulate the response
 X <- scale(cbind(n_original, beta_r, nu_r, alpha_r, nu, alpha, tau, lambdas[, 1]))
 colnames(X) <- c("N", paste0("beta_", 1:ncol(beta_r)), "nu_r", "alpha_r", "nu", "alpha", "tau", "lambda_1")
-y <- X %*% c(1, 1, -1, -1, .5, .5, .5, .5, .5, 1) / sqrt(ncol(X))
+y <- X %*% c(.5, 1, -1, -1, -.5, -.5, -.5, -.5, .5, 1) / sqrt(ncol(X))
 y <- y - mean(y)
 ```
 
-```{r}
-for (i in c(4, 10, 12)) {
-  result <- sim_wrapper(x, X[i, 1], X[i, 5], X[i, 6], X[i, 2], X[i, 3], X[i, 4], X[i, 7], X[i, 8])
-  plot_matern(result) %>%
+```{r, eval = FALSE}
+plot_ix <- order(y)[c(1:5, 5000:5005, 9995:1000)]
+for (j in test_ix) {
+  sim_wrapper(x, n_original[j], nu[j], alpha[j], beta_r[j, ], nu_r[j], alpha_r[j], tau[j], lambdas[j, ]) %>%
+    plot_matern() %>%
     print()
 }
 ```

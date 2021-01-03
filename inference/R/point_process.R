@@ -234,6 +234,7 @@ plot_matern <- function(result) {
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
     scale_color_brewer(palette = "Set3") +
+    scale_fill_continuous(low = "white", high = "black") +
     labs(x = "", y = "") +
     scale_size(range = c(0.1, 5)) +
     theme(legend.position = "none")
