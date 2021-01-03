@@ -76,7 +76,7 @@ y <- y - mean(y)
 ```
 
 ```{r, eval = FALSE}
-plot_ix <- order(y)[c(1:2, 5000:5001, 9999:10000)]
+plot_ix <- order(y)[c(1:2, 5004:5005, 9999:10000)]
 plot_list <- list()
 raster_list <- list()
 
@@ -100,7 +100,6 @@ grid.arrange(
   ncol = 4,
   widths = c(4, 1, 4, 1)
 )
-
 ```
 
 
