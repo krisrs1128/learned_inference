@@ -60,7 +60,7 @@ def vae_prefixes(model):
         #"layer_2": model.encoder[:2], # remove to reduce space
         #"layer_3": model.encoder[:4],
         #"layer_4": model.encoder[:6],
-        "mu": model.encoder
+        "mu": model.encoder_avg
     }
 
 

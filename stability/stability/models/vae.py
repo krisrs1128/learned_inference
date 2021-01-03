@@ -60,6 +60,8 @@ class VAE(nn.Module):
         self.emb = NearestEmbed(k, z_dim)
         self.vq_coef = vq_coef
 
+        self.encoder_avg = nn.Sequential(self.encoder, nn.AvgPool2d(16))
+
         for l in self.modules():
             if isinstance(l, nn.Linear) or isinstance(l, nn.Conv2d):
                 l.weight.detach().normal_(0, 0.02)
