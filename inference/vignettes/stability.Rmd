@@ -271,7 +271,6 @@ ggplot(pi_hat %>% filter(j > 0)) +
     x = expression(log(lambda)),
     y = expression(hat(Pi)^{b}~(lambda))
   ) +
-  #scale_x_continuous(trans = ggforce::trans_reverser('log10')) +
   scale_y_continuous(breaks = c(0.1, 0.5, 0.9)) +
   facet_wrap(~ j, ncol = 5) +
   theme(
@@ -279,6 +278,7 @@ ggplot(pi_hat %>% filter(j > 0)) +
     panel.grid.minor = element_blank()
   )
 ggsave(file.path(save_dir, sprintf("selection_paths_%s.png", sca_label)))
+write_csv(pi_hat, file.path(save_dir, sprintf("pi_hat_%s.csv", sca_label)))
 ```
 What is the average correlation between selected features and the underlying
 generative process?
