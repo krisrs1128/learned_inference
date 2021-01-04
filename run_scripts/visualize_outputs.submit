@@ -5,7 +5,7 @@ log = /home/ksankaran/logs/vis_\$(Cluster)_\$(Process).log
 error = /home/ksankaran/logs/vis_\$(Cluster)_\$(Process).err
 output = /home/ksankaran/logs/vis_\$(Cluster)_\$(Process).out
 transfer_input_files = stability_outputs.tar.gz,stability_data.tar.gz
-environment = "PREFIX=${1} LAYER=${2} SCA=${3}"
+environment = "PREFIX=${1} BASENAME=${2} SCA=${3}"
 executable = visualize_outputs.sh
 request_cpus = 1
 request_memory = 12GB

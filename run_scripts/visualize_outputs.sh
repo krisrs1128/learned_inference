@@ -10,4 +10,4 @@ Rscript -e "rmarkdown::render('learned_inference/inference/vignettes/stability.R
 ls
 ls figures/
 
-tar -zcvf figures_${PREFIX}_${LAYER}_${SCA}.tar.gz figures/
+tar -zcvf figures_${PREFIX}_${BASENAME}_${SCA}.tar.gz figures/
