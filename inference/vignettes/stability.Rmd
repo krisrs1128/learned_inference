@@ -13,7 +13,6 @@ params:
 ---
 
 ```{r libraries}
-library("RColorBrewer")
 library("dplyr")
 library("epca")
 library("ggplot2")
@@ -340,11 +339,11 @@ ggsave(file.path(save_dir, sprintf("correlation_diagram_%s.png", sca_label)))
 ```
 
 ```{r correlation_heatmap}
-cols <- colorRampPalette(brewer.pal(8, "PiYG"))(25)
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
 png(file.path(save_dir, sprintf("correlation_heatmap_%s.png", sca_label)))
+cols <- c("#C51B7D", "#CC358B", "#D35099", "#DA6BA7", "#E181B5", "#E693C2", "#ECA6CF", "#F1B7DA", "#F5C4E1", "#F8D0E7", "#FCDCED", "#F8E4E8", "#F1EADF", "#EAF0D6", "#E2F3C9", "#D4EDB4", "#C7E79E", "#B9E189", "#A9D774", "#99CC60", "#88C24C", "#78B63C", "#6AAA33", "#5B9E2A", "#4D9221")
 heatmap(cor(scores_mat), asp = 1, col = cols)
 dev.off()
 ```
