@@ -3,21 +3,14 @@ Train VAE on multichannel cell tiffs
 
 python3 -m train -c ../conf/train.yaml
 """
-from addict import Dict
 from pathlib import Path
-from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+import logging
+import numpy as np
+import torch
 from torchvision.utils import make_grid
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from .features import save_features
 from .models.vae import vae_loss
-import numpy as np
-import os
-import logging
-import pandas as pd
-import torch
-import torch.nn.functional as F
-import yaml
 
 
 def log_stage(stage, epoch, model, loss, loader, writer, device):
@@ -25,18 +18,14 @@ def log_stage(stage, epoch, model, loss, loader, writer, device):
     x, _ = next(iter(loader))
 
     if "VAE" in str(model.__class__):
-      if epoch == 0:
-          if x.shape[1] > 3:
-              keep_ix = [3, 4, 6]
-          else:
-              keep_ix = [0, 1, 2]
-          writer.add_image(f"x/{stage}", make_grid(x[:, keep_ix]), epoch)
-      x_hat = model(x.to(device))["x_hat"][:, keep_ix]
-      writer.add_image(f"x_hat/{stage}", make_grid(x_hat), epoch)
+        if epoch == 0:
+            writer.add_image(f"x/{stage}", make_grid(x[:, :3]), epoch)
+        x_hat = model(x.to(device))["x_hat"]
+        writer.add_image(f"x_hat/{stage}", make_grid(x_hat[:, :3]), epoch)
     else:
-      y_hat = model(x.to(device))["y_hat"]
-      for i in range(len(y_hat)):
-          writer.add_scalar(f"y_hat_{i}/{stage}", y_hat[i], epoch)
+        y_hat = model(x.to(device))["y_hat"]
+        for i, yi in enumerate(y_hat):
+            writer.add_scalar(f"y_hat_{i}/{stage}", yi, epoch)
 
 
 def log_epoch(epoch, model, loss, loaders, writer, device):
@@ -50,7 +39,12 @@ def train(model, optim, loaders, opts, out_paths, writer, loss_fn=vae_loss):
     """
     loss = {"dev": [], "train": []}
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    scheduler = ReduceLROnPlateau(optim, mode="max", factor=opts.train.factor, patience=opts.train.patience)
+    scheduler = ReduceLROnPlateau(
+        optim,
+        mode="max",
+        factor=opts.train.factor,
+        patience=opts.train.patience
+    )
 
     logging.basicConfig(filename=Path(out_paths[0]) / "logs" / "train.log", level=logging.DEBUG)
     logging.info(f"Using device: {str(device)}")
@@ -80,7 +74,7 @@ def train_epoch(model, loader, optim, loss_fn, device):
     """
     Train model for a single epoch
     """
-    epoch_losses, i = [], 0
+    epoch_losses = []
     model = model.to(device)
 
     for x, y, in loader:
