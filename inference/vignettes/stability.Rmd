@@ -2,17 +2,18 @@
 title: Stability Analysis
 output: html_notebook
 params:
+  basename: "linear_best.npy"
   data_dir: "/Users/kris/Documents/stability_outputs/"
-  layer: "linear"
   model_prefix: "tnbc_cnn"
   ncomp: 10
   python_path: "/usr/bin/python3"
-  sca: FALSE
   save_dir: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures"
+  sca: FALSE
   tiles_dir: "/Users/kris/Documents/stability_data/"
 ---
 
 ```{r libraries}
+library("RColorBrewer")
 library("dplyr")
 library("epca")
 library("ggplot2")
@@ -71,7 +72,7 @@ arrays referenced in the metadata file.
 use_python(params$python_path)
 np <- import("numpy")
 acts_ <- metadata %>%
-  filter(epoch == "best", layer == params$layer) %>%
+  filter(basename(out_path) == params$basename) %>%
   .[["abs_path"]] %>%
   unique()
 acts <- map(acts_, ~ data.frame(np$load(.x)))
@@ -91,8 +92,6 @@ save_dir <- file.path(params$save_dir, params$model_prefix)
 dir.create(save_dir, recursive = TRUE)
 ggsave(file.path(save_dir, "activation_histogram.png"))
 ```
-
-First, we'll get the projected scores, using MultiCCA.
 
 ```{r multicca}
 acts_splits <- acts %>%
@@ -339,12 +338,14 @@ ggplot(mcor) +
   )
 ggsave(file.path(save_dir, sprintf("correlation_diagram_%s.png", sca_label)))
 ```
+
 ```{r correlation_heatmap}
+cols <- colorRampPalette(brewer.pal(8, "PiYG"))(25)
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
   as.matrix()
 png(file.path(save_dir, sprintf("correlation_heatmap_%s.png", sca_label)))
-heatmap(cor(scores_mat), asp = 1)
+heatmap(cor(scores_mat), asp = 1, col = cols)
 dev.off()
 ```
 
@@ -373,7 +374,6 @@ selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
 selections$sca <- params$sca
 write_csv(selections, file.path(save_dir, sprintf("selections_%s.csv", sca_label)))
 ```
-
 
 ```{r}
 paths <- file.path(params$tiles_dir, centroids$rel_path)
