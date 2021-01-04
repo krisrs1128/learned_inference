@@ -5,16 +5,18 @@ organization: # all relative to $DATA_DIR
   splits: "splits_0.15-train.csv"
   xy: "Xy.csv"
 train:
-  batch_size: 128
+  batch_size: 64
   checkpoint: null
-  lr: 0.001
+  factor: 0.5
+  lr: 0.00005
   model: "vae"
-  momentum: 0.9
-  n_epochs: 480
-  save_every: 80
+  n_epochs: 100
+  p_in: 3
+  patience: 20
+  save_every: 50
   save_subset: 2000
   z_dim: 64
 bootstrap:
-  path: "bootstraps_0.15-train.csv"
+  path: "bootstraps_0.9-train.csv"
   index: null
   B: 20

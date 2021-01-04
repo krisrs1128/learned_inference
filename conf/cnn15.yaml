@@ -8,15 +8,13 @@ train:
   batch_size: 128
   checkpoint: null
   factor: 0.5
-  lr: 0.001
+  lr: 0.0001
   model: "cnn"
   momentum: 0.9
-  n_epochs: 240
-  p_in: 3 
+  n_epochs: 100
+  p_in: 3
   patience: 5
-  save_every: 80
+  save_every: 50
   save_subset: 2000
 bootstrap:
-  path: "bootstraps_0.15-train.csv"
-  index: null
-  B: 20
+  path: "bootstraps_0.9-train.csv"
