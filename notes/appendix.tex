@@ -1,0 +1,48 @@
+
+\section{Simulation Parameters}
+
+
+\section{Reproducibility}
+
+Our raw and derived data are available at the following links.
+
+
+
+Instructions to reproduce our simulations and data analysis example are
+available in a \href{https://github.com/krisrs1128/learned_inference}{README} on the study's github page. Data preprocessing, the
+regression baseline, and feature learning can be reproduced in the ipython
+notebooks
+
+\begin{itemize}
+\item \texttt{tnbc\_splits.ipynb}
+\item \texttt{tnbc\_baseline.ipynb}
+\item \texttt{model\_training.ipynb}
+\end{itemize}
+
+Data simulation, feature stability analysis, and visualization of results are
+done within the rmarkdown documents,
+
+\begin{itemize}
+\item \texttt{generate.Rmd}
+\item \texttt{stability.Rmd}
+\end{itemize}
+
+To support code reusability between experiments, two helper packages were prepared,
+
+\begin{itemize}
+\item \texttt{stability}
+\item \texttt{inference}
+\end{itemize}
+
+We have prepared a \href{https://hub.docker.com/r/krisrs1128/li}{docker image}
+with all necessary software installed. For example, to reproduce figure
+\ref{fig:?}, you can enter the image and execute the relevant rmarkdown document
+using the following commands,
+
+\begin{verbatim}
+shell> docker run -it krisrs1128/li:latest bash
+docker shell> git pull krisrs1128/learned_inference.git
+docker shell> source learned_inference/.env
+docker shell> # download relevant data
+docker shell> Rscript rmarkdown -e "rmarkdown::render('learned_inference/inference/vignettes/stability.Rmd')"
+\end{verbatim}
