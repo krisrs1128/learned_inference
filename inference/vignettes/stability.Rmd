@@ -60,7 +60,7 @@ metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "laye
     abs_path = file.path(abs_path, rel_path),
     source = str_replace(abs_path, "(.+)(tar)(.+)", "\\1\\2")
   ) %>%
-  dplyr::select(abs_path, source, model, bootstrap, epoch, layer)
+  dplyr::select(abs_path, rel_path, source, model, bootstrap, epoch, layer)
 ```
 
 
@@ -71,7 +71,7 @@ arrays referenced in the metadata file.
 use_python(params$python_path)
 np <- import("numpy")
 acts_ <- metadata %>%
-  filter(basename(out_path) == params$basename) %>%
+  filter(basename(rel_path) == params$basename) %>%
   .[["abs_path"]] %>%
   unique()
 acts <- map(acts_, ~ data.frame(np$load(.x)))
@@ -129,6 +129,18 @@ pres <- sparse_approx %>%
 M <- pres$M
 scores <- pres$x_align
 scores <- lapply(seq_len(dim(scores)[3]), function(i) scores[,, i]) # split last dimension across list
+
+feature_stability <- map(scores, ~ sum( (.x - M) ^ 2)) %>%
+  unlist() %>%
+  mean()
+fss <- data.frame(
+  model = params$model_prefix,
+  ncom = params$ncomp,
+  sca = params$ca,
+  basename = params$basename,
+  feature_stability = feature_stability
+)
+write_csv(fss, file.path(save_dir, "feature_stability.csv"))
 ```
 
 ```{r}
@@ -290,6 +302,7 @@ for (i in seq_along(scores_mat)) {
   scores_i <- scores_mat[[i]] %>%
     select(starts_with("dim"), starts_with("X")) %>%
     as.matrix()
+  scores_i[is.na(scores_i)] <- 0
   
   mcor[[i]] <- melt(cor(scores_i), varnames = c("dim", "feature")) %>%
     filter(!(feature %in% paste0("dim", 1:params$ncomp))) %>%
@@ -303,6 +316,7 @@ for (i in seq_along(scores_mat)) {
   x_i <- scores_mat[[i]] %>%
     select(starts_with("X")) %>%
     as.matrix()
+  x_i[is.na(x_i)] <- 0
 
   cca_data[[i]] <- data.frame(
     k = 1:params$ncomp,
