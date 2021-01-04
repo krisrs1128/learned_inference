@@ -178,7 +178,14 @@ bash train.submit conf/tnbc_rcf.yaml
 mkdir stability_outputs/
 mv tnbc_cnn*tar.gz stability_outputs/
 tar -zcvf stability_outputs.tar.gz stability_outputs/
-bash visualize_outputs.submit tnbc_cnn linear_best.npy FALSE # model name, layer of learned features, whether to use sparse components
+bash visualize_outputs.submit tnbc_cnn linear_best.npy FALSE # model prefix, layer name, and whether to use sparse PCA
+bash visualize_outputs.submit tnbc_cnn linear_best.npy TRUE
+bash visualize_outputs.submit tnbc_rcf full_best.npy FALSE
+bash visualize_outputs.submit tnbc_rcf full_best.npy TRUE
+bash visualize_outputs.submit tnbc_rcf selected_best.npy FALSE
+bash visualize_outputs.submit tnbc_rcf selected_best.npy TRUE
+bash visualize_outputs.submit tnbc_vae mu_99.npy FALSE
+bash visualize_outputs.submit tnbc_vae mu_99.npy TRUE
 ```
 
 You have to wait until each job is finished before launching the next. The

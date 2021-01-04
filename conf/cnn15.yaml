@@ -17,4 +17,4 @@ train:
   save_every: 50
   save_subset: 2000
 bootstrap:
-  path: "bootstraps_0.9-train.csv"
+  path: "bootstraps_0.15-train.csv"
