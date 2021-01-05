@@ -144,18 +144,61 @@ Figure \ref{fig:distributed_hm} shows the activations of learned features across
 algorithms. In the three cases, the learned features correspond to
 
 \begin{itemize}
-
+\item CNN: Activations from the last layer of neurons, used directly as input
+  for the regression. There are a total of 512 nonnegative
+  features\footnote{They are nonnegative because they follow an ReLU layer.}.
+\item VAE: Spatially-pooled activations from the middle, encoding layer of the
+  variational autoencoder. There are a total of 64 real-valued features.
+\item RCF: The spatially-pooled activations corresponding to each of 1048 random
+  convolutional features.
 \end{itemize}
 
+Our first observation is that there is no simple correspondence between learned
+and source features (i.e., parameters of the underlying simulation). For
+example, it is not the case that one set of features represents the number of
+cells $N$, and a different set maps to the roughness $\alpha, \nu$. Rather,
+there appear to be clusters of learned features, and each cluster corresponds to
+a pattern of correlation across multiple source features. We also find large
+subsets of features, across all models, that are only weakly correlated with any
+source feature.
+
+Next, note that certain source features are ``easier'' to represent than others,
+in the sense that more of the learned features are strongly correlated with
+them. Many features are correlated with $N_{i}$, the total number of cells in
+the image, and $\lambda_{i1}$, the size of the cells from Process 1. Depending
+on the model the process roughness $\alpha_{ir}$, $\nu_{ir}$ and prevalence
+$\beta_{ik}$ parameters are either only weakly or not at all correlated with the
+learned features. Interestingly, the convolutional network learns to represent
+$\beta_{1}$ well, but not $\beta_{2}$ or $\beta_{3}$ -- this is consistent with
+the fact that only $\beta_{1}$ influences the response $y_{i}$.
+
+Finally, we observe that different models learn qualitatively different sets of
+features. For example, the CNN features tend to be more clustered, with strong
+correlation across several source features. In contrast, the RCF features show
+more gradual shifts in correlation strength. They also show relatively little
+variation in correlation strength across features other than $\lambda_{i1}$ and
+$N_{i}$.
+
+Note that the features do not naturally map onto one another from one run to the
+next. This is not obvious from Figure \ref{fig:distributed_hm}, but a zoomed in
+version in Figure \ref{fig:distributed_hm_subset} showing only the first 15
+features per run makes this clear.
+
+It is natural to ask whether the overall correlation between source and learned
+features are different between the different algorithms. To this end, we compute
+the top canonical correlations between these sets of features, shown in Figure
+\ref{fig:cca_sim}.
+
 \begin{figure}
-  \includegraphics[width=0.9\textwidth]{correlation_heatmap}
+  \centering
+  \includegraphics[width=\textwidth]{correlation_heatmap}
   \caption{Each feature learning algorithm (rows) learns a distributed
     representation of the true underlying features in the simulation. The two
     columns give results from two bootstrap resamples. Within each heatmap, rows
     correspond to the parameters in Table \ref{tab:sim_params}. Columns are
     activations of learned features; they have been reordered by a hierarchical
     clustering. The color of a cell gives the correlation between the associated
-    true and learned features. Green and purple encode positive and negative
+    true and learned features. Green and burgundy encode positive and negative
     correlation, respectively. Evidently, all learned features are associated
     with multiple true features at once.}
   \label{fig:distributed_hm}
