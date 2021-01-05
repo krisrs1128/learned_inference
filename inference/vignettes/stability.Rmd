@@ -3,7 +3,7 @@ title: Stability Analysis
 output: html_notebook
 params:
   basename: "linear_best.npy"
-  channels: c(1, 2, 3)
+  channels: [1, 2, 3]
   data_dir: "/Users/kris/Documents/stability_outputs/"
   model_prefix: "tnbc_cnn"
   ncomp: 10
