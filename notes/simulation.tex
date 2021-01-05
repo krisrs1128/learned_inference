@@ -5,13 +5,13 @@ We use a simulation experiment to understand properties of the proposed
 algorithms. Our key questions are,
 
 \begin{enumerate}
-\item When we vary the relative sizes of $I$ and $I^{C}$, we expect a trade-off
-  between feature learning and inferential quality. What is the nature of that
-  trade-off?
 \item How different are the features learned by supervised and unsupervised
   feature learning algorithms $T\left(\cdot; \theta\right)$?
 \item Does the choice of dimensionality reduction used in $\mathcal{A}$ affect
   downstream inferences?
+\item When we vary the relative sizes of $I$ and $I^{C}$, we expect a trade-off
+  between feature learning and inferential quality. What is the nature of that
+  trade-off?
 \item Is it ever possible to substitute the RCF feature learner for either of
   the more time-consuming VAE or CNN models?
 \end{enumerate}
@@ -137,11 +137,12 @@ feature learners to recover these known underlying features. These features are
 themselves all drawn from uniform distributions between the ranges given in the
 table.
 
-\subsection{Results}
+\subsection{Distributed features}
 
 Figure \ref{fig:distributed_hm} shows the activations of learned features across
 2000 samples for two bootstrap resamples from each of the feature learning
-algorithms. In the three cases, the learned features correspond to
+algorithms when using 90\% of the training data for feature learning. In the
+three cases, the learned features correspond to
 
 \begin{itemize}
 \item CNN: Activations from the last layer of neurons, used directly as input
@@ -184,11 +185,6 @@ next. This is not obvious from Figure \ref{fig:distributed_hm}, but a zoomed in
 version in Figure \ref{fig:distributed_hm_subset} showing only the first 15
 features per run makes this clear.
 
-It is natural to ask whether the overall correlation between source and learned
-features are different between the different algorithms. To this end, we compute
-the top canonical correlations between these sets of features, shown in Figure
-\ref{fig:cca_sim}.
-
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{correlation_heatmap}
@@ -204,22 +200,56 @@ the top canonical correlations between these sets of features, shown in Figure
   \label{fig:distributed_hm}
 \end{figure}
 
-* Learned features are indeed distributed. But they are also highly correlated,
-especially for the CNN.
-  - average correlation diagram and cca figure
-  - The other summary diagram?
-* SCA features are easily alignable than PCA features
-* The VAE features are not often selected. The feature learning processes are
-not interchangeable.
+\subsection{Stability scores}
 
-figure 1
+Figures \ref{fig:embeddings_sim} and \ref{fig:selections_sim} summarize the
+results of Algorithms \ref{fig:fss} and \ref{alg:selection} applied to several
+feature learners. For this figure, $\absarg{I} = \absarg{I^{C}} = 5000$ samples.
+The analogous results with alternative splits are given in the appendix.
 
-interpretation
+Reading the embeddings figures
+* Two axes are two dimensions of embeddings. We've chosen those that have high
+selection scores
+* Each star is a single sample, linked across bootstrap runs (there are 20 arms)
+* Color is the true value of y
+* Different panels show the different splits. First two are $I$, last is
+$I^{C}$.
 
-figure 2
+Interpretation about the embeddings -- difference in algorithms and
+dimensionality reduction approaches?
+* Different samples have different embedding stabilities. Seems like points near
+the center are more stable, which makes sense -- the clouds of points along each
+subspace are harder to align near the boundaries
+* The clusters seem tigheter for SCA. More easily embeddable.
+* CNN (and RCF?) features are more obviously associated with the response
+* Top features in VAE are not necessarily associated with the response. Note
+that this is in spite of the fact that the reconstructions are often quite good
+(see appendix figure)
 
-interpretation
+Interpretation about the selections -- difference in the algorithms and
+dimensionality reduction approaches
+* There is no obvious overfitting as far as feature learning is concerned.
+* Selection paths $\Pi$ are not monotone for SCA. Likely due to the fact that
+those scores can be correlated with one another in this approach, but not for
+SVD.
 
-figure 3
+\subsection{Feature Learning vs. Inference}
 
-interpretation
+It is natural to ask how the overall correlation between source and learned
+features vary as a function of the algorithms and training sample sizes used. To
+this end, in Figure \ref{fig:cca_sim}, we compute the top canonical correlations
+between learned features.
+
+Comparison in the CCA scores between the alternative approach
+
+Comparison in feature stabilities across algorithms and sample sizes.
+
+Comparison between the FDR's from the different selection strategies, at
+different #samples. Idea is that selection diagram is rich, but not succinct
+enough to draw meaningful comparisons across algorithms and training sample
+sizes.
+
+Specifically, plot the pi thr vs. number of features
+selected. The point is that you want high $\pi$'s and some selections, because
+those are unlikely to be false positives. You also don't want too many
+selections overall at that given level, because that dilutes the signal.

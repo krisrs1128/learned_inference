@@ -3,26 +3,6 @@
 
 We briefly summarize the methods used in this work.
 
-\subsubsection{Procrustes Analysis}
-Procrustes Analysis gives a way of aligning multiple tables. Given two tables $\mathbf{X}$ and $\mathbf{Y}$, the Procrustes problem finds the rotation matrix $\mathbf{R}$ solving the optimization,
-
-\begin{align*}
-\min_{\mathbf{R} \mathcal{O}} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{2},
-\end{align*}
-
-where $\mathcal{O}$ denotes the space of orthogonal matrices. Using the associated Lagrangian,
-
-\begin{align*}
-\max_{\mathbf{R}, \mathbf{\Lambda} \succ 0} \|\mathbf{X} - \mathbf{Y}\|_{2}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
-\end{align*}
-
-the solution can be shown to be $\hat{\mathbf{R}} = \mathbf{U}^{T}\mathbf{V}$ for $\mathbf{U}$ and $\mathbf{V}$ obtained by the SVD of $\mathbf{X}^{T}\mathbf{Y}$. More generally, for $B$ matrices $\mathbf{X}_{1}, \dots, \mathbf{X}_{B}$, the generalized procrustes problem finds $B$ rotations $\mathbf{R}_{1}, \dots, \mathbf{R}_{B}$ and mean matrix $\mathbf{M}$ solving
-
-\begin{align*}
-\min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}, M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{2}^{2}.
-\end{align*}
-
-While there is no closed form solution, the optimization can be solved by cyclically updating each $\mathbf{R}_{b}$ via standard Procrustes problems and then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b} \mathbf{R}_{b}$.
 
 \subsubsection{Stability}
 
@@ -99,6 +79,27 @@ ridge regression model is trained, solving
 
 For a new example $x^{\ast}$, the same image patches $w_{1}, \dots, w_{p}$ are used to create a featurization $z^{\ast}$, and predictions are made with $z^{\ast T}\hat{\beta}$. Unlike either the VAE or CNN, this model does not require gradient based training, and it can serve as a fast (and often effective) baseline.
 
+\subsubsection{Procrustes Analysis}
+Procrustes Analysis gives a way of aligning multiple tables. Given two tables $\mathbf{X}$ and $\mathbf{Y}$, the Procrustes problem finds the rotation matrix $\mathbf{R}$ solving the optimization,
+
+\begin{align*}
+\min_{\mathbf{R} \mathcal{O}} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{2},
+\end{align*}
+
+where $\mathcal{O}$ denotes the space of orthogonal matrices. Using the associated Lagrangian,
+
+\begin{align*}
+\max_{\mathbf{R}, \mathbf{\Lambda} \succ 0} \|\mathbf{X} - \mathbf{Y}\|_{2}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
+\end{align*}
+
+the solution can be shown to be $\hat{\mathbf{R}} = \mathbf{U}^{T}\mathbf{V}$ for $\mathbf{U}$ and $\mathbf{V}$ obtained by the SVD of $\mathbf{X}^{T}\mathbf{Y}$. More generally, for $B$ matrices $\mathbf{X}_{1}, \dots, \mathbf{X}_{B}$, the generalized procrustes problem finds $B$ rotations $\mathbf{R}_{1}, \dots, \mathbf{R}_{B}$ and mean matrix $\mathbf{M}$ solving
+
+\begin{align*}
+\min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}, M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{2}^{2}.
+\end{align*}
+
+While there is no closed form solution, the optimization can be solved by cyclically updating each $\mathbf{R}_{b}$ via standard Procrustes problems and then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b} \mathbf{R}_{b}$.
+
 \subsubsection{Representation Analysis}
 
 Our approach is closely related to methods for representation analysis, which
@@ -136,7 +137,8 @@ activations $X$ and $Y$ directly, for representations with many neurons, the
 dimensionality reduction step can lead to dramatic performance gains, because it
 avoids inverting a high-dimensional correlation matrix.
 
-. This is
-because directly inverting $\hat{\Sigma}_{X}$ and $\hat{\Sigma}_{Y}$ would be an $O\left(p^{3}\right)$
-operation.
+\subsection{Sparse PCA}
+
+Like SVCCA, we reduce dimensionality of our learned features before comparing
+them. We reductions using both PCA and a sparse variant introduced in.
 
