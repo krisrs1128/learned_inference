@@ -11,6 +11,6 @@ request_gpus = 1
 request_cpus = 1
 +WantGPULab = true
 +GPUJobLength = "short"
-request_memory = 12GB
-request_disk = 6GB
-queue 5
+request_memory = 8GB
+request_disk = 3GB
+queue 20
