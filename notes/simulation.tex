@@ -83,7 +83,7 @@ observed across the images.
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.9\textwidth]{figure/generation_mechanism}
+  \includegraphics[width=0.9\textwidth]{generation_mechanism}
   \caption{Example simulated images, for low (top), average (middle), and high
     (bottom) values of $y$. For each sample, three relative intensity functions
     are generated, shown as a greyscale heatmap (left three displays for each
@@ -138,6 +138,28 @@ themselves all drawn from uniform distributions between the ranges given in the
 table.
 
 \subsection{Results}
+
+Figure \ref{fig:distributed_hm} shows the activations of learned features across
+2000 samples for two bootstrap resamples from each of the feature learning
+algorithms. In the three cases, the learned features correspond to
+
+\begin{itemize}
+
+\end{itemize}
+
+\begin{figure}
+  \includegraphics[width=0.9\textwidth]{correlation_heatmap}
+  \caption{Each feature learning algorithm (rows) learns a distributed
+    representation of the true underlying features in the simulation. The two
+    columns give results from two bootstrap resamples. Within each heatmap, rows
+    correspond to the parameters in Table \ref{tab:sim_params}. Columns are
+    activations of learned features; they have been reordered by a hierarchical
+    clustering. The color of a cell gives the correlation between the associated
+    true and learned features. Green and purple encode positive and negative
+    correlation, respectively. Evidently, all learned features are associated
+    with multiple true features at once.}
+  \label{fig:distributed_hm}
+\end{figure}
 
 * Learned features are indeed distributed. But they are also highly correlated,
 especially for the CNN.

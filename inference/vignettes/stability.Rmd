@@ -3,6 +3,7 @@ title: Stability Analysis
 output: html_notebook
 params:
   basename: "linear_best.npy"
+  channels: c(1, 2, 3)
   data_dir: "/Users/kris/Documents/stability_outputs/"
   model_prefix: "tnbc_cnn"
   ncomp: 10
@@ -24,6 +25,10 @@ library("reshape2")
 library("reticulate")
 library("stringr")
 theme_set(theme_bw())
+
+dpath <- function(x, s) {
+  read_csv(file.path(x, paste0(s, collapse = "/")))
+}
 ```
 First we read in all the relevant data.
 
@@ -35,19 +40,19 @@ untar_all(paths, data_dir = data_dir)
 
 # read in response data and input image paths
 output_dirs <- map(paths, ~ file.path(data_dir, tools::file_path_sans_ext(basename(.x))))
-Xy <- read_csv(file.path(params$tiles_dir, "Xy.csv"))
-metadata <- map(output_dirs, ~ read_csv(file.path(.x, "layers.csv")))
-subsets <- map(output_dirs, ~ read_csv(file.path(.x, "features", "subset.csv")))
+Xy <- dpath(params$tiles_dir, "Xy.csv")
+metadata <- map(output_dirs, ~ dpath(.x, "metadata.csv"))
+subsets <- map(output_dirs, ~ dpath(.x, c("features", "subset.csv")))
 names(subsets) <- output_dirs
 ```
 Next, let's identify the paths to all the activation numpy files. This involves
 
-* merging all the `metadata.csv` files produced by individual runs
+* merging all the `metadata.csv` files produced by individual runs)
 * annotating the bootstrap number associated with each run
 * giving absolute and relative paths to the data
 
 ```{r parse_metadata}
-metadata <- map(output_dirs, ~ cbind(abs_path = .x, read_csv(file.path(.x, "layers.csv")))) %>%
+metadata <- map(output_dirs, ~ cbind(abs_path = .x, dpath(.x, "metadata.csv"))) %>%
   map_dfr(~ .x %>%
       mutate(
         model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
@@ -136,7 +141,7 @@ feature_stability <- map(scores, ~ sum( (.x - M) ^ 2)) %>%
 fss <- data.frame(
   model = params$model_prefix,
   ncom = params$ncomp,
-  sca = params$ca,
+  sca = params$sca,
   basename = params$basename,
   feature_stability = feature_stability
 )
@@ -149,7 +154,7 @@ for (i in seq_along(scores)) {
 }
 
 scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X")), .y)) %>%
-  left_join(Xy)
+  left_join(Xy, c("rel_path" = "path"))
 plot_data <- scores %>%
   melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim")
 plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
@@ -209,7 +214,6 @@ for (filt_rows in c(TRUE, FALSE)) {
     }
   }
 }
-  
 ```
 
 ```{r}
@@ -396,7 +400,7 @@ for (j1 in seq_len(params$ncomp)) {
     coords <- centroids %>%
       select(one_of(cur_cols))
     colnames(coords) <- c("x", "y")
-    image_grid(coords, paths, min_dist = .05, density = 10, channels = c(4, 5, 7)) +
+    image_grid(coords, paths, min_dist = .05, density = 10, channels = params$channels) +
       labs(
         x = sprintf("Learned Feature %s", j1),
         y = sprintf("Learned Feature %s", j2)
