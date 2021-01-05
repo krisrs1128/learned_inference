@@ -53,6 +53,8 @@ that are expected to be false positives.
 
 \subsubsection{Feature Learning}
 
+(tk: do I need to define activation?)
+
 In this work, we will examine the behavior of three particular feature learning algorithms. The first approach is called the Variational Autoencoder (VAE). Like principal components analysis, this algorithm learns a $K$-dimensional reduction of a dataset by optimizing a reconstruction objective. Formally, the algorithm first posits some generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data; $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair $\xi, \varphi$ maximizing the lower bound,
 
 \begin{align*}
@@ -96,3 +98,45 @@ ridge regression model is trained, solving
 \end{align*}
 
 For a new example $x^{\ast}$, the same image patches $w_{1}, \dots, w_{p}$ are used to create a featurization $z^{\ast}$, and predictions are made with $z^{\ast T}\hat{\beta}$. Unlike either the VAE or CNN, this model does not require gradient based training, and it can serve as a fast (and often effective) baseline.
+
+\subsubsection{Representation Analysis}
+
+Our approach is closely related to methods for representation analysis, which
+compare activations across deep learning models. One popular approach to
+representation analysis is Singular Vector CCA (SVCCA). This method can be used
+to compare pairs of representations, coming from different layers, models, or
+training epochs, for example. In SVCCA, the two representations are identified
+with two matrices, $X \in \reals^{n \times k_{1}}$ and $Y \in \reals^{n \times
+  k_{2}}$. The $ij^{th}$ cell in each matrix corresponds to the activation of
+neuron $j$ on sample $i$. Each representation effectively corresponds to a
+pattern of activations across a collection of neurons.
+
+To compare these representations, SVCCA first computes singular value
+decompositions $X = U_{X}D_{X}V_{X}^{T}$ and $Y = U_{Y}D_{Y}V_{T}^{T}$. The
+coordinates of these matrices with respect to the top $K$ singular vector
+directions are then extracted, $Z_{X} = U_{X, 1:K}D_{X, 1:K}$ and $Z_{Y} = U_{Y,
+  1:K}D_{Y, 1:K}$. Finally, a canonical correlation analysis is performed on
+these coordinate matrices. That is, the top CCA directions $u_{1}, v_{1}$ are
+found by optimizing
+
+\begin{align*}
+  \text{maximize }& u^{T}\hat{\Sigma}_{Z_{X}}^{-\frac{1}{2}}\hat{\Sigma}_{Z_{X}Z_{Y}}\hat{\Sigma}_{Z_{Y}}^{-\frac{1}{2}}v \\
+  \text{such that } & \|u\|_{2} = \|v\| = 1
+\end{align*}
+
+and subsequent directions are found by solving the same problem, after
+orthogonalizing $Z_{X}$ and $Z_{Y}$ to previously extracted directions. The
+value of the objective for each of the $K$ directions extracted is denoted
+$\rho_{k}$, and the overall similarity between the two representations is taken
+to be the average of these canonical correlations: $\frac{1}{K}\sum_{k = 1}^{K}
+\rho_{k}$.
+
+Note that, while in principle, it would be possible to perform a CCA on the
+activations $X$ and $Y$ directly, for representations with many neurons, the
+dimensionality reduction step can lead to dramatic performance gains, because it
+avoids inverting a high-dimensional correlation matrix.
+
+. This is
+because directly inverting $\hat{\Sigma}_{X}$ and $\hat{\Sigma}_{Y}$ would be an $O\left(p^{3}\right)$
+operation.
+
