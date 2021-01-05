@@ -1,6 +1,6 @@
 condor_submit <<EOF
 universe = docker
-docker_image = krisrs1128/li:010302
+docker_image = krisrs1128/li:010401
 log = /home/ksankaran/logs/vis_\$(Cluster)_\$(Process).log
 error = /home/ksankaran/logs/vis_\$(Cluster)_\$(Process).err
 output = /home/ksankaran/logs/vis_\$(Cluster)_\$(Process).out
@@ -9,5 +9,5 @@ environment = "PREFIX=${1} BASENAME=${2} SCA=${3}"
 executable = visualize_outputs.sh
 request_cpus = 1
 request_memory = 12GB
-request_disk = 4GB
+request_disk = 5GB
 queue 1

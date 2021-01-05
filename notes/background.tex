@@ -137,8 +137,23 @@ activations $X$ and $Y$ directly, for representations with many neurons, the
 dimensionality reduction step can lead to dramatic performance gains, because it
 avoids inverting a high-dimensional correlation matrix.
 
-\subsection{Sparse PCA}
+\subsection{Sparse Components Analysis}
 
 Like SVCCA, we reduce dimensionality of our learned features before comparing
-them. We reductions using both PCA and a sparse variant introduced in.
+them. We reductions using both PCA and a recently proposed variant called Sparse
+Components Analysis (SCA). For a given data matrix $X$ and a number of
+components $K$, and sparsity parameter $\gamma$, SCA solves the optimization
 
+\begin{align*}
+  \text{maximize }_{Z, B, Y} &\|X - Z B Y^{T}\|_{F} \\
+  \text{such that }Z \in &\mathcal{O}\left(n, K\right) \\
+  Y \in &\mathcal{O}\left(p, k\right) \\
+  \|Y\|_{1} \leq \gamma.
+\end{align*}
+
+Here, $\mathcal{O}\left(m, n\right)$ corresponds to the space of $m \times n$
+orthogonal matrices. The matrix $Y$ provides the $K$ the SCA loadings, and the
+product $ZB$ provide the coordinates of each sample with respect to that basis.
+Note that if $B$ is forced to be diagonal, then this optimization reduces to
+previously proposed versions of sparse PCA (we work with nondiagonal $B$
+throughout this work).
