@@ -1,7 +1,7 @@
 organization: # all relative to $DATA_DIR
-  features_dir: "cnn90/features/"
-  metadata: "cnn90/metadata.csv"
-  model: "cnn90/model_best.pt"
+  features_dir: "features/"
+  metadata: "layers.csv"
+  model: "model_best.pt"
   splits: "splits_0.9-train.csv"
   xy: "Xy.csv"
 train:

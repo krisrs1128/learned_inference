@@ -1,7 +1,7 @@
 organization: # all relative to $DATA_DIR
-  features_dir: "rcf15/features/"
-  metadata: "rcf15/layers.csv"
-  model: "rcf15/widenet.pt"
+  features_dir: "features/"
+  metadata: "layers.csv"
+  model: "widenet.pt"
   splits: "splits_0.15-train.csv"
   xy: "Xy.csv"
 train:
