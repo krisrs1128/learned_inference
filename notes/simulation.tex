@@ -224,10 +224,33 @@ selections overall at that given level, because that dilutes the signal.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{combined_summary}
-  \caption{}
-  \label{fig:}
+  \includegraphics[width=\textwidth]{cca_summary}
+  \caption{The top canonical correlations between the sources features and the
+    aligned $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$. Horizontal rows correspond to
+    CNN, RCF, and VAE algorithms. Columns give the CCA dimension. Within each
+    cell, the canonical correlations across all bootstrap is shown. The $x$-axis
+    within each cell gives the amount of data used for feature learning.
+    Canonical correlations are computed separately for samples within training,
+    development, and test splits, indicated by each point's color. The total
+    amount of data used for feature learning does not strongly influence the
+    canonical correlation between source and learned features. From the point of
+    view of these canonical correlations, the RCF and VAE have comparable
+    feature learning behaviors.}
+  \label{fig:cca_summary}
 \end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{selection_summary2}
+  \caption{The median number of features selected by stability selection across
+    bootstrap runs $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$, viewed as a function of
+    $\pi_{thr}$. Rows and columns correspond to models and fraction of the data
+    used for training, respectively. Stability selection is run within training,
+    validation, and test splits (color) and using two dimensionality reduction
+    procedures during alignment (solid vs. dashed lines).}
+  \label{fig:selection_summary}
+\end{figure}
+
 
 \subsection{Stability study}
 

@@ -27,7 +27,7 @@ library("stringr")
 theme_set(theme_bw())
 
 dpath <- function(x, s) {
-  read_csv(file.path(x, paste0(s, collapse = "/")))
+  read_csv(file.path(x, params$model_prefix, paste0(s, collapse = "/")))
 }
 ```
 First we read in all the relevant data.
@@ -41,18 +41,18 @@ untar_all(paths, data_dir = data_dir)
 # read in response data and input image paths
 output_dirs <- map(paths, ~ file.path(data_dir, tools::file_path_sans_ext(basename(.x))))
 Xy <- dpath(params$tiles_dir, "Xy.csv")
-metadata <- map(output_dirs, ~ dpath(.x, "layers.csv"))
+metadata <- map(output_dirs, ~ dpath(.x, "metadata.csv"))
 subsets <- map(output_dirs, ~ dpath(.x, c("features", "subset.csv")))
 names(subsets) <- output_dirs
 ```
 Next, let's identify the paths to all the activation numpy files. This involves
 
-* merging all the `layers.csv` files produced by individual runs)
+* merging all the `metadata.csv` files produced by individual runs)
 * annotating the bootstrap number associated with each run
 * giving absolute and relative paths to the data
 
 ```{r parse_metadata}
-metadata <- map(output_dirs, ~ cbind(abs_path = .x, dpath(.x, "layers.csv"))) %>%
+metadata <- map(output_dirs, ~ cbind(abs_path = .x, dpath(.x, "metadata.csv"))) %>%
   map_dfr(~ .x %>%
       mutate(
         model = str_replace(out_path, "(.+)stability_data/(.+)/features(.+)", "\\2"),
