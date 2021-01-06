@@ -40,7 +40,7 @@ for (i in seq_len(nrow(paths_df))) {
     select(-ix)
 
   H_ <- np$load(dpath(paths_df$feature[i])) %>%
-    as.data.frame()
+    as.data.framed()
 
   # some RCF cols have 0 variance, so jitter
   H_ <- H_ + matrix(runif(prod(dim(H_)), -0.1, 0.1), nrow(H_), ncol(H_))
