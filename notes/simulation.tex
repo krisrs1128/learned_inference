@@ -200,12 +200,56 @@ features per run makes this clear.
   \label{fig:distributed_hm}
 \end{figure}
 
-\subsection{Stability scores}
+\subsection{Feature Learning vs. Inference}
+
+It is natural to ask how the overall correlation between source and learned
+features vary as a function of the algorithms and training sample sizes used. To
+this end, in Figure \ref{fig:cca_sim}, we compute the top canonical correlations
+between learned features.
+
+Comparison in the CCA scores between the alternative approach
+
+Comparison in feature stabilities across algorithms and sample sizes.
+
+Comparison between the FDR's from the different selection strategies, at
+different #samples. Idea is that selection diagram is rich, but not succinct
+enough to draw meaningful comparisons across algorithms and training sample
+sizes.
+
+Specifically, plot the pi thr vs. number of features
+selected. The point is that you want high $\pi$'s and some selections, because
+those are unlikely to be false positives. You also don't want too many
+selections overall at that given level, because that dilutes the signal.
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{combined_summary}
+  \caption{}
+  \label{fig:}
+\end{figure}
+
+\subsection{Stability study}
 
 Figures \ref{fig:embeddings_sim} and \ref{fig:selections_sim} summarize the
 results of Algorithms \ref{fig:fss} and \ref{alg:selection} applied to several
 feature learners. For this figure, $\absarg{I} = \absarg{I^{C}} = 5000$ samples.
 The analogous results with alternative splits are given in the appendix.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{embeddings50}
+  \caption{}
+  \label{fig:}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{selection_paths50}
+  \caption{}
+  \label{fig:}
+\end{figure}
+
 
 Reading the embeddings figures
 * Two axes are two dimensions of embeddings. We've chosen those that have high
@@ -233,23 +277,9 @@ dimensionality reduction approaches
 those scores can be correlated with one another in this approach, but not for
 SVD.
 
-\subsection{Feature Learning vs. Inference}
-
-It is natural to ask how the overall correlation between source and learned
-features vary as a function of the algorithms and training sample sizes used. To
-this end, in Figure \ref{fig:cca_sim}, we compute the top canonical correlations
-between learned features.
-
-Comparison in the CCA scores between the alternative approach
-
-Comparison in feature stabilities across algorithms and sample sizes.
-
-Comparison between the FDR's from the different selection strategies, at
-different #samples. Idea is that selection diagram is rich, but not succinct
-enough to draw meaningful comparisons across algorithms and training sample
-sizes.
-
-Specifically, plot the pi thr vs. number of features
-selected. The point is that you want high $\pi$'s and some selections, because
-those are unlikely to be false positives. You also don't want too many
-selections overall at that given level, because that dilutes the signal.
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{}
+  \caption{}
+  \label{fig:}
+\end{figure}
