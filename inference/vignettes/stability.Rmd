@@ -153,8 +153,13 @@ for (i in seq_along(scores)) {
   colnames(scores[[i]]) <- paste0("dim", 1:params$ncomp)
 }
 
+# Xy.csv has different information in TNBC and Simulation splits
 scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X")), .y)) %>%
-  left_join(Xy, c("rel_path" = "path"))
+if (!grepl("tnbc", params$model_prefix)) { 
+  scores <- scores %>%
+    left_join(Xy, c("rel_path" = "path"))
+}
+  
 plot_data <- scores %>%
   melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim")
 plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
