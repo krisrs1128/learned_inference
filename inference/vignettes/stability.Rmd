@@ -359,43 +359,9 @@ selections$train_perc <- as.numeric(str_extract(params$model_prefix, "[0-9]+"))
 selections$sca <- params$sca
 write_csv(selections, file.path(save_dir, sprintf("selections_%s.csv", sca_label)))
 ```
-
-```{r}
-paths <- file.path(params$tiles_dir, centroids$rel_path)
-for (j1 in seq_len(params$ncomp)) {
-  for (j2 in seq_len(j1 - 1)) {
-    cur_cols <- paste0("meandim", c(j1, j2))
-    coords <- centroids %>%
-      select(one_of(cur_cols))
-    colnames(coords) <- c("x", "y")
-    image_grid(coords, paths, min_dist = .4, density = 10, imsize = 0.8) +
-      labs(
-        x = sprintf("Learned Feature %s", j1),
-        y = sprintf("Learned Feature %s", j2)
-      )
-    ggsave(file.path(save_dir, sprintf("image_grid-%s-%s-%s.png", sca_label, j1, j2)))
-  }
-}
-```
-
-```{r}
-j1 <- 1
-j2 <- 2
-cur_cols <- paste0("meandim", c(j1, j2))
-coords <- centroids %>%
-  filter(split == "train") %>%
-  select(one_of(cur_cols))
-colnames(coords) <- c("x", "y")
-image_grid(coords, paths, min_dist = .4, density = 15, imsize = .4) +
-  labs(
-    x = sprintf("Learned Feature %s", j1),
-    y = sprintf("Learned Feature %s", j2)
-  )
-```
-
 In case we want to follow-up any of these analysis, we can look at these
 RData's.
 
 ```{r}
-save.image(file.path(save_dir, sprintf("stability_%s.RData", sca_label)))
+save.image(file.path(params$save_dir, sprintf("stability_%s.RData", sca_label)))
 ```

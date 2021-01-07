@@ -1,0 +1,33 @@
+---
+title: "R Notebook"
+output: html_notebook
+params:
+  rdata_path: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures/tnbc_rcf/stability_svd.RData"
+---
+```{r}
+library("ggplot2")
+library("inference")
+library("dplyr")
+theme_set(theme_bw())
+```
+
+```{r}
+load(params$rdata_path)
+```
+
+
+```{r}
+j1 <- 1
+j2 <- 2
+cur_cols <- paste0("meandim", c(j1, j2))
+coords <- centroids %>%
+  filter(split == "train") %>%
+  select(one_of(cur_cols))
+colnames(coords) <- c("x", "y")
+inference::image_grid(coords, paths, min_dist = .4, density = 5, imsize = 1) +
+  labs(
+    x = sprintf("Learned Feature %s", j1),
+    y = sprintf("Learned Feature %s", j2)
+  )
+```
+
