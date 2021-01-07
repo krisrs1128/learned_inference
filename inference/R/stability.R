@@ -95,18 +95,13 @@ procrustes <- function(x_list, tol = 1e-3) {
 #' @importFrom ggplot2 ggplot geom_point aes coord_fixed theme_bw
 #'   annotation_raster %+%
 #' @export
-image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, channels = c(1, 2, 3)) {
+image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, imsize = 0.2) {
   np <- import("numpy")
   p <- ggplot() +
-    geom_point(
-      data = coordinates,
-      aes(x = x, y = y),
-      alpha = 0.2,
-      size = 0.7
-    ) +
     coord_fixed() +
-    theme_bw()
-
+    theme(legend.position = "none") +
+    scale_fill_brewer(palette = "Set3")
+  
   # get distances between anchor points and scores
   x_range <- c(min(coordinates$x), max(coordinates$x))
   y_range <- c(min(coordinates$y), max(coordinates$y))
@@ -114,25 +109,42 @@ image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, channels 
   y_grid <- seq(y_range[1], y_range[2], length.out = density)
   xy_grid <- expand.grid(x_grid, y_grid)
   dists <- as.matrix(pdist(xy_grid, as.matrix(coordinates)))
-
+  
   # overlay the closest points
   used_ix <- c()
   for (i in seq_len(nrow(dists))) {
     min_ix <- which.min(dists[i, ])
+    print(min_ix)
     if (dists[i, min_ix] > min_dist) next
     if (min_ix %in% used_ix) next
     used_ix <- c(used_ix, min_ix)
-
-    im <- np$load(paths[min_ix])[,, channels]
+    
+    print(dists[i, min_ix])
+    
+    im <- np$load(paths[min_ix])
+    mim <- melt(im) %>%
+      filter(value != 0) %>%
+      mutate(
+        Var1 = xy_grid[i, 1] + (Var1) * imsize / 64,
+        Var2 = xy_grid[i, 2] + (Var2) * imsize / 64
+      )
+    
     p <- p +
-      annotation_raster(
-        as.raster(im),
-        xy_grid[i, 1] - 0.2,
-        xy_grid[i, 1] + 0.2,
-        xy_grid[i, 2] - 0.2,
-        xy_grid[i, 2] + 0.2
+      geom_rect(
+        data = mim,
+        aes(
+          xmin = min(Var1),
+          xmax = max(Var1),
+          ymin = min(Var2),
+          ymax = max(Var2)
+        ),
+        fill = "#ededed"
+      ) +
+      geom_tile(
+        data = mim,
+        aes(x = Var1, y = Var2, fill = as.factor(Var3))
       )
   }
-
+  
   p
 }
