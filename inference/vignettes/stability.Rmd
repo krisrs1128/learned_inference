@@ -2,15 +2,14 @@
 title: Stability Analysis
 output: html_notebook
 params:
-  basename: "linear_best.npy"
-  channels: [1, 2, 3]
-  data_dir: "/Users/kris/Documents/stability_outputs/"
-  model_prefix: "tnbc_cnn"
+  basename: "full_best.npy"
+  data_dir: "/Users/kris/Documents/tmp//"
+  model_prefix: "tnbc_rcf"
   ncomp: 10
   python_path: "/usr/bin/python3"
   save_dir: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures"
   sca: FALSE
-  tiles_dir: "/Users/kris/Documents/stability_data/"
+  tiles_dir: "/Users/kris/Documents/tiles_dir"
 ---
 
 ```{r libraries}
@@ -27,7 +26,7 @@ library("stringr")
 theme_set(theme_bw())
 
 dpath <- function(x, s) {
-  read_csv(file.path(x, paste0(s, collapse = "/")))
+  read_csv(file.path(x, paste0(s, collapse = "/")), col_types = cols())
 }
 ```
 First we read in all the relevant data.
@@ -79,8 +78,9 @@ acts_ <- metadata %>%
   filter(basename(rel_path) == params$basename) %>%
   .[["abs_path"]] %>%
   unique()
-acts <- map(acts_, ~ data.frame(np$load(.x)))
+acts <- map(acts_, ~ data.frame(np$load(.)))
 subsets_ <- map(subsets, ~ dplyr::rename(., c("ix" = "X1", "rel_path" = "path")))
+
 acts <- map2_dfr(subsets_, acts, cbind, .id = "source") %>%
   left_join(metadata %>% select(source, bootstrap) %>% unique())
 ```
@@ -153,13 +153,7 @@ for (i in seq_along(scores)) {
   colnames(scores[[i]]) <- paste0("dim", 1:params$ncomp)
 }
 
-# Xy.csv has different information in TNBC and Simulation splits
 scores <- map2_dfr(acts_splits, scores, ~ cbind(.x %>% select(-starts_with("X")), .y))
-if (!grepl("tnbc", params$model_prefix)) { 
-  scores <- scores %>%
-    left_join(Xy, c("rel_path" = "path"))
-}
-  
 plot_data <- scores %>%
   melt(measure.vars = paste0("dim", 1:params$ncomp), variable.name = "dim")
 plot_data$split <- factor(plot_data$split, levels = c("train", "dev", "test"))
@@ -292,7 +286,7 @@ write_csv(pi_hat, file.path(save_dir, sprintf("pi_hat_%s.csv", sca_label)))
 What is the average correlation between selected features and the underlying
 generative process?
 
-```{r, correlation_data, fig.width = 8, fig.height = 5}
+```{r, correlation_data, fig.width = 8, fig.height = 5, eval = FALSE}
 lambda_thr <- lambda[8]
 
 selections <- pi_hat %>%
@@ -303,9 +297,9 @@ selections <- pi_hat %>%
   select(-j)
 
 scores_mat <- scores %>%
+  left_join(Xy %>% select(path, starts_with("X")), c("rel_path" = "path")) %>%
   split(., list(.$split, .$bootstrap))
 
-mcor <- list()
 cca_data <- list()
 for (i in seq_along(scores_mat)) {
   scores_i <- scores_mat[[i]] %>%
@@ -313,12 +307,6 @@ for (i in seq_along(scores_mat)) {
     as.matrix()
   scores_i[is.na(scores_i)] <- 0
   
-  mcor[[i]] <- melt(cor(scores_i), varnames = c("dim", "feature")) %>%
-    filter(!(feature %in% paste0("dim", 1:params$ncomp))) %>%
-    filter(dim %in% paste0("dim", 1:params$ncomp))
-  mcor[[i]]$split <- scores_mat[[i]]$split[1]
-  mcor[[i]]$bootstrap <- scores_mat[[i]]$bootstrap[1]
-
   dim_i <- scores_mat[[i]] %>%
     select(starts_with("dim")) %>%
     as.matrix()
@@ -327,11 +315,12 @@ for (i in seq_along(scores_mat)) {
     as.matrix()
   x_i[is.na(x_i)] <- 0
 
+  rhos <- cancor(dim_i, x_i)$cor
   cca_data[[i]] <- data.frame(
-    k = 1:params$ncomp,
+    k = seq_along(rhos),
     split = scores_mat[[i]]$split[1],
     bootstrap = scores_mat[[i]]$bootstrap[1],
-    rho = cancor(dim_i, x_i)$cor
+    rho = rhos
   )
 }
 ```
@@ -342,25 +331,6 @@ ggplot(cca_data) +
   geom_point(aes(x = k, y = rho, col = split))
 write_csv(cca_data, file.path(save_dir, sprintf("cca_data_%s.csv", sca_label)))
 ```
-
-```{r, correlation_diagram, fig.width = 8, fig.height = 5}
-mcor <- do.call(rbind, mcor) %>%
-  left_join(selections) %>%
-  mutate(dim = gsub("dim", "", dim))
-mcor$dim <- factor(mcor$dim, levels = 1:10)
-
-ggplot(mcor) +
-  geom_hline(yintercept = 0) +
-  geom_point(aes(x = feature, y = value, col = selection, shape = split)) +
-  facet_grid(split ~ dim) +
-  scale_color_viridis_c() +
-  theme(
-    axis.text.x = element_text(angle = 90, size = 8),
-    legend.position = "bottom"
-  )
-ggsave(file.path(save_dir, sprintf("correlation_diagram_%s.png", sca_label)))
-```
-
 ```{r correlation_heatmap}
 scores_mat <- scores %>%
   select(starts_with("dim"), starts_with("X")) %>%
@@ -405,7 +375,7 @@ for (j1 in seq_len(params$ncomp)) {
     coords <- centroids %>%
       select(one_of(cur_cols))
     colnames(coords) <- c("x", "y")
-    image_grid(coords, paths, min_dist = .05, density = 10, channels = params$channels) +
+    image_grid(coords, paths, min_dist = .4, density = 10, imsize = 2) +
       labs(
         x = sprintf("Learned Feature %s", j1),
         y = sprintf("Learned Feature %s", j2)
@@ -417,6 +387,22 @@ for (j1 in seq_len(params$ncomp)) {
 
 In case we want to follow-up any of these analysis, we can look at these
 RData's.
+
+```{r}
+j1 <- 6
+j2 <- 3
+cur_cols <- paste0("meandim", c(j1, j2))
+coords <- centroids %>%
+  filter(split == "train") %>%
+  select(one_of(cur_cols))
+colnames(coords) <- c("x", "y")
+image_grid(coords, paths, min_dist = .4, density = 20, imsize = .4) +
+  labs(
+    x = sprintf("Learned Feature %s", j1),
+    y = sprintf("Learned Feature %s", j2)
+  )
+ggsave("~/Desktop/tmp.png", dpi = 350)
+```
 
 ```{r}
 save.image(file.path(save_dir, sprintf("stability_%s.RData", sca_label)))
