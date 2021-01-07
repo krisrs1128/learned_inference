@@ -116,7 +116,6 @@ extract_patch <- function(r, w, h, r_cells, qsize = 256, fct = 4, alpha = 5) {
   
   tumor_status <- cells_filter %>%
     pull(tumorYN)
-  browser()
   
   # log ratio tumor vs. immune (with laplace smoothing)
   xy <- data.frame(

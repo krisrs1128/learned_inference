@@ -19,6 +19,7 @@ library("inference")
 raw_data <- load_mibi(params$data_dir, 41, n_lev = params$k_channels - 1)
 tiff_paths <- raw_data$tiffs
 exper <- raw_data$mibi
+raw_data$levels
 ```
 
 > While we generally observed similar enrichments across patients (e.g., enrichment of PD-1 expression on T cells), we identified several pronounced differences between patients in the cell types expressing different regulatory proteins (Figures S6G and S6H). We found that some patients have predominantly PD1+ CD4+ T cells, whereas others have predominantly PD1+ CD8+ T cells. For example, patient 35 has 368 PD1+ immune cells. Of these, 68% are CD4+ and 8% are CD8+ . Similarly, patient 14 has 390 PD1+ cells. However, of these, 7% are CD4+ and 78% are CD8+ (Figure 5A).
