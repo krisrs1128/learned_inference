@@ -4,13 +4,7 @@
 \alias{image_grid}
 \title{Plot a Grid of Images}
 \usage{
-image_grid(
-  coordinates,
-  paths,
-  density = 15,
-  min_dist = 0.1,
-  channels = c(1, 2, 3)
-)
+image_grid(coordinates, paths, density = 15, min_dist = 0.1, imsize = 0.2)
 }
 \description{
 Plot a Grid of Images

@@ -114,12 +114,9 @@ image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, imsize = 
   used_ix <- c()
   for (i in seq_len(nrow(dists))) {
     min_ix <- which.min(dists[i, ])
-    print(min_ix)
     if (dists[i, min_ix] > min_dist) next
     if (min_ix %in% used_ix) next
     used_ix <- c(used_ix, min_ix)
-    
-    print(dists[i, min_ix])
     
     im <- np$load(paths[min_ix])
     mim <- melt(im) %>%

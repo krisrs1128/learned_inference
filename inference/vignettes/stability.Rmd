@@ -188,7 +188,7 @@ for (filt_rows in c(TRUE, FALSE)) {
     edge_data_sub <- edge_data
   }
   
-  for (j1 in seq_len(params$ncomp)) {
+  for (j1 in seq_len(min(4, params$ncomp))) {
     for (j2 in seq_len(j1 - 1)) {
       ggplot(edge_data_sub) +
         geom_point(
@@ -286,7 +286,7 @@ write_csv(pi_hat, file.path(save_dir, sprintf("pi_hat_%s.csv", sca_label)))
 What is the average correlation between selected features and the underlying
 generative process?
 
-```{r, correlation_data, fig.width = 8, fig.height = 5, eval = FALSE}
+```{r, correlation_data, fig.width = 8, fig.height = 5}
 lambda_thr <- lambda[8]
 
 selections <- pi_hat %>%
