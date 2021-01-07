@@ -22,8 +22,14 @@ images, each taken from a separate patient. We associate each pixel with one of
 \begin{figure}
   \centering
   \includegraphics[width=0.8\textwidth]{example_cells}
-  \caption{}
-  \label{}
+  \caption{Example patches of TNBC data. Each cell is shaded in by its cell
+    type. Keratin+ and Mesenchymal-like cells are tumor cells, the rest are
+    immune cells. Panels are ordered by $y_i$, the (log) fraction of cells they
+    contain that belong to the tumor. The goal of the prediction algorithm in
+    this illustrative example is to correctly place patches from new patients
+    along this gradient, after having observed many patches and their
+    corresponding $y_i$'s.}
+  \label{fig:example_cells}
 \end{figure}
 
 
@@ -51,15 +57,24 @@ models are shown in Figure \ref{fig:tnbc_stability}. Figure
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{tnbc_selection_svd}
-  \caption{}
-  \label{}
+  \caption{Selection curves for features learned from the TNBC data. 50\% of
+    the data were used for feature learning and the SVD was used for
+    dimensionality reduction. Each curve is read as in Figure
+    \ref{fig:selection_paths50}. The analogous paths using SCA alignment are
+    given in the appendix. }
+  \label{fig:tnbc_selection_svd}
 \end{figure}
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{tnbc_important_features}
-  \caption{}
-  \label{}
+  \caption{Representation of samples according to some of the important learned
+    feature dimensions, obtained using a CNN (a), RCF (b), and VAE (c). Glyphs
+    are read as in Figure \ref{fig:embeddings-test}. To interpret these
+    features, example patches are arranged according to these coordinates in
+    Figure \ref{fig:embeddings-images}. Example unimportant feature dimensions
+    are given in Supplementary Figure \ref{fig:tnbc_unimportant_features}.}
+  \label{fig:tnbc_important_features}
 \end{figure}
 
 data used in study
