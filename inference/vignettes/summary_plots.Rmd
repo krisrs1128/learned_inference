@@ -21,6 +21,7 @@ selections <- dir(params$data_dir, "selections", full = TRUE, recursive = TRUE) 
   mutate(
     Reduction = ifelse(sca, "SCA", "SVD")
   )
+selections$split <- factor(selections$split, levels = c("train", "dev", "test"))
 
 ggplot(selections) +
   #geom_errorbar(
@@ -46,6 +47,8 @@ ggplot(selections) +
     axis.text.x = element_text(angle = 90),
     legend.position = "bottom"
   )
+
+#ggsave("~/Desktop/conceptual/learned_inference/notes/figure/selection_summary2.png", dpi = 350)
 ```
 
 ```{r}
@@ -59,27 +62,29 @@ cca_data <- cca_paths %>%
 cca_data <- cca_data %>%
   mutate(
     train_perc = as.integer(str_extract(path, "[0-9]+")),
-    method = str_extract(path, "cnn|vae|rcf")
+    method = str_extract(path, "cnn|vae|rcf"),
+    reduction = str_extract(path, "sca|svd")
   )
 ```
 
-```{r}
+```{r, fig.height = 5, fig.width = 8}
 cca_data$split <- factor(cca_data$split, levels = c("train", "dev", "test"))
 cca_data$train_perc <- as.factor(cca_data$train_perc)
 ggplot(cca_data) +
   geom_point(
-    aes(x = train_perc, y = rho, col = split),
-    size = 0.6, alpha = 0.5,
+    aes(x = interaction(train_perc, reduction), y = rho, col = split),
+    size = 1, alpha = 0.5,
     position = position_jitter(w = 0.2)
   ) +
   labs(
     y = expression("Canonical Correlation " ~ rho[k]),
-    x = expression(k ~ "and % Data used for Feature Learning")
+    x = "Canonical Correlation Analysis Dimension"
   ) +
   scale_color_brewer(palette = "Set2") +
   facet_grid(method ~ k) +
   theme(
     panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 90),
     axis.ticks.y = element_blank(),
     axis.text.y = element_text(size = 7),
     legend.position = "bottom",
@@ -88,6 +93,10 @@ ggplot(cca_data) +
   guides(color = guide_legend(override.aes = list(size = 3, alpha = 1))) +
   ylim(0, 1)
 ```
+```{r}
+cca_data$path %>% unique()
+```
+
 
 ```{r, fig.width = 4, fig.height = 3}
 fss <- dir(file.path(params$data_dir, "ftotal"), "feature", full = TRUE, recursive = TRUE) %>%
