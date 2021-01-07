@@ -1,17 +1,66 @@
-\section{Introduction}
+n\section{Introduction}
 
-The traditional high-dimensional inference setting assumes that all features have been fixed in advance. When given a dataset $X \in \reals^{n \times p}$, there was little reason to ask where exactly the $p$ columns came from. However, across a variety of fields, the feature extraction process itself has become data-driven. Indeed, automatic feature learning can minimize the labor associated with manually extracting features. Consider the following examples,
+The traditional high-dimensional inference setting assumes that all features
+have been fixed in advance. When given a dataset $X \in \reals^{n \times p}$,
+there was little reason to ask where exactly the $p$ columns came from. 
+
+
+How should we perform statistical inference when our data are nontabular? One
+idea, presented in the review \citep{buhlmann2019comments}, is to first
+transform the data into a tabular form, using modern feature learning
+algorithms. The idea is important enough to quote at length,
+
+\begin{quote}
+I would like to re-emphasize the importance of new sources of information.
+Indeed, images, videos and audios are typically cheap devices to record data.
+[The authors] do not mention recent progress with autoencoders
+\citep{hinton2006reducing, vincent2010stacked}: when using such techniques, one
+would again end up with numeric features which can then be used for further
+downstream analysis using techniques from high-dimensional statistics or
+statistical machine learning \citep{hastie2015statistical,
+  buhlmann2011statistics}.
+\end{quote}
+
+This work explores this proposal, illustrating how methods from high-dimesional
+statistics can be used to study the inferential properties of machine-generated
+features. Specifically, we present algorithms and visualizations that can be
+used to characterize the statistical stability of features learned from
+nontabular data sources. In the process, we also uncover questions particular to
+this new setting.
+
+To ground the discussion, consider the following examples,
 
 \begin{itemize}
-\item Spatial genomics: In addition to measuring the cell-level gene expression measurements of (tk give how many people), the study (tk give reference to stanford study) provided images describing the spatial relationships between cells. It has become possible to interrogate the ways in which collections of cells influence disease progress. (tk give study that actually uses VAE for this) A variety of features, like the amount of mixing between tumor and healthy cells, were first extracted from these images, before being used for survival analysis.
-\item Computational Sustainability: The study () used satellite imagery to measure economic development across Nigeria. The results were in close agreement to traditional government surveys, suggesting that the method could be used as a less resource-intensive proxy. That work discusses the possibility that neighborhood characteristics and degree of infrastructure development were implicitly learned by the supervised model.
+\item Spatial 'omics: In addition to measuring the gene or protein expression at
+  the cell level, it has become possible to study how expression varies
+  spatially across a tissue \citep{burgess2019spatial, lundberg2019spatial}. A
+  variety of spatial features are thought to influence biological processes; for
+  example, for some types of cancer, it is thought that the amount of mixing
+  between tumor and healthy cells influence disease outlook
+  \citep{keren2018structured}.
+\item Ecological and public health: Satellite imagery are now routinely
+  integrated into ecological and public health projects, since they can capture
+  important environmental features and are readily available globally
+  \citep{jean2016combining, wu2020air, bondimapping}. These methods have been found to be effective
+  proxies for otherwise resource-intensive collection methods, like
+  on-the-ground surveys, opening up the possibility of more universal and easily
+  updated monitoring.
 \end{itemize}
 
-This shift from human-curated to machine-generated features poses a statistical challenge: How can robust scientific inference be accomplished when the targets of inference are themselves estimated from data? On the other hand, this shift also presents a statistical opportunity. As long as features were manually designed by investigators, it was hard to pinpoint exactly where they came from. The process was essentially a creative one; on another day, a different set of features might have been defined, and the statistician would have no way of knowing. The more systematic the feature generation process becomes, the easier it becomes to quantify the uncertainty that comes from it.
 
-This question is not a new one — \cite{rao1955estimation} discussed tests for scores following a factor analysis, \cite{diaconis1983computer} described a bootstrap for principal components, \cite{elguero1988confidence} developed confidence regions for exploratory projection pursuit. This work revisits these ideas with a focus on the feature learning algorithms that have recently become common in the analysis of scientific imagery, especially those from deep learning.
+This question of how to perform inference on learned features is not a new one —
+\cite{rao1955estimation} discussed tests for scores following a factor analysis,
+\cite{diaconis1983computer} described a bootstrap for principal components,
+\cite{elguero1988confidence} developed confidence regions for exploratory
+projection pursuit. More recent work adapts this work to the types of feature
+learning algorithms that have recently become common in the analysis of
+scientific imagery, especially those from deep learning \citep{wang2020methods}.
 
-It’s worth asking why the approaches cited above haven’t become already become standard practice the scientific workflow. Why isn’t the bootstrap already used to quantify the importance of cell type mixing in cancer progression, or the role of infrastructure development in economic growth? We suspect that the main reasons are,
+It’s worth asking why the approaches cited above haven’t become already become
+standard practice the scientific workflow. Why isn’t the bootstrap already used
+to quantify the importance of cell type mixing in cancer progression, or the
+role of infrastructure development in economic growth? We suspect that the main
+reasons are,
 
 \begin{itemize}
 \item The learned features are effective for computational tasks, but not for human understanding. This is a result of the fact that deep learning representations are ``distributed'' \cite{mcclelland1986parallel}. Practically, this means that any pattern observed by the algorithm, will be encoded by a pattern of activations across a large number of more elementary features, not any specialized feature that recognizes just that pattern. A deep learning algorithm is able ot recognize a highway in a satellite image not because it has a single high-level feature for recognizing highways, but because it can merge evidence from across neurons (another word for an elementary learned feature) that activate when particular color, shape, and edge features are present. This approach turns out to be much more effective for tasks like classification and simulation, but poses a challenge for human inspection.

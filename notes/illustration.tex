@@ -19,6 +19,14 @@ simplicity. Our complete data are therefore 41 $2048 \times 2048$-dimensional
 images, each taken from a separate patient. We associate each pixel with one of
 7 categories of tumor and immune cell types.
 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{example_cells}
+  \caption{}
+  \label{}
+\end{figure}
+
+
 To setup a prediction problem, we first split each image into $512 \times 512$
 patches. These patches are our $x_{i}$. Patches from 32 of the patients are
 reserved form feature learning. Four among these 32 are used as a validation
@@ -40,6 +48,19 @@ Stability curves associated with the learned features from the CNN, VAE, and RCF
 models are shown in Figure \ref{fig:tnbc_stability}. Figure
 \ref{fig:tnbc_features} can be used to interpret different feature dimensions.
 
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{tnbc_selection_svd}
+  \caption{}
+  \label{}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{tnbc_important_features}
+  \caption{}
+  \label{}
+\end{figure}
 
 data used in study
 
