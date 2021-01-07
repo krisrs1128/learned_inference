@@ -125,6 +125,7 @@ image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, imsize = 
         Var1 = xy_grid[i, 1] + (Var1) * imsize / 64,
         Var2 = xy_grid[i, 2] + (Var2) * imsize / 64
       )
+    if (nrow(mim) == 0) next
     
     p <- p +
       geom_rect(

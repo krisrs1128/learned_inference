@@ -188,7 +188,7 @@ for (filt_rows in c(TRUE, FALSE)) {
     edge_data_sub <- edge_data
   }
   
-  for (j1 in seq_len(min(4, params$ncomp))) {
+  for (j1 in seq_len(params$ncomp)) {
     for (j2 in seq_len(j1 - 1)) {
       ggplot(edge_data_sub) +
         geom_point(
@@ -236,16 +236,9 @@ for (b in seq_along(xy)) {
   fit <- glmnet(x = xy[[b]]$X, y = xy[[b]]$y)
   y_hat <- predict(fit, newx = xy[[b]]$X, type = "response")
 
-  # glmnet plot
-  png(file.path(save_dir, sprintf("glmnet_cv-%s-%s.png", names(xy)[b], sca_label)))
+  # glmnet plots
   plot(cv.glmnet(xy[[b]]$X, xy[[b]]$y))
-  dev.off()
-
-  # y vs prediction plot
-  png(file.path(save_dir, sprintf("y_vs_y_hat-%s-%s.png", names(xy)[b], sca_label)))
   plot(xy[[b]]$y, y_hat[, dim(y_hat)[2]], col = rgb(0, 0, 0, 0.6), cex = 0.5, main = names(xy)[b])
-  abline(a = 0, b = 1, col = "red")
-  dev.off()
 }
 ```
 Now let's run stability selection on each split and bootstrap sample separately.
@@ -375,7 +368,7 @@ for (j1 in seq_len(params$ncomp)) {
     coords <- centroids %>%
       select(one_of(cur_cols))
     colnames(coords) <- c("x", "y")
-    image_grid(coords, paths, min_dist = .4, density = 10, imsize = 2) +
+    image_grid(coords, paths, min_dist = .4, density = 10, imsize = 0.8) +
       labs(
         x = sprintf("Learned Feature %s", j1),
         y = sprintf("Learned Feature %s", j2)
@@ -385,24 +378,23 @@ for (j1 in seq_len(params$ncomp)) {
 }
 ```
 
-In case we want to follow-up any of these analysis, we can look at these
-RData's.
-
 ```{r}
-j1 <- 6
-j2 <- 3
+j1 <- 1
+j2 <- 2
 cur_cols <- paste0("meandim", c(j1, j2))
 coords <- centroids %>%
   filter(split == "train") %>%
   select(one_of(cur_cols))
 colnames(coords) <- c("x", "y")
-image_grid(coords, paths, min_dist = .4, density = 20, imsize = .4) +
+image_grid(coords, paths, min_dist = .4, density = 15, imsize = .4) +
   labs(
     x = sprintf("Learned Feature %s", j1),
     y = sprintf("Learned Feature %s", j2)
   )
-ggsave("~/Desktop/tmp.png", dpi = 350)
 ```
+
+In case we want to follow-up any of these analysis, we can look at these
+RData's.
 
 ```{r}
 save.image(file.path(save_dir, sprintf("stability_%s.RData", sca_label)))
