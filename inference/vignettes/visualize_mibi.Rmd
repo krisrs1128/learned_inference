@@ -1,0 +1,55 @@
+---
+title: "Visualize MIBI"
+output: html_notebook
+params:
+  tiles_dir: "/Users/kris/Documents/tiles_dir/"
+---
+
+```{r}
+library("reticulate")
+library("dplyr")
+library("ggplot2")
+library("readr")
+library("purrr")
+library("reshape2")
+np <- import("numpy")
+theme_set(theme_bw())
+```
+
+```{r}
+Xy <- read_csv(file.path(params$tiles_dir, "Xy.csv"), col_types = cols())
+cell_types <- c("B", "CD4", "CD8", "Keratin+ tumor", "Macrophages", "Mesenchymal-like", "Other")
+```
+
+```{r}
+n_patch <- nrow(Xy)
+ix <- order(Xy$y)[seq(1, n_patch, length.out = 16)]
+ims <- map(ix, ~ np$load(file.path(params$tiles_dir, Xy$path[.])))
+```
+
+```{r, fig.width = 5, fig.height = 6}
+mim <- melt(ims, varnames = c("w", "h", "cell_type")) %>%
+  mutate(cell_type = cell_types[cell_type]) %>%
+  filter(value == 1)
+
+ggplot(mim) +
+  geom_raster(
+    aes(x = w, y = h, fill = cell_type)
+  ) +
+  coord_fixed() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_alpha(range = c(0, 1), guide = FALSE) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(fill = "Cell Type") +
+  facet_wrap(~L1) +
+  theme(
+    panel.grid = element_blank(),
+    panel.spacing = unit(0, "cm"),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    legend.position = "bottom"
+  )
+```
+
