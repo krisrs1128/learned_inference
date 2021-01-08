@@ -10,17 +10,20 @@ library("ggplot2")
 library("inference")
 library("dplyr")
 theme_set(theme_bw())
-tiles_dir <- params$tiles_dir
+dpath <- function(s) {
+  file.path(params$tiles_dir, s)
+}
 ```
 
 ```{r}
-load(params$rdata_path)
-paths <- sapply(centroids$rel_path, function(s) file.path(tiles_dir, s))
+centroids <- read_csv(dpath("centroids_svd.csv"))
+edge_data <- read_csv(dpath("edge_data_svd.csv"))
+paths <- sapply(centroids$rel_path, dpath)
+j1 <- 2
+j2 <- 1
 ```
 
 ```{r, fig.height = 12, fig.width = 8}
-j1 <- 2
-j2 <- 1
 cur_cols <- paste0("meandim", c(j1, j2))
 coords <- centroids %>%
   filter(split == "test") %>%
@@ -33,7 +36,28 @@ image_grid(coords, paths, min_dist = .1, density = c(12, 14), imsize = .05) +
   ) +
   theme(panel.grid.minor = element_blank())
 ```
-```{r}
-ggsave("/Users/kris/Desktop/tnbc_vae.png", dpi = 450)
-```
 
+```{r}
+edge_data_ <- edge_data %>%
+      split(.$split) %>%
+      map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:150]))
+ggplot(edge_data_) +
+  geom_point(
+    data = centroids %>% filter(rel_path %in% edge_data_$rel_path),
+    aes_string(x = paste0("meandim", j1), y = paste0("meandim", j2), col = "y"),
+    alpha = .5, size = 0.6
+    ) +
+  geom_point(
+    aes_string(x = paste0("dim", j1), y = paste0("dim", j2), col = "y"),
+    size = 0.4, alpha = 0.8, shape = 4
+  ) +
+  geom_segment(
+    aes_string(x = paste0("meandim", j1), xend = paste0("dim", j1), y = paste0("meandim", j2), yend = paste0("dim", j2), col = "y"),
+    size = 0.3, alpha = 0.8
+  ) +
+  coord_fixed(1) +
+  facet_grid(. ~ split) +
+  scale_color_viridis_c() +
+  labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
+  theme(legend.position = "bottom")
+```

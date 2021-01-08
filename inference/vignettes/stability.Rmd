@@ -135,7 +135,7 @@ M <- pres$M
 scores <- pres$x_align
 scores <- lapply(seq_len(dim(scores)[3]), function(i) scores[,, i]) # split last dimension across list
 
-feature_stability <- map(scores, ~ sum( (.x - M) ^ 2)) %>%
+feature_stability <- map(scores, ~ mean( (.x - M) ^ 2)) %>%
   unlist() %>%
   mean()
 fss <- data.frame(
@@ -173,49 +173,12 @@ edge_data <- plot_data %>%
   split(.$bootstrap) %>%
   map_dfr(~ .x %>% left_join(centroids))
 
-head(edge_data)
-```
-
-```{r, embedding_plot, fig.width = 8}
-sca_label <- ifelse(params$sca, "sca", "svd")
-
-for (filt_rows in c(TRUE, FALSE)) {
-  if (filt_rows) {
-    edge_data_sub <- edge_data %>%
-      split(.$split) %>%
-      map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:150]))
-  } else {
-    edge_data_sub <- edge_data
-  }
-  
-  for (j1 in seq_len(params$ncomp)) {
-    for (j2 in seq_len(j1 - 1)) {
-      ggplot(edge_data_sub) +
-        geom_point(
-          data = centroids %>% filter(rel_path %in% edge_data_sub$rel_path),
-          aes_string(x = paste0("meandim", j1), y = paste0("meandim", j2), col = "y"),
-          alpha = .5, size = 0.6
-          ) +
-        geom_point(
-          aes_string(x = paste0("dim", j1), y = paste0("dim", j2), col = "y"),
-          size = 0.4, alpha = 0.8, shape = 4
-        ) +
-        geom_segment(
-          aes_string(x = paste0("meandim", j1), xend = paste0("dim", j1), y = paste0("meandim", j2), yend = paste0("dim", j2), col = "y"),
-          size = 0.3, alpha = 0.8
-        ) +
-        coord_fixed(1) +
-        facet_grid(. ~ split) +
-        scale_color_viridis_c() +
-        labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
-        theme(legend.position = "bottom")
-      ggsave(file.path(save_dir, sprintf("embeddings_%s-%s-%s_%s.png", sca_label, j1, j2, filt_rows)))
-    }
-  }
-}
+write_csv(centroids, file.path(save_dir, sprintf("centroids_%s.csv", sca_label)))
+write_csv(edge_data, file.path(save_dir, sprintf("edge_data_%s.csv", sca_label)))
 ```
 
 ```{r}
+sca_label <- ifelse(params$sca, "sca", "svd")
 edge_dists <- edge_data %>%
   mutate(D = sqrt((dim1 - meandim1) ^ 2 + (dim2 - meandim2) ^ 2 + (dim3 - meandim3) ^ 2)) %>%
   select(split, D)
