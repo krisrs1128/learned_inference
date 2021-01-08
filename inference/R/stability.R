@@ -95,7 +95,11 @@ procrustes <- function(x_list, tol = 1e-3) {
 #' @importFrom ggplot2 ggplot geom_point aes coord_fixed theme_bw
 #'   annotation_raster %+%
 #' @export
-image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, imsize = 0.2) {
+image_grid <- function(coordinates, paths, density = c(15, 15), min_dist=0.1, imsize = 0.2) {
+  if (length(density) == 1) {
+    density <- c(density, density)
+  }
+  
   np <- import("numpy")
   p <- ggplot() +
     coord_fixed() +
@@ -105,8 +109,8 @@ image_grid <- function(coordinates, paths, density = 15, min_dist=0.1, imsize = 
   # get distances between anchor points and scores
   x_range <- c(min(coordinates$x), max(coordinates$x))
   y_range <- c(min(coordinates$y), max(coordinates$y))
-  x_grid <- seq(x_range[1], x_range[2], length.out = density)
-  y_grid <- seq(y_range[1], y_range[2], length.out = density)
+  x_grid <- seq(x_range[1], x_range[2], length.out = density[1])
+  y_grid <- seq(y_range[1], y_range[2], length.out = density[2])
   xy_grid <- expand.grid(x_grid, y_grid)
   dists <- as.matrix(pdist(xy_grid, as.matrix(coordinates)))
   
