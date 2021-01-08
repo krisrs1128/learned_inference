@@ -173,12 +173,12 @@ edge_data <- plot_data %>%
   split(.$bootstrap) %>%
   map_dfr(~ .x %>% left_join(centroids))
 
+sca_label <- ifelse(params$sca, "sca", "svd")
 write_csv(centroids, file.path(save_dir, sprintf("centroids_%s.csv", sca_label)))
 write_csv(edge_data, file.path(save_dir, sprintf("edge_data_%s.csv", sca_label)))
 ```
 
 ```{r}
-sca_label <- ifelse(params$sca, "sca", "svd")
 edge_dists <- edge_data %>%
   mutate(D = sqrt((dim1 - meandim1) ^ 2 + (dim2 - meandim2) ^ 2 + (dim3 - meandim3) ^ 2)) %>%
   select(split, D)
