@@ -123,7 +123,7 @@ for (i in seq_along(x_list)) {
 if (params$sca) {
   sparse_approx <- map(x_list, ~ sca(., k = max(params$ncomp, 20)))
 } else {
-  sparse_approx <- map(x_list, ~ princomp(.))
+  sparse_approx <- map(x_list, ~ princomp(., scale = TRUE))
 }
 ```
 
