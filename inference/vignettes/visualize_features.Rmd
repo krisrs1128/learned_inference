@@ -2,32 +2,38 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  rdata_path: "/Users/kris/Desktop/conceptual/learned_inference/notes/figures/tnbc_rcf/stability_svd.RData"
+  rdata_path: "/Users/kris/Documents/tnbc_figs/figures/tnbc_vae/stability_svd.RData"
+  tiles_dir: "/Users/kris/Documents/stability_data"
 ---
 ```{r}
 library("ggplot2")
 library("inference")
 library("dplyr")
 theme_set(theme_bw())
+tiles_dir <- params$tiles_dir
 ```
 
 ```{r}
 load(params$rdata_path)
+paths <- sapply(centroids$rel_path, function(s) file.path(tiles_dir, s))
 ```
 
-
-```{r}
-j1 <- 1
-j2 <- 2
+```{r, fig.height = 12, fig.width = 8}
+j1 <- 2
+j2 <- 1
 cur_cols <- paste0("meandim", c(j1, j2))
 coords <- centroids %>%
-  filter(split == "train") %>%
+  filter(split == "test") %>%
   select(one_of(cur_cols))
 colnames(coords) <- c("x", "y")
-inference::image_grid(coords, paths, min_dist = .4, density = 5, imsize = 1) +
+image_grid(coords, paths, min_dist = .1, density = c(12, 14), imsize = .05) +
   labs(
     x = sprintf("Learned Feature %s", j1),
     y = sprintf("Learned Feature %s", j2)
-  )
+  ) +
+  theme(panel.grid.minor = element_blank())
+```
+```{r}
+ggsave("/Users/kris/Desktop/tnbc_vae.png", dpi = 450)
 ```
 
