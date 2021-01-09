@@ -156,4 +156,6 @@ orthogonal matrices. The matrix $Y$ provides the $K$ the SCA loadings, and the
 product $ZB$ provide the coordinates of each sample with respect to that basis.
 Note that if $B$ is forced to be diagonal, then this optimization reduces to
 previously proposed versions of sparse PCA (we work with nondiagonal $B$
-throughout this work).
+throughout this work). This optimization does not directly provide an ordering
+of the loadings. However, the proportion of variance explained by each dimension
+can still be computed, and this can be indirectly used to order the dimensions.

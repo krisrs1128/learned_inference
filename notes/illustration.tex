@@ -51,8 +51,16 @@ $\underaccent{\bar}{\mathbf{Z}}_{b}\left[I^{C}\right]$, reported in Figure
 \ref{fig:performance}.
 
 Stability curves associated with the learned features from the CNN, VAE, and RCF
-models are shown in Figure \ref{fig:tnbc_stability}. Figure
-\ref{fig:tnbc_features} can be used to interpret different feature dimensions.
+models are shown in Figure \ref{fig:tnbc_selection_svd}. Interestingly, across
+all algorithms, top features are not necessarily those with the highest
+selection probabilities. For example, CNN Feature 4 has higher selections than
+Feature 3, RCF Feature 6 has higher selection than Feature 4, and VAE Feature 5
+is more frequently selected than Feature 3. In contrast to the simulation, the
+CNN and VAE do not have substantial differences in their selection curves.
+Further, the RCF features seem to have high selection probabilities across more
+dimensions than either the CNN or VAE. This all points to the fact that the most
+salient features in $x_i$ are also relevant for predicting $y_i$. Supervision is
+not as critical in this problem as it is in the simulation.
 
 \begin{figure}
   \centering
@@ -64,6 +72,14 @@ models are shown in Figure \ref{fig:tnbc_stability}. Figure
     given in the appendix. }
   \label{fig:tnbc_selection_svd}
 \end{figure}
+
+Example aligned coordinates are given in Figure
+\ref{fig:tnbc_important_features}. Consistent with the conclusion, we find that
+the association with the response is clearly visible with respect to the learned
+feature dimensions. The variation in the size of the glpyhs across regions of
+the learned feature space is especially pronounced in this application. For
+example, in the VAE, the representations of samples with higher tumor-to-immune
+ratio $y_i$ are much more stable than those with low ratio.
 
 \begin{figure}
   \centering
@@ -77,25 +93,30 @@ models are shown in Figure \ref{fig:tnbc_stability}. Figure
   \label{fig:tnbc_important_features}
 \end{figure}
 
+While there is no consensus on how to best interpret automatically learned
+features, we present one simple approach in \ref{fig:tnbc_imagegrid}, which
+overlays example data patches with coordinates that we have just commented upon.
+For example, in the VAE, the patches with higher values of Feature 1 tend to
+have more open gaps, compared to patches in the lower region. Those patches in
+the far left are more clearly dominated by Tumor cells. For the RCF, the bottom
+patches tend to have more immune cells, those in the top right have more gaps,
+and those in the top left have a higher density of tumor cells. The structure is
+less clear for the CNN features, though it continues to be the case that nearby
+patches do tend to have similar density or cell type configurations. The
+analogous display for learned dimensions 3 and 6, which are significant for the
+RCF but the VAE, are given in Figure \ref{fig:tnbc_imagegrid-3-6}.
+
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{tnbc_imagegrid}
-  \caption{}
-  \label{fig:tnbc_important_features}
+  \includegraphics[width=1.2\textwidth]{tnbc_imagegrid-1-2}
+  \caption{A version of Figure \ref{fig:tnbc_important_features} overlaying
+    representative samples across the learned feature space. Along a grid in the
+    learned feature space, the closest patch is displayed to the grid point is
+    identified and plotted. Cells are color coded as in Figure
+    \ref{fig:example_cells}. The mechanism for displaying patches means that the
+    overall shape of the region in which images are displayed are available
+    mirrors the shape of the cloud of points in Figure
+    \ref{fig:tnbc_important_features}. }
+  \label{fig:tnbc_imagegrid}
 \end{figure}
 
-data used in study
-
-figure 1: data
-
-reference -- baseline
-
-interpretation
-
-figure 2:
-
-interpretation
-
-figure 3:
-
-interpretation

@@ -277,7 +277,7 @@ more frequently, because stability selection will have low power when it can
 only subsample from the 10\% of the data reserved for inference. This phenomenon
 appears for features learned using both supervised and unsupervised methods. For
 this reason, in the remainder of this study, we will focus on results obtained
-using a 50\% split between learning and inference -- that is, $absarg{I} =
+using a 50\% split between learning and inference -- that is, $\absarg{I} =
 \absarg{I^{C}}$ -- though results using different splits are available in the
 appendix.
 
@@ -297,16 +297,21 @@ appendix.
 
 Figures \ref{fig:embeddings_sim} and \ref{fig:selections_sim} summarize the
 results of Algorithms \ref{fig:fss} and \ref{alg:selection} applied to several
-feature learners. For this figure, $\absarg{I} = \absarg{I^{C}} = 5000$ samples.
-The analogous results when using a different fraction of the data for training
-are given in the appendix.
+feature learners. Here, $\absarg{I} = \absarg{I^{C}} = 5000$ samples. Within a
+single panel, each star glyph corresponds to a single sample. The arms of the
+glyph link the bootstrap replicates for that given sample: $\protect z_{i}^{1},
+\dots, z_{i}^{20}$. Each glyph is colored in the true value of $y_{i}$ for that
+sample. Only the first two learned feature dimensions are shown.
 
-Within a single panel, each star glyph corresponds to a single sample. The
-arms of the glyph link the bootstrap replicates for that given sample:
-$\protect z_{i}^{1}, \dots, z_{i}^{20}$. Each glyph is colored in the true
-value of $y_{i}$ for that sample. Only the first two learned feature
-dimensions are shown. Both the model and reduction strategy used influence
-the stability of the learned features and their association with the response
+Both the model and reduction strategy used influence the stability of the
+learned features. Based on the relative sizes of the glphys, the CNN features
+are least stable, those from the RCF are most stable, and the VAE features are
+intermediate. Separate regions of the learned feature space appear more stable
+than others. Dimensionality reduction using SCA results in axis-aligned
+variation, except in the case of the VAE. None of the displays exhibits an
+obvious association between the learned feature dimensions and the response $y$;
+however, we will see soon that these dimensions are nonetheless relevant for
+prediction.
 
 \begin{figure}
   \centering
@@ -317,10 +322,31 @@ the stability of the learned features and their association with the response
     data reserved for feature learning. Displays on the top and bottom were
     obtained using SVD and SCA-reduced features, respectively. The three columns
     correspond to features learned from the CNN, RCF, and VAE. For clarity, only
-    a subset of samples is shown, and all belong to $I^{C}$. The analogous
-    figure with both $I$ and $I^{C}$ is given in the appendix.}
+    a subset of samples is shown, and all belong to $I^{C}$, the samples that
+    were not used for feature learning.}
   \label{fig:embeddings50-test}
 \end{figure}
+
+ Figure \ref{fig:selection_paths50} displays stability selection paths
+ $\Pi_{k}^{b}\left(\lambda\right)$ for combinations of feature learning and
+ dimensionality reduction procedures. Like in Figure \ref{fig:cca_summary}, we
+ find that the largest variation is between the data splits, but that
+ overfitting does not appear to be a problem. Indeed, for several features, the
+ dev and test splits have higher selection probabilities.
+
+Next, consider differences between the paths obtained with using SCA vs. SVD for
+dimensionality reduction. The selection paths are not monotone for SCA. This is
+most likely a consequence of the correlation between SCA coordinates, a result
+of the fact that the matrix $B$ in the decomposition $X = Z B Y^{T}$ need not be
+diagonal. Further, when using the SVD, the top features are also the most
+selected ones; this is not the always the case with SCA.
+
+Between algorithms, we find that the selection paths for RCF features form a
+tighter band across all bootstrap samples. For all algorithms, this band seems
+to widen for later feature dimensions; the selection probabilities also
+generally rise more gradually. Note that for Feature 3 onwards, the selection
+paths for the VAE rise more gradually than the corresponding paths for either
+the CNN or RCF dimensions.
 
 \begin{figure}
   \centering
@@ -340,28 +366,10 @@ the stability of the learned features and their association with the response
   \label{fig:selection_paths50}
 \end{figure}
 
-Reading the embeddings figures
-* Two axes are two dimensions of embeddings. We've chosen those that have high
-selection scores
-* Each star is a single sample, linked across bootstrap runs (there are 20 arms)
-* Color is the true value of y
-* Different panels show the different splits. First two are $I$, last is
-$I^{C}$.
-
-Interpretation about the embeddings -- difference in algorithms and
-dimensionality reduction approaches?
-* Different samples have different embedding stabilities. Seems like points near
-the center are more stable, which makes sense -- the clouds of points along each
-subspace are harder to align near the boundaries
-* The clusters seem tigheter for SCA. More easily embeddable.
-* CNN (and RCF?) features are more obviously associated with the response
-* Top features in VAE are not necessarily associated with the response. Note
-that this is in spite of the fact that the reconstructions are often quite good
-(see appendix figure)
-
-Interpretation about the selections -- difference in the algorithms and
-dimensionality reduction approaches
-* There is no obvious overfitting as far as feature learning is concerned.
-* Selection paths $\Pi$ are not monotone for SCA. Likely due to the fact that
-those scores can be correlated with one another in this approach, but not for
-SVD.
+Based on these figures, we recommend using an SVD reduction either CNN or RCF
+feature learning. While the axis alignment of the SCA features is attrawctive,
+their correlation with one another complicates the interpretation of stability
+selection curves. While the CNN features are somewhat harder to align, they lead
+to a clearer distinction between important and unimportant features. The RCF
+features are easy to compute and align without sacrificing relevance in
+prediction and selection.
