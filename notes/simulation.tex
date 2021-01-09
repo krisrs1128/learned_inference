@@ -321,7 +321,7 @@ prediction.
     $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$ derived from several models
     and alignment strategies applied to the simulation data with 50\% of the
     data reserved for feature learning. Displays on the top and bottom were
-    obtained using SVD and SCA-reduced features, respectively. The three columns
+    obtained using PCA and SCA-reduced features, respectively. The three columns
     correspond to features learned from the CNN, RCF, and VAE. For clarity, only
     a subset of samples is shown, and all belong to $I^{C}$, the samples that
     were not used for feature learning.}
@@ -335,11 +335,11 @@ prediction.
  overfitting does not appear to be a problem. Indeed, for several features, the
  dev and test splits have higher selection probabilities.
 
-Next, consider differences between the paths obtained with using SCA vs. SVD for
+Next, consider differences between the paths obtained with using SCA vs. PCA for
 dimensionality reduction. The selection paths are not monotone for SCA. This is
 most likely a consequence of the correlation between SCA coordinates, a result
 of the fact that the matrix $B$ in the decomposition $X = Z B Y^{T}$ need not be
-diagonal. Further, when using the SVD, the top features are also the most
+diagonal. Further, when using the PCA, the top features are also the most
 selected ones; this is not the always the case with SCA.
 
 Between algorithms, we find that the selection paths for RCF features form a
@@ -351,23 +351,23 @@ the CNN or RCF dimensions.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{selection_paths50}
+  \includegraphics[width=1.2\textwidth]{selection_paths-5}
+  \includegraphics[width=1.2\textwidth]{selection_paths-2}
   \caption{Stability selection paths $\hat{\Pi}_{k}^{b}\left(\lambda\right)$ for
-    10 learned features, across models and alignment strategies. (a - c) and (d
-    - f) use SVD and SCA-reduced features, respectively. (a) and (d) are derived
-    from CNN features, (b) and (e) from RCF features, and (c) and (f) from VAE
-    features. Within each group, a single panel corresponds to one learned
-    feature dimension. Each curve gives $\hat{\Pi}_{k}^{b}\left(\lambda\right)$
-    for one bootstrap replicate $b$ and restricted to samples from either the
-    training, development, or test set, indicated by the curve color. The
-    $x$-axis is the regularization strength $\log \lambda$ and the $y$-axis is
-    the probability of selecting that feature at the given regularization
-    strength. 50\% of the simulation data was used for training each feature
-    learner.}
+    10 learned features, across models and alignment strategies. Top and bottom
+    groups use PCA and SCA-reduced features, respectively, and each row
+    corresponds to a feature learning algorithm. Each panel corresponds to one
+    learned feature dimension. Each curve gives
+    $\hat{\Pi}_{k}^{b}\left(\lambda\right)$ for one bootstrap replicate $b$ and
+    restricted to samples from either the training, development, or test set,
+    indicated by the curve color. The $x$-axis is the regularization strength
+    $\log \lambda$ and the $y$-axis is the probability of selecting that feature
+    at the given regularization strength. 50\% of the simulation data was used
+    for training each feature learner.}
   \label{fig:selection_paths50}
 \end{figure}
 
-Based on these figures, we recommend using an SVD reduction either CNN or RCF
+Based on these figures, we recommend using an PCA reduction either CNN or RCF
 feature learning. While the axis alignment of the SCA features is attrawctive,
 their correlation with one another complicates the interpretation of stability
 selection curves. While the CNN features are somewhat harder to align, they lead

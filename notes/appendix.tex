@@ -47,18 +47,22 @@ docker shell> Rscript rmarkdown -e "rmarkdown::render('learned_inference/inferen
 Finally, we have released intermediate results from our analysis,
 
 \begin{itemize}
-\item \href{}{sim\_data.tar.gz}: Our toy simulation dataset.
-\item \href{}{tnbc\_data.tar.gz}: The preprocessed MIBI-ToF data, with all
+\item
+  \href{https://drive.google.com/file/d/1v_Ndux1Rmk2q1ul5Vv5srgI1JQ17Vx0n/view?usp=sharing}{sim\_data.tar.gz}:
+  Our toy simulation dataset.
+\item \href{https://drive.google.com/file/d/1KMG5yrty8UEPhrR0Y7hIZrtwWuP_y-cm/view?usp=sharing}{tnbc\_data.tar.gz}: The preprocessed MIBI-ToF data, with all
   patient's data split into 64 $\times$ 64 patches and with the associated
   splits and response value stored in a metadata file.
-\item \href{}{simulation\_outputs.tar.gz}: All the models trained in our
+\item \href{https://drive.google.com/file/d/1QVmyqYQCe8C04rAyBQxXuZYuaiYleopx/view?usp=sharing}{simulation\_outputs.tar.gz}: All the models trained in our
   simulation experiments.
-\item \href{}{tnbc\_outputs.tar.gz}: All models trained in our illustration on
+\item \href{https://drive.google.com/file/d/1DmzObBWCzVzDNZ1DxcUWgyIoZmC4H8gD/view?usp=sharing}{tnbc\_outputs.tar.gz}: All models trained in our illustration on
   the TNBC dataset.
 \item \href{}{simulation\_figure\_data.tar.gz}: The data written by
   `stability.Rmd` which was used to generate figures for our simulation.
 \item \href{}{tnbc\_figure\_data.tar.gz}: The data written by `stability.Rmd`
   which was used to generate figures for our data illustration.
+\item \href{https://drive.google.com/file/d/1c-ZPs9RbzkY9FzUnCCVJc8syt5dpj-4Y/view?usp=sharing}{tnbc\_raw.tar.gz}:
+  The original MIBI-ToF tiffs, before splitting into patches.
 \end{itemize}
 
 \section{Supplementary Figures}
@@ -83,7 +87,18 @@ Finally, we have released intermediate results from our analysis,
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{selection_paths15}
+  \includegraphics[width=1.4\textwidth]{sim_imagegrid-1-2}
+  \caption{Patches overlaid on the learned features in Figure
+    \ref{fig:embeddings50-test}, to guide interpretation of regions of the
+    learned feature space. The figure is read in the same way as Figure
+    \ref{fig:tnbc_imagegrid}.}
+  \label{fig:sim_imagegrid-1-2}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1.2\textwidth]{selection_paths-4}
+  \includegraphics[width=1.2\textwidth]{selection_paths-1}
   \caption{Selection paths for all models when using 15\% of the data for
     feature learning. Most features, especially those from the CNN, have lower selection
     probability than the analogous features at other split sizes. Other key
@@ -92,10 +107,10 @@ Finally, we have released intermediate results from our analysis,
   \label{fig:selection_paths15}
 \end{figure}
 
-
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{selection_paths90}
+  \includegraphics[width=1.2\textwidth]{selection_paths-6}
+  \includegraphics[width=1.2\textwidth]{selection_paths-3}
   \caption{Selection paths for all models when using 90\% of the data for
     feature learning. The top learned features across several methods are
     strongly related to the response; however, the width of the band across
