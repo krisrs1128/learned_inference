@@ -2,7 +2,7 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  data_dir: "/Users/kris/Documents/figs/figures/"
+  data_dir: "/Users/kris/Downloads/figs/sim/"
 ---
 
 ```{r}
@@ -14,20 +14,16 @@ library("stringr")
 theme_set(theme_bw())
 ```
 
-
 ```{r fig.width = 6, fig.height = 4}
 selections <- dir(params$data_dir, "selections", full = TRUE, recursive = TRUE) %>%
   map_dfr(~ read_csv(., col_types = cols())) %>%
   mutate(
-    Reduction = ifelse(sca, "SCA", "SVD")
+    Reduction = ifelse(sca, "SCA", "PCA"),
+    model = toupper(model)
   )
 selections$split <- factor(selections$split, levels = c("train", "dev", "test"))
 
 ggplot(selections) +
-  #geom_errorbar(
-  #  aes(x = pi_thr, ymin = min, ymax = max, col = sca),
-  #  size = 0.3, alpha = 0.6
-  #) +
   geom_line(
     aes(x = pi_thr, y = median, col = split, linetype = Reduction),
     size = 0.7, alpha = 0.8
@@ -48,7 +44,7 @@ ggplot(selections) +
     legend.position = "bottom"
   )
 
-#ggsave("~/Desktop/conceptual/learned_inference/notes/figure/selection_summary2.png", dpi = 350)
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/selection_summary2.png", dpi = 400)
 ```
 
 ```{r}
@@ -93,33 +89,3 @@ ggplot(cca_data) +
   guides(color = guide_legend(override.aes = list(size = 3, alpha = 1))) +
   ylim(0, 1)
 ```
-```{r}
-cca_data$path %>% unique()
-```
-
-
-```{r, fig.width = 4, fig.height = 3}
-fss <- dir(file.path(params$data_dir, "ftotal"), "feature", full = TRUE, recursive = TRUE) %>%
-  map_dfr(~ read_csv(., col_types = cols())) %>%
-  mutate(
-    train_perc = as.factor(str_extract(model, "[0-9]+")),
-    method = str_extract(model, "cnn|vae|rcf"),
-    Reduction = ifelse(sca, "SCA", "SVD")
-  )
-
-
-ggplot(fss) +
-  geom_point(aes(x = train_perc, col = Reduction, y = feature_stability / 10)) + # 10 reduction dimensions
-  scale_y_log10() +
-  facet_grid(. ~ method) +
-  labs(
-    x ="% Data used for Feature Learning",
-    y = "Feature Subspace Instability"
-  ) +
-  scale_color_manual(values = c("#cd5c5c", "#5ccdcd")) +
-  theme(
-    panel.spacing = unit(0, "cm"),
-    legend.position = "bottom"
-  )
-```
-
