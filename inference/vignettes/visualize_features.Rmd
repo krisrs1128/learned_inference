@@ -1,10 +1,14 @@
 ---
-title: "R Notebook"
+title: "Visualize Learned Features"
 output: html_notebook
 params:
   output_path: "/Users/kris/Downloads/figures/"
   tiles_dir: "/Users/kris/Documents/stability_data"
 ---
+
+This notebook includes helpers for visualizing the learned aligned features
+$\mathbf{Z}_{b}$.
+
 ```{r}
 library("ggplot2")
 library("inference")
@@ -14,17 +18,24 @@ dpath <- function(s, d=params$output_path) {
   file.path(d, s)
 }
 ```
+
+First, read in all the aligned features, their centroids, and edges between
+features and centroids.
+
 ```{r}
 # directory containing unzipped figure results
-edge_data <- dir(params$output_path, "edge_data*", recursive = TRUE, full = TRUE) %>%
+edge_data <- dir(params$output_path, "edge_data_svd*", recursive = TRUE, full = TRUE) %>%
   map_dfr(read_csv, col_types = cols(), .id = "method")
 edge_data$method <- c("CNN", "RCF", "VAE")[as.numeric(edge_data$method)]
-centroids <- dir(params$output_path, "centroids*", recursive = TRUE, full = TRUE) %>%
+centroids <- dir(params$output_path, "centroids_svd*", recursive = TRUE, full = TRUE) %>%
   map_dfr(read_csv, col_types = cols(), .id = "method")
 centroids$method <- c("CNN", "RCF", "VAE")[as.numeric(centroids$method)]
+paths <- sapply(centroids$rel_path, dpath, d = params$tiles_dir)
 j1 <- 2
 j2 <- 1
 ```
+
+Overlay example patches on the observed coordinates.
 
 ```{r}
 cur_cols <- paste0("meandim", c(j1, j2))
@@ -43,21 +54,33 @@ for (m in c("CNN", "RCF", "VAE")) {
       x = sprintf("Learned Feature %s", j1),
       y = sprintf("Learned Feature %s", j2)
     ) +
+    scale_fill_manual(values = c("red", "green", "blue")) +
     theme(panel.grid.minor = element_blank())
 }
 ```
 
 ```{r, fig.height = 4, fig.width = 12}
 library("gridExtra")
-ga <- grid.arrange(p[[1]], p[[2]], p[[3]], ncol = 3)
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_imagegrid-1-2.png", ga, dpi = 500)
+ga <- grid.arrange(
+  p[[1]] + ggtitle("CNN"), 
+  p[[2]] + ggtitle("RCF"), 
+  p[[3]] + ggtitle("VAE"), 
+  ncol = 3
+)
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/sim_imagegrid-1-2.png", ga, dpi = 500)
 ```
 
-```{r, fig.height = 6.5, fig.width = 14}
+Consider the original discrepancies between features and their centroids.
+
+```{r, fig.height = 18, fig.width = 12}
 edge_data_ <- edge_data %>%
-  filter(split == "test") %>%
+  #filter(split == "test") %>%
   split(.$method) %>%
-  map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:150]))
+  map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:400])) %>%
+  mutate(split = factor(split, levels = c("train", "dev", "test")))
+
+centroids <- centroids %>%
+  mutate(split = factor(split, levels = c("train", "dev", "test")))
 
 ggplot(edge_data_) +
   geom_point(
@@ -73,10 +96,25 @@ ggplot(edge_data_) +
     aes_string(x = paste0("meandim", j1), xend = paste0("dim", j1), y = paste0("meandim", j2), yend = paste0("dim", j2), col = "y"),
     size = 0.3, alpha = 0.8
   ) +
-  facet_wrap(. ~ method, scale = "free") +
+  facet_wrap(split ~ method, scale = "free") +
+  #facet_wrap(. ~ method, scale = "free") +
   scale_color_viridis_c() +
   labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
   theme(legend.position = "bottom")
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_important_features-3-6.png", dpi = 500)
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/embeddings50-all-svd-1-2.png", dpi = 500)
 ```
+And place into context by showing all samples in one figure.
 
+```{r, fig.height = 10, fig.width = 7.5}
+ggplot(centroids) +
+  geom_point(
+    data = centroids,
+    aes_string(x = paste0("meandim", j1), y = paste0("meandim", j2), col = "y"),
+    alpha = .8, size = 0.5
+    ) +
+  facet_wrap(split ~ method, scale = "free") +
+  scale_color_viridis_c() +
+  labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
+  theme(legend.position = "bottom")
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/embeddings50-all-all-svd-1-2.png", dpi = 500)
+```

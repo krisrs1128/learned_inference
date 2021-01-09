@@ -1,0 +1,63 @@
+---
+title: "visualize_pi_hat"
+output: html_notebook
+params:
+  output_path: "/Users/kris/Downloads/figures/"
+  tiles_dir: "/Users/kris/Documents/stability_data"
+---
+
+```{r}
+library("ggplot2")
+library("readr")
+library("inference")
+library("purrr")
+library("dplyr")
+theme_set(theme_bw())
+dpath <- function(s, d=params$output_path) {
+  file.path(d, s)
+}
+```
+
+```{r}
+paths <- dir(params$output_path, "pi_hat*", recursive = TRUE) %>%
+  dpath()
+```
+
+```{r}
+pi_hat <- map_dfr(paths, read_csv, col_types = cols(), .id = "path")
+```
+
+```{r}
+pi_hat$path <- as.integer(pi_hat$path)
+pi_hat$sca <- grepl("sca", paths)[pi_hat$path]
+pi_hat$method <- c("CNN", "CNN", "RCF", "VAE")[pi_hat$path]
+pi_hat$split <- factor(pi_hat$split, levels = c("train", "dev", "test"))
+```
+
+
+```{r, fig.height = 4, fig.width = 12}
+ggplot(pi_hat %>% filter(j > 0, sca)) +
+  geom_line(
+    aes(x = log(lambda), 
+        y = value, 
+        col = split, 
+        group = jb),
+    alpha = 0.5
+    ) +
+  scale_color_brewer(palette = "Set2") +
+  scale_x_reverse() +
+  labs(
+    x = expression(log(lambda)),
+    y = expression(hat(Pi)^{b}~(lambda))
+  ) +
+  guides(color = guide_legend(override.aes = list(size = 4, alpha = 1))) +
+  scale_y_continuous(breaks = c(0.1, 0.5, 0.9)) +
+  facet_grid(method ~ j) +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    panel.spacing.x = unit(0, "cm")
+  )
+#ggsave("~/Desktop/conceptual/learned_inference/notes/figure/selection_paths50-svd.png")
+```
+
