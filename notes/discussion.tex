@@ -6,6 +6,27 @@ hand-crafted, features. A better understanding of stability in this modern
 regime has consequences for how these methods can be used in real-world
 applications, especially those intended for scientific workflows.
 
+Our results raise several questions for further study. It is natural to ask
+to what extent similar behaviors are exhibited across other data domains, model
+types, or training regimes. For example, it would not be unusual to represent
+the cell data in our case study using a marked graph linking neighboring cells.
+Do the features learned by a graph autoencoder have similar stability
+properties? In other domains, we may ask whether our methods can be adapted to
+text or audio data.
+
+Further, there are questions that may guide us towards better stability analysis
+procedures. Using a Procrustes rotation for $\mathcal{A}$ and stability
+selection for $\mathcal{S}$ provides a reasonable point of departure, but more
+sophisticated approaches are possible. For example, recent work has demonstrated
+the potential to align learned features using optimal transport
+\citep{wang2020federated }. It is also possible to propose alignments based on
+more refined measures of correlation \citep{josse2016measuring,
+  azadkia2019simple}. We have found that using an even split between
+feature learning and inference and inference gives reasonable results, but our
+results are not universal. Our approaches to summarizing and displaying the
+resulting representations may be improved through a more careful application of
+interactive visualization principles.
+
 While the data sources and feature learning context we consider is novel, we
 have been motivated by an old statistical idea that remains as true now as ever
 -- quoting \citep{mosteller1977data},
@@ -27,28 +48,3 @@ In the same way that a standard error around a mean is a new piece of
 information that supports more nuanced reasoning, the feature and selection
 stability ideas we have developed help characterize the behavior of modern
 feature learning algorithms.
-
-Our results raise several questions for further study. It is natural to ask
-to what extent similar behaviors are exhibited across other data domains, model
-types, or training regimes. For example, it would not be unusual to represent
-the cell data in our case study using a marked graph linking neighboring cells.
-Do the features learned by a graph autoencoder have similar stability
-properties? In other domains, we may ask whether our methods can be adapted to
-text or audio data.
-
-Further, there are questions that may guide us towards better stability analysis
-procedures. Using a Procrustes rotation for $\mathcal{A}$ and stability
-selection for $\mathcal{S}$ provides a reasonable point of departure, but there are We have
-found that using an even split between feature learning and inference and
-inference gives reasonable results, but our results are not universal.
-
-computational acceleration of stability analysis wide-open. Alternative
-approaches, based on the infinitismal jacknife or coresets, for example, may
-yield worthwhile speedups. The running representational device of this study — a
-variant of SVCCA — may also be improved, so that it is less reliant on
-heuristics related to the underlying subspace dimension. Our approaches to
-summarizing and displaying the resulting representations may be improved through
-a more careful application of interactive visualization principles. Finally,
-even at this early stage, an easily accessible computational infrastructure for
-performing the analysis presented in this work, through an appropriately
-maintained software package, cou
