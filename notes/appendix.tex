@@ -5,7 +5,7 @@ Our raw and derived data are available at the following links.
 
 Instructions to reproduce our simulations and data analysis example are
 available in a \href{https://github.com/krisrs1128/learned_inference}{README} on
-the study's github page. Data preprocessing, the regression baseline, and
+the study's github page. Training split creation, the regression baseline, and
 feature learning can be reproduced in the ipython notebooks
 
 \begin{itemize}
@@ -14,19 +14,21 @@ feature learning can be reproduced in the ipython notebooks
 \item \texttt{model\_training.ipynb}
 \end{itemize}
 
-Data simulation, feature stability analysis, and visualization of results are
-done within the rmarkdown documents,
+MIBI-ToF data preparation, generation of simulation data, feature stability
+analysis, and visualization of results are done within the rmarkdown documents,
 
 \begin{itemize}
 \item \texttt{generate.Rmd}
 \item \texttt{stability.Rmd}
+\item \texttt{visualize\_features.Rmd}
+\item \texttt{summary\_plots.Rmd}
 \end{itemize}
 
 To support code reusability between experiments, two helper packages were prepared,
 
 \begin{itemize}
-\item \texttt{stability}
-\item \texttt{inference}
+\item \href{https://github.com/krisrs1128/learned_inference/tree/master/stability}{\texttt{stability}}
+\item \href{https://github.com/krisrs1128/learned_inference/tree/master/inference}{\texttt{inference}}
 \end{itemize}
 
 We have prepared a \href{https://hub.docker.com/r/krisrs1128/li}{docker image}
@@ -36,55 +38,88 @@ using the following commands,
 
 \begin{verbatim}
 shell> docker run -it krisrs1128/li:latest bash
-docker shell> git pull krisrs1128/learned_inference.git
+docker shell> git clone https://github.com/krisrs1128/learned_inference.git
 docker shell> source learned_inference/.env
 docker shell> # download relevant data
 docker shell> Rscript rmarkdown -e "rmarkdown::render('learned_inference/inference/vignettes/stability.Rmd')"
 \end{verbatim}
 
-\section{Model Outputs}
+Finally, we have released intermediate results from our analysis,
+
+\begin{itemize}
+\item \href{}{sim\_data.tar.gz}: Our toy simulation dataset.
+\item \href{}{tnbc\_data.tar.gz}: The preprocessed MIBI-ToF data, with all
+  patient's data split into 64 $\times$ 64 patches and with the associated
+  splits and response value stored in a metadata file.
+\item \href{}{simulation\_outputs.tar.gz}: All the models trained in our
+  simulation experiments.
+\item \href{}{tnbc\_outputs.tar.gz}: All models trained in our illustration on
+  the TNBC dataset.
+\item \href{}{simulation\_figure\_data.tar.gz}: The data written by
+  `stability.Rmd` which was used to generate figures for our simulation.
+\item \href{}{tnbc\_figure\_data.tar.gz}: The data written by `stability.Rmd`
+  which was used to generate figures for our data illustration.
+\end{itemize}
+
+\section{Supplementary Figures}
 
 \begin{figure}
 \includegraphics[width=\textwidth]{reconstructions}
-\caption{}
+\caption{Example reconstructions from the VAE model applied to the simulation
+  data. Original image patches are shown on the left, corresponding
+  reconstructions are given on the right. Though fine-grained details are missed
+  by our version of the VAE model, most of the key global features of each patch
+  seem accurately reflected.}
 \label{fig:reconstructions}
 \end{figure}
-
-\section{Stability Figures}
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{embeddings50}
   \caption{The analogous figure to Figure \ref{fig:embeddings50-test}, but
     showing all splits of the data.}
+  \label{fig:embeddings50}
 \end{figure}
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{selection_paths15}
-  \caption{}
-  \label{fig:}
+  \caption{Selection paths for all models when using 15\% of the data for
+    feature learning. Most features, especially those from the CNN, have lower selection
+    probability than the analogous features at other split sizes. Other key
+    characteristics of the selection curves, like the effect of SVD vs. SCA
+    reduction, and the stability of RCF features, remain the same.}
+  \label{fig:selection_paths15}
 \end{figure}
 
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{selection_paths90}
-  \caption{}
-  \label{fig:}
+  \caption{Selection paths for all models when using 90\% of the data for
+    feature learning. The top learned features across several methods are
+    strongly related to the response; however, the width of the band across
+    bootstraps has widened, relative to the analogous plot using 50\% of the
+    data for feature learning.}
+  \label{fig:selection_paths90}
 \end{figure}
-
-\section{Data Analysis}
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{tnbc_selection_sca}
+  \caption{Selection curves for the TNBC dataset application when using SCA for
+    dimensionality reduction.}
+  \label{fig:tnbc_selection_sca}
 \end{figure}
-
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{tnbc_unimportant_features}
+  \caption{Examples of features that are found to be unimportant in the TNBC
+    dataset application, according to the selection curves in Figure
+    \ref{fig:tnbc_selection_svd}. Note that the relationship between the
+    displayed locations and the measured $y$ are much more ambiguous here,
+    compared to those in Figure \ref{fig:tnbc_important_features}.}
   \label{fig:tnbc_unimportant_features}
 \end{figure}
 
@@ -92,4 +127,6 @@ docker shell> Rscript rmarkdown -e "rmarkdown::render('learned_inference/inferen
   \centering
   \includegraphics[width=1.2\textwidth]{tnbc_imagegrid-3-6}
   \label{fig:tnbc_imagegrid-3-6}
+  \caption{Dataset examples overlaid onto the features of Figure
+    \ref{fig:tnbc_unimportant_features}.}
 \end{figure}
