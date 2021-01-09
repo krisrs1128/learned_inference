@@ -2,7 +2,7 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  rdata_path: "/Users/kris/Documents/tnbc_figs/figures/tnbc_vae/stability_svd.RData"
+  output_path: "/Users/kris/Downloads/figures/"
   tiles_dir: "/Users/kris/Documents/stability_data"
 ---
 ```{r}
@@ -10,37 +10,55 @@ library("ggplot2")
 library("inference")
 library("dplyr")
 theme_set(theme_bw())
-dpath <- function(s) {
-  file.path(params$tiles_dir, s)
+dpath <- function(s, d=params$output_path) {
+  file.path(d, s)
 }
 ```
-
 ```{r}
-centroids <- read_csv(dpath("centroids_svd.csv"))
-edge_data <- read_csv(dpath("edge_data_svd.csv"))
-paths <- sapply(centroids$rel_path, dpath)
+# directory containing unzipped figure results
+edge_data <- dir(params$output_path, "edge_data*", recursive = TRUE, full = TRUE) %>%
+  map_dfr(read_csv, col_types = cols(), .id = "method")
+edge_data$method <- c("CNN", "RCF", "VAE")[as.numeric(edge_data$method)]
+centroids <- dir(params$output_path, "centroids*", recursive = TRUE, full = TRUE) %>%
+  map_dfr(read_csv, col_types = cols(), .id = "method")
+centroids$method <- c("CNN", "RCF", "VAE")[as.numeric(centroids$method)]
 j1 <- 2
 j2 <- 1
 ```
 
-```{r, fig.height = 12, fig.width = 8}
+```{r}
 cur_cols <- paste0("meandim", c(j1, j2))
-coords <- centroids %>%
-  filter(split == "test") %>%
-  select(one_of(cur_cols))
-colnames(coords) <- c("x", "y")
-image_grid(coords, paths, min_dist = .1, density = c(12, 14), imsize = .05) +
-  labs(
-    x = sprintf("Learned Feature %s", j1),
-    y = sprintf("Learned Feature %s", j2)
-  ) +
-  theme(panel.grid.minor = element_blank())
+p <- list()
+for (m in c("CNN", "RCF", "VAE")) {
+  coords <- centroids %>%
+    filter(
+      split == "test",
+      method == m
+    ) %>%
+    select(one_of(cur_cols))
+  colnames(coords) <- c("x", "y")
+  imsize <- diff(range(coords$y)) / 14.5
+  p[[m]] <- image_grid(coords, paths, min_dist = 1, density = c(12, 14), imsize = imsize) +
+    labs(
+      x = sprintf("Learned Feature %s", j1),
+      y = sprintf("Learned Feature %s", j2)
+    ) +
+    theme(panel.grid.minor = element_blank())
+}
 ```
 
-```{r}
+```{r, fig.height = 4, fig.width = 12}
+library("gridExtra")
+ga <- grid.arrange(p[[1]], p[[2]], p[[3]], ncol = 3)
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_imagegrid-1-2.png", ga, dpi = 500)
+```
+
+```{r, fig.height = 6.5, fig.width = 14}
 edge_data_ <- edge_data %>%
-      split(.$split) %>%
-      map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:150]))
+  filter(split == "test") %>%
+  split(.$method) %>%
+  map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:150]))
+
 ggplot(edge_data_) +
   geom_point(
     data = centroids %>% filter(rel_path %in% edge_data_$rel_path),
@@ -55,9 +73,10 @@ ggplot(edge_data_) +
     aes_string(x = paste0("meandim", j1), xend = paste0("dim", j1), y = paste0("meandim", j2), yend = paste0("dim", j2), col = "y"),
     size = 0.3, alpha = 0.8
   ) +
-  coord_fixed(1) +
-  facet_grid(. ~ split) +
+  facet_wrap(. ~ method, scale = "free") +
   scale_color_viridis_c() +
   labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
   theme(legend.position = "bottom")
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_important_features-3-6.png", dpi = 500)
 ```
+

@@ -76,13 +76,19 @@ use_python(params$python_path)
 np <- import("numpy")
 acts_ <- metadata %>%
   filter(basename(rel_path) == params$basename) %>%
-  .[["abs_path"]] %>%
+  pull() %>%
   unique()
 acts <- map(acts_, ~ data.frame(np$load(.)))
 subsets_ <- map(subsets, ~ dplyr::rename(., c("ix" = "X1", "rel_path" = "path")))
 
 acts <- map2_dfr(subsets_, acts, cbind, .id = "source") %>%
   left_join(metadata %>% select(source, bootstrap) %>% unique())
+
+
+if (!("y" %in% colnames(acts))) {
+  acts <- acts %>%
+    left_join(Xy %>% select(path, y), c("rel_path" = "path"))
+}
 ```
 
 ```{r activation_histo}

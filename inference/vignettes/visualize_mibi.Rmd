@@ -51,5 +51,6 @@ ggplot(mim) +
     axis.ticks = element_blank(),
     legend.position = "bottom"
   )
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/example_cells.png", dpi = 500)
 ```
 
