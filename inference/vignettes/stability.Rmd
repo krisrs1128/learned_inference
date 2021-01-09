@@ -76,8 +76,8 @@ use_python(params$python_path)
 np <- import("numpy")
 acts_ <- metadata %>%
   filter(basename(rel_path) == params$basename) %>%
-  pull(abs_path) %>%
-  unique()
+  distinct(abs_path) %>%
+  pull()
 acts <- map(acts_, ~ data.frame(np$load(.)))
 subsets_ <- map(subsets, ~ dplyr::rename(., c("ix" = "X1", "rel_path" = "path")))
 
