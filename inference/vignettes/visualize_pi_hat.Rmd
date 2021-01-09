@@ -2,7 +2,7 @@
 title: "visualize_pi_hat"
 output: html_notebook
 params:
-  output_path: "/Users/kris/Downloads/figs/sim/"
+  output_path: "/Users/kris/Downloads/figs/tnbc/"
 ---
 
 ```{r}
@@ -20,8 +20,8 @@ dpath <- function(s, d=params$output_path) {
 
 ```{r}
 #' Helper function for plotting \hat{Pi}
-plot_curves <- function(pi_hat, sca_bit, perc) {
-  ggplot(pi_hat %>% filter(j > 0, sca == sca_bit, train_perc == perc)) +
+plot_curves <- function(pi_hat, sca_bit, perc=NULL) {
+  ggplot(pi_hat %>% filter(j > 0, sca == sca_bit)) +
     geom_line(
       aes(x = log(lambda), 
           y = value, 
@@ -43,7 +43,8 @@ plot_curves <- function(pi_hat, sca_bit, perc) {
       panel.grid.minor = element_blank(),
       panel.spacing.x = unit(0, "cm")
     ) +
-    ggtitle(sprintf("%s%% Learning Split, %s", perc, ifelse(sca_bit, "SCA", "PCA")))
+    #ggtitle(sprintf("%s%% Learning Split, %s", perc, ifelse(sca_bit, "SCA", "PCA")))
+    ggtitle(sprintf("TNBC Stability Curves, %s", ifelse(sca_bit, "SCA", "PCA")))
 }
 ```
 
@@ -66,17 +67,17 @@ pi_hat$split <- factor(pi_hat$split, levels = c("train", "dev", "test"))
 p <- list()
 i <- 1
 for (sca in c(TRUE, FALSE)) {
-  for (train_perc in c(15, 50, 90)) {
+#  for (train_perc in c(15, 50, 90)) {
     p[[i]] <- plot_curves(pi_hat, sca, train_perc)
     i <- i + 1
-  }
+#  }
 }
 ```
 
 ```{r, fig.height = 4, fig.width = 12}
 for (i in seq_along(p)) {
   ggsave(
-    sprintf("~/Desktop/conceptual/learned_inference/notes/figure/selection_paths-%s.png", i), 
+    sprintf("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_selection_paths-%s.png", i), 
     p[[i]],
     dpi = 350,
     height = 4,

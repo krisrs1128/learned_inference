@@ -36,18 +36,22 @@ cpaths <- dir(params$output_path, "centroids_*", recursive = TRUE, full = TRUE)
 edge_data <- epaths %>%
   map_dfr(read_csv, col_types = cols(), .id = "path") %>%
   mutate(path = as.integer(path))
+
 edge_data$method <- str_extract(epaths, "cnn|rcf|vae")[edge_data$path] %>%
   toupper()
 edge_data$train_perc <- str_extract(epaths, "15|50|90")[edge_data$path]
-edge_data$sca <- str_extract(epaths, "svd|sca")[edge_data$path] %>%
-  toupper()
 centroids <- cpaths %>%
   map_dfr(read_csv, col_types = cols(), .id = "path") %>%
   mutate(path = as.integer(path))
 centroids$method <- str_extract(cpaths, "cnn|rcf|vae")[centroids$path] %>%
   toupper()
 centroids$train_perc <- str_extract(epaths, "15|50|90")[centroids$path]
-centroids$sca <- str_extract(epaths, "svd|sca")[centroids$path] %>%
+
+epaths <- gsub("svd", "pca", epaths)
+cpaths <- gsub("svd", "pca", cpaths)
+edge_data$sca <- str_extract(epaths, "pca|sca")[edge_data$path] %>%
+  toupper()
+centroids$sca <- str_extract(epaths, "pca|sca")[centroids$path] %>%
   toupper()
 
 paths <- sapply(centroids$rel_path, dpath, d = params$tiles_dir)
@@ -59,16 +63,14 @@ Overlay example patches on the observed coordinates.
 
 ```{r}
 cur_cols <- paste0("meandim", c(j1, j2))
-for (perc in c("15", "50", "90")) {
-  for (dimred in c("SCA", "SVD")) {
-    
+#for (perc in c("15", "50", "90")) {
+  for (dimred in c("SCA", "PCA")) {
     p <- list()
     for (m in c("CNN", "RCF", "VAE")) {
       coords <- centroids %>%
         filter(
-          split == "test",
           method == m,
-          train_perc == perc,
+  #        train_perc == perc,
           sca == dimred
         ) %>%
         select(one_of(cur_cols))
@@ -80,34 +82,27 @@ for (perc in c("15", "50", "90")) {
           x = sprintf("Learned Feature %s", j1),
           y = sprintf("Learned Feature %s", j2)
         ) +
-        scale_fill_manual(values = c("red", "green", "blue")) +
         theme(panel.grid.minor = element_blank())
     }
     
-    ga <- grid.arrange( p[[1]] + ggtitle("CNN"), p[[2]] + ggtitle("RCF"), p[[3]] + ggtitle("VAE"), ncol = 2 )
+    ga <- grid.arrange( p[[1]] + ggtitle("CNN"), p[[2]] + ggtitle("RCF"), p[[3]] + ggtitle("VAE"), ncol = 3 )
     ggsave(
-      sprintf("~/Desktop/conceptual/learned_inference/notes/figure/sim_imagegrid-%s-%s-1-2.png", dimred, perc),
-      ga, dpi = 500, width = 9, height = 10
+      sprintf("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_imagegrid-%s-1-2.png", dimred),
+      ga, dpi = 500, width = 12, height = 5
     )
-  }
 }
-```
-
-```{r, fig.height = 10, fig.width = 10}
 ```
 
 Consider the original discrepancies between features and their centroids.
 
-```{r, fig.height = 10, fig.width = 8}
+```{r, fig.height = 8, fig.width = 8}
 edge_data_ <- edge_data %>%
-  filter(sca == "SCA") %>%
-  split(.$method, .$train_perc) %>%
+  split(.$method, .$sca) %>%
   map_dfr(~ .x %>% filter(rel_path %in% unique(.x$rel_path)[1:400])) %>%
   mutate(split = factor(split, levels = c("train", "dev", "test")))
 
 centroids <- centroids %>%
-  mutate(split = factor(split, levels = c("train", "dev", "test"))) %>%
-  filter(sca == "SCA")
+  mutate(split = factor(split, levels = c("train", "dev", "test")))
 
 ggplot(edge_data_) +
   geom_point(
@@ -123,7 +118,7 @@ ggplot(edge_data_) +
     aes_string(x = paste0("meandim", j1), y = paste0("meandim", j2), col = "y", shape = "split"),
     alpha = .8, size = 0.6
     ) +
-  facet_wrap(method ~ train_perc, scale = "free") +
+  facet_wrap(sca ~ method, scale = "free") +
   scale_color_viridis_c() +
   guides(shape = guide_legend(override.aes = list(size = 2))) +
   labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
@@ -132,24 +127,19 @@ ggplot(edge_data_) +
     axis.text = element_text(size = 6),
     axis.ticks = element_blank()
   )
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/embeddings-sca-1-2.png", dpi = 500)
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_embeddings-1-2.png", dpi = 500)
 ```
 And place into context by showing all samples in one figure.
 
-```{r}
-cpaths
-centroids %>% filter(split == "test", train_perc == "50")
-```
-
-```{r, fig.height = 10, fig.width = 7.5}
-ggplot(centroids %>% filter(sca == "SVD")) +
+```{r, fig.height = 8, fig.width = 8}
+ggplot(centroids) +
   geom_point(
     aes_string(x = paste0("meandim", j1), y = paste0("meandim", j2), col = "y", shape = "split"),
     alpha = .9, size = 1.5 
     ) +
-  facet_wrap(method ~ train_perc, scale = "free") +
+  facet_wrap(sca ~ method, scale = "free") +
   scale_color_viridis_c() +
   labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
   theme(legend.position = "bottom")
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/embeddings-svd-1-2.png", dpi = 500)
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_embeddings-full-both-1-2.png", dpi = 500)
 ```
