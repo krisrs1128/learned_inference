@@ -1,0 +1,100 @@
+---
+title: "TNBC Performance Evaluation"
+output: html_notebook
+params:
+  output_path: "/Users/kris/Downloads/figs/tnbc/"
+---
+
+```{r}
+library("ggplot2")
+library("readr")
+library("inference")
+library("glmnet")
+library("purrr")
+library("stringr")
+library("dplyr")
+theme_set(theme_bw())
+dpath <- function(s, d=params$output_path) {
+  file.path(d, s)
+}
+```
+
+```{r}
+fit_lassos <- function(xy) {
+  performances <- data.frame(i = names(xy), MSE = 0) %>%
+    mutate(
+      B = str_extract(i, "[0-9]+"),
+      split = str_extract(i, "[a-z]+"),
+      split = factor(split, levels = c("train", "dev", "test"))
+    )
+  
+  for (i in seq_along(xy)) {
+    x <- xy[[i]]$X
+    y <- xy[[i]]$y
+    fit <- cv.glmnet(x, y)
+    performances$MSE[i] <- mean((y - predict(fit, x)) ^ 2)
+  }
+  performances 
+}
+```
+
+```{r}
+# from tnbc_baseline.ipynb
+baseline <- data.frame("dev"= 1.443717800608584, "train"= 1.2302844792243133, "test"= 1.5837075913302505) %>%
+  melt(variable.name = "split", value.name = "MSE") %>%
+  filter(split != "dev")
+```
+
+```{r}
+rdata_paths <- dir(params$output_path, "*RData", recursive = TRUE, full = TRUE)
+performances <- list()
+load(rdata_paths[1])
+performances[["cnn_sca"]] <- fit_lassos(xy)
+load(rdata_paths[2])
+performances[["cnn_svd"]] <- fit_lassos(xy)
+load(rdata_paths[3])
+performances[["rcf_sca"]] <- fit_lassos(xy)
+load(rdata_paths[4])
+performances[["rcf_svd"]] <- fit_lassos(xy)
+load(rdata_paths[5])
+performances[["vae_sca"]] <- fit_lassos(xy)
+load(rdata_paths[6])
+performances[["vae_svd"]] <- fit_lassos(xy)
+```
+
+```{r, fig.height = 3, fig.width = 5}
+performances_df <- bind_rows(performances, .id = "method_ix") %>%
+  mutate(
+    method = str_extract(method_ix, "cnn|vae|rcf") %>% toupper(),
+    dimred = str_extract(method_ix, "sca|svd") %>% toupper(),
+  )
+
+performances_df$dimred[performances_df$dimred == "SVD"] <- "PCA"
+performances_edges <- performances_df %>%
+  dcast(method + dimred + B ~ split, value.var = "MSE")
+
+ggplot(performances_df %>% filter(split %in% c("train", "test"))) +
+  geom_point(
+    data = baseline,
+    aes(x = split, y = MSE), size = 3, col = "black"
+  ) +
+  geom_line(
+    data = baseline, 
+    aes(x = split, y = MSE, group = 1), size = .5, col = "black"
+  ) +
+  geom_point(
+    aes(x = split, y = MSE, col = method),
+    size = 1
+  ) +
+  scale_color_manual(values = c("#486378", "#c5a9d1", "#d7673f")) +
+  geom_line(
+    aes(
+      x = split, y = MSE, col = method,
+      group = interaction(B, method),
+    ),
+    size = 0.2
+  ) +
+  facet_grid(. ~ dimred)
+ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_baseline.png", dpi = 400)
+```
+
