@@ -2,7 +2,7 @@
 title: "Visualize Learned Features"
 output: html_notebook
 params:
-  output_path: "/Users/kris/Downloads/figs/"
+  output_path: "/Users/kris/Downloads/figs/tnbc/"
   tiles_dir: "/Users/kris/Documents/stability_data"
 ---
 
@@ -39,13 +39,11 @@ edge_data <- epaths %>%
 
 edge_data$method <- str_extract(epaths, "cnn|rcf|vae")[edge_data$path] %>%
   toupper()
-edge_data$train_perc <- str_extract(epaths, "15|50|90")[edge_data$path]
 centroids <- cpaths %>%
   map_dfr(read_csv, col_types = cols(), .id = "path") %>%
   mutate(path = as.integer(path))
 centroids$method <- str_extract(cpaths, "cnn|rcf|vae")[centroids$path] %>%
   toupper()
-centroids$train_perc <- str_extract(epaths, "15|50|90")[centroids$path]
 
 epaths <- gsub("svd", "pca", epaths)
 cpaths <- gsub("svd", "pca", cpaths)
@@ -63,14 +61,12 @@ Overlay example patches on the observed coordinates.
 
 ```{r}
 cur_cols <- paste0("meandim", c(j1, j2))
-#for (perc in c("15", "50", "90")) {
   for (dimred in c("SCA", "PCA")) {
     p <- list()
     for (m in c("CNN", "RCF", "VAE")) {
       coords <- centroids %>%
         filter(
           method == m,
-  #        train_perc == perc,
           sca == dimred
         ) %>%
         select(one_of(cur_cols))
@@ -127,7 +123,7 @@ ggplot(edge_data_) +
     axis.text = element_text(size = 6),
     axis.ticks = element_blank()
   )
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_embeddings-1-2.png", dpi = 500)
+#ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_embeddings-1-2.png", dpi = 500)
 ```
 And place into context by showing all samples in one figure.
 
