@@ -127,7 +127,7 @@ be a spatial proteomics measurement or a satellite image. They could also be
 more general data types -- $x_i$ might be the audio recording for one of $n$
 speakers, or the graph derived from one of $n$ molecules. Optionally, a vector
 $\mathbf{y}\in \reals^{n}$ of responses associated with each observation will be
-available.
+available. We denote the full set of available data by $\mathcal{D}$.
 
 \begin{definition}
 A \textit{feature learner} is a parameterized mapping $T\left(\cdot;
@@ -138,11 +138,15 @@ domain $\mathcal{X}$ and represents it using a vector in $\reals^{L}$.
 For example, in the proteomics and satellite applications, we expect the learner
 to transform a set of raw pixel intensities into a vector of features reflecting
 biological or environmental properties of the imaged sample. The parameter
-$\theta$ is estimated from data. An unsupervised feature extractor estimates
-$\theta$ via $\hat{\theta}\left(x_{1}, \dots, x_{n}\right)$ while a supervised
-feature extractor uses $\hat{\theta}\left(x_{1}, \dots, x_{n},
-\mathbf{y}\right)$. To cover both cases, we will just write $\hat{\theta}$. For
-ease of notation, we will write $z_{i} = T\left(x_{i}; \hat{\theta}\right) \in
+$\theta$ is estimated from data, typically through an optimization problem,
+\begin{align*}
+  \hat{\theta} := \arg\min_{\theta \in \Theta} \mathcal{L}\left(\mathcal{D}, T\left(\cdot; \theta\right)\right)
+\end{align*}
+for some loss function $\mathcal{L}$. In an unsupervised feature learner,
+candidates $\theta \in \Theta$ are functions of $x_{1}, \dots, x_{n}$ alone. For
+a supervised feature learner, the class includes functions of both
+$x_{1}, \dots, x_{n}$ and $\mathbf{y}$. To simplify notation, we will write
+$z_{i} = T\left(x_{i}; \hat{\theta}\right) \in
 \reals^{L}$ to denote the learned features associated with the $i^{th}$
 observation.
 

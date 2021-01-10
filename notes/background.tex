@@ -102,14 +102,14 @@ tables $\mathbf{X}$ and $\mathbf{Y}$, the Procrustes problem finds the rotation
 matrix $\mathbf{R}$ solving the optimization,
 
 \begin{align*}
-\min_{\mathbf{R} \in \mathcal{O}\left(p, p\right)} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{2},
+\min_{\mathbf{R} \in \mathcal{O}\left(p, p\right)} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{F},
 \end{align*}
 
 where $\mathcal{O}\left(p, p\right)$ denotes the space of $p\times p$
 orthonormal matrices. Using the associated Lagrangian,
 
 \begin{align*}
-\max_{\mathbf{R}, \mathbf{\Lambda} \succeq 0} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|_{2}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
+\max_{\mathbf{R}, \mathbf{\Lambda} \succeq 0} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|_{F}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
 \end{align*}
 
 the solution can be shown to be $\hat{\mathbf{R}} = \mathbf{U}^{T}\mathbf{V}$
@@ -119,10 +119,13 @@ $\mathbf{X}^{T}\mathbf{Y}$. For $B$ matrices $\mathbf{X}_{1}, \dots,
 $\mathbf{R}_{1}, \dots, \mathbf{R}_{B}$ and mean matrix $\mathbf{M}$ solving
 
 \begin{align*}
-\min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}\left(p, p\right), M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{2}^{2}.
+\min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}\left(p, p\right), M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{F}^{2}.
 \end{align*}
 
-While there is no closed form solution, the optimization can be solved by cyclically updating each $\mathbf{R}_{b}$ via standard Procrustes problems and then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b} \mathbf{R}_{b}$.
+While there is no closed form solution, the optimization can be solved by
+cyclically updating each $\mathbf{R}_{b}$ via standard Procrustes problems and
+then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b}
+\mathbf{R}_{b}$.
 
 \subsubsection{Representation Analysis}
 

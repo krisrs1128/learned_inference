@@ -14,18 +14,40 @@ Do the features learned by a graph autoencoder have similar stability
 properties? In other domains, we may ask whether our methods can be adapted to
 text or audio data.
 
+( other perturbation functions )
+
 Further, there are questions that may guide us towards better stability analysis
-procedures. Using a Procrustes rotation for $\mathcal{A}$ and stability
-selection for $\mathcal{S}$ provides a reasonable point of departure, but more
-sophisticated approaches are possible. For example, recent work has demonstrated
-the potential to align learned features using optimal transport
-\citep{wang2020federated }. It is also possible to propose alignments based on
-more refined measures of correlation \citep{josse2016measuring,
-  azadkia2019simple}. We have found that using an even split between
-feature learning and inference and inference gives reasonable results, but our
-results are not universal. Our approaches to summarizing and displaying the
-resulting representations may be improved through a more careful application of
-interactive visualization principles.
+procedures.
+
+While we have relied on the bootstrap, we have introduce notation to encompass
+more general perturbations $\mathcal{P}$. For example, how do learned features
+change when discarding nonrandomly chosen subsets of training data? Learning
+features on different temporal or spatial subsets may reveal a drift in the
+important features over time or space. Alternatively, we could imagine
+perturbing the model training procedure, using different hyperparameters. It
+would be of interest to trace out the dependence of the learned features on the
+mechanics of learning procedure.
+
+Similarly, using a Procrustes rotation for $\mathcal{A}$ and stability selection
+for $\mathcal{S}$ provides a reasonable point of departure, but more
+sophisticated approaches are possible. For example, dimensionality reduction
+could be optimize to support alignment; this could be accomplished using
+multiple canonical correlation analysis. Combinations of features could also be
+approximately matched across feature learners, using a form of optimal
+transport, identifying sets of features that all activate on similar input
+samples. This has been applied in a federated learning context, but not to study
+stability \citep{wang2020federated}.
+
+It is also possible to propose alignments based on more refined measures of
+correlation \citep{josse2016measuring, azadkia2019simple}. We have found that
+using an even split between feature learning and inference and inference gives
+reasonable results, but our results are admittedly coarse. Though we have
+focused on stability selection, the procedure $\mathcal{S}$ could be any
+selective inference procedure. Finally, our approaches to summarizing and
+displaying the resulting representations may be improved through a more careful
+application of interactive visualization principles.
+
+(broader conversation on two cultures)
 
 While the data sources and feature learning context we consider is novel, we
 have been motivated by an old statistical idea that remains as true now as ever

@@ -1,17 +1,17 @@
 
-\section{Simulation}
+\section{Simulation Experiment}
 \label{sec:simulation}
 
 We use a simulation experiment to understand properties of the proposed
-algorithms. Our key questions are,
+algorithms. Our guiding questions are,
 
 \begin{enumerate}
-\item How different are the features learned by supervised and unsupervised
+\item How different are the results obtained via supervised vs. unsupervised
   feature learning algorithms $T\left(\cdot; \theta\right)$?
-\item Does the choice of dimensionality reduction used in $\mathcal{A}$ affect
-  downstream inferences?
+\item How does the dimensionality reduction approach used in $\mathcal{A}$
+  affect downstream inferences?
 \item When we vary the relative sizes of $I$ and $I^{C}$, we expect a trade-off
-  between feature learning and inferential quality. What is the nature of that
+  between feature learning and inferential quality. Can we characterize this
   trade-off?
 \item Is it ever possible to substitute the RCF feature learner for either of
   the more time-consuming VAE or CNN models?
@@ -21,8 +21,9 @@ To answer these questions, we evaluate our proposal using a full factorial with
 three factors,
 
 \begin{enumerate}
-\item Relative sizes of $I$ and $I^{C}$: We use $\absarg{I} \in \left\{0.15n, 0.5n, 0.8n\right\}$.
-\item Dimensionality reduction procedure: We use both PCA and sparse PCA.
+\item Relative sizes of $I$ and $I^{C}$: We use $\absarg{I} \in \left\{0.15n,
+  0.5n, 0.8n\right\}$.
+\item Dimensionality reduction procedure: We use both PCA and SCA.
 \item Algorithm used: We train CNN, VAE and RCF models.
 \end{enumerate}
 
@@ -30,69 +31,73 @@ three factors,
 
 The key ingredient in this simulation is the construction of a dataset where all
 ``true'' features are directly controlled. To motivate the simulation, imagine
-that we are examining a set of tumor pathology slides, with the hope of
-recovering features that are predictive of survival time. Each pathology slide
-gives a view into a cellular ecosystem — there are several types of cells, with
-different sizes, density, and affinities to one another.
+studying a set of tumor pathology slides, with the hope of discovering features
+that are predictive disease prognosis. Each pathology slide gives a view into a
+cellular ecosystem — there are several types of cells, with different sizes,
+density, and affinities to one another.
 
 In the simulation, we first generate these underlying properties of each slide.
-Survival is defined as a linear function of these underlying properties. Then,
-images are generated that reflect these properties. The essential characteristic
-of this simulation is that the analyst only has access to the images and
-survival times, not the true predictors of the linear model. A good feature
-extractor $T\left(x; \hat{\theta}\left(\mathcal{D}\right)\right)$ should recover
-these important cell ecosystem properties from the images alone. Example images
-for varying values of $y$ are given in Figure \ref{fig:matern_example}.
+Prognosis is defined as a linear function of these properties. Then, images are
+generated that reflect these properties. The essential challenge is that the
+investigator only has access to the images and patient prognoses, not the true
+properties behind each image. A good feature extractor $T\left(x;
+\hat{\theta}\right)$ should recover these important cell ecosystem properties
+from the images alone. Example images for varying values of $y$ are given in
+Figure \ref{fig:matern_example}.
 
-We now give details. Our images are simulated as two-dimensional marked Log Cox
-Matern Process (LCMP) \cite{diggle2013}. Recall that a Matern process is a
-Gaussian process with covariance function
+We now give details. The locations of cells are governed by an intensity
+function drawn from a two-dimensional marked Log Cox Matern Process (LCMP)
+\cite{diggle2013spatial}. Recall that a Matern process is a Gaussian process
+with covariance function,
+\begin{align}
+  \label{eq:cov_lcmp}
+C_{\nu, \alpha}(\|x - y\|)=\sigma^{2} \frac{2^{1-\nu}}{\Gamma(\nu)}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right)^{\nu} K_{\nu}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right),
+\end{align}
+where $\alpha$ acts like a bandwidth parameter and $\nu$ controls the roughness
+of the simulated process.
 
-\begin{align*}
-C_{\nu, \alpha}(\|x - y\|)=\sigma^{2} \frac{2^{1-\nu}}{\Gamma(\nu)}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right)^{\nu} K_{\nu}\left(\sqrt{2 \nu} \frac{\|x - y\|}{\alpha}\right).
-\end{align*}
-
-$\alpha$ acts like a bandwidth parameter and $\nu$ controls the roughness of the
-simulated process. A LCMP process with $K$ classes is constructed as follows.
-First, a nonnegative process $\Lambda\left(x\right)$ is simulated along the
-image grid, $\Lambda\left(x\right) \exp{\mathcal{N}\left(0,
-  \mathbf{C}_{\nu_{\Lambda}, \alpha_{\Lambda}}\right)}$, where
-$\mathbf{C}_{\nu_{\Lambda}, \alpha_{\Lambda}}$ is the covariance matrix induced
-by $C_{\nu_{\Lambda}, \alpha_{\Lambda}}$. This represents a baseline intensity
-that determines the location of cells, regardless of cell type. Then, $K$
-further processes are simulated, $B_{k}\left(x\right) \exp{b_{k} +
+Suppose we have $R$ types of cells. Then, our LCMP should have $R$ classes. This
+can be constructed as follows. First, a nonnegative process
+$\Lambda\left(x\right)$ is simulated along the image grid,
+$\Lambda\left(x\right) \sim \exp{\mathcal{N}\left(0, \mathbf{C}_{\nu_{\Lambda},
+    \alpha_{\Lambda}}\right)}$, where $\mathbf{C}_{\nu_{\Lambda},
+  \alpha_{\Lambda}}$ is the covariance matrix induced by the $C_{\nu_{\Lambda},
+  \alpha_{\Lambda}}$ in equation \ref{eq:cov_lcmp}. This is a baseline intensity
+that determines the location of cells, regardless of cell type. Then, $R$
+further processes are simulated, $B_{r}\left(x\right) \sim \exp{b_{r} +
   \mathcal{N}\left(0, \mathbf{C}_{\nu_{B}, \alpha_{B}}\right)} $. These
-processes will reflect the relative frequencies of the $k$ classes at any
-location $x$; the intercept $b_k$ makes a class either more or less frequent
+processes will reflect the relative frequencies of the $R$ classes at any
+location $x$; the intercept $b_r$ makes a class either more or less frequent
 across all positions $x$.
 
 Given these intensity functions, we can simulate $N$ cell locations by drawing
 from an inhomogeneous Poisson process with intensity $\Lambda\left(x\right)$.
-For a cell at location $x$, we assign it cell type $k$ with probability
-$\frac{B_{k}^{\tau}\left(x\right)}{\sum_{k^\prime = 1}^{K}
-  B^{\tau}_{k^\prime}\left(x\right)}$. Here, we have introduced a temperature
+For a cell at location $x$, we assign it cell type $r$ with probability
+$\frac{B_{r}^{\tau}\left(x\right)}{\sum_{r^\prime = 1}^{R}
+  B^{\tau}_{r^\prime}\left(x\right)}$. Here, we have introduced a temperature
 parameter $\tau$ which controls the degree of mixedness between cell types at a
 given location.
 
 To complete the procedure for simulating images, we add two last source of
-variation — cell size. The cells from class $k$ are drawn with a random radius
-drawn from $\text{Gamma}\left(5, \lambda_{k}\right)$. A summary of all
-parameters used to generate each image is given in Table \ref{tab:sim_params}.
-These parameters are the ``true'' underlying features associated with the
-observed images; they give the most concise description of the variation
-observed across the images.
+variation — the number of cells and the cell size. The number of cells per image
+is drawn uniformly from 50 to 1000. The cells from class $R$ are drawn with a
+random radius drawn from $\text{Gamma}\left(5, \lambda_{r}\right)$. A summary of
+all parameters used to generate each image is given in Table
+\ref{tab:sim_params}. These parameters are the ``true'' underlying features
+associated with the simulated images; they give the most concise description of
+the variation observed across the images.
 
 \begin{figure}
   \centering
   \includegraphics[width=0.9\textwidth]{generation_mechanism}
   \caption{Example simulated images, for low (top), average (middle), and high
-    (bottom) values of $y$. For each sample, three relative intensity functions
-    are generated, shown as a greyscale heatmap (left three displays for each
-    group). Samples drawn from each process are overlaid as circles. The final
-    images (display at the right for each group) overlay the points from the
-    three processes, discarding the original generating intensity function.
-    Evidently, small $y$ values are associated with smoother, less structured
-    intensity functions.}
+    (bottom) values of $y_i$. For each sample, three relative intensity
+    functions $B_{k}\left(x\right)$ are generated, shown as a greyscale
+    heatmaps. Samples drawn from each process are overlaid as circles. The final
+    images, displayed at the right of each group, combines points from the three
+    processes, removing the original generating intensity function, which is not
+    available to the feature learner. Small $y_i$ values are associated with
+    smoother, less structured intensity functions.}
   \label{fig:matern_example}
 \end{figure}
 
@@ -103,11 +108,11 @@ observed across the images.
 \hline
 $N_i$                & The total number of cells.                                    & 0.5                         & $\left[50, 1000\right]$    \\
 \hline
-$\nu_{i,\Lambda}$    & The roughness of the underlying intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
+$\nu_{i,\Lambda}$    & The roughness of the overall intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
 \hline
-$\alpha_{i,\Lambda}$ & The roughness of the underlying intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
+$\alpha_{i,\Lambda}$ & The roughness of the overall intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
 \hline
-$b_{ik}$             & The intercept controlling the overall frequency of class $k$. & 1 for $k = 1$,\ -1 otherwise & $\left[-0.15, 0.15\right]$ \\
+$b_{ir}$             & The intercept controlling the frequency of class $r$. & 1 for $r = 1$,\ -1 otherwise & $\left[-0.15, 0.15\right]$ \\
 \hline
 $\nu_{iB}$           & The roughness of the relative intensity processes.            & -0.5                        & $\left[0, 3\right]$        \\
 \hline
@@ -115,30 +120,35 @@ $\alpha_{iB}$        & The bandwidth of relative intensity processes.           
 \hline
 $\tau_{i}$           & The temperature used in cell type assignment.                 & 0.5                         & $\left[0, 3\right]$        \\
 \hline
-$\lambda_{ik}$       & The shape parameter controlling the sizes of each cell type.  & 1 for $k = 1$,\ 0 otherwise  & $\left[100, 500\right]$   \\
+$\lambda_{ir}$       & The shape parameter controlling the sizes of each cell type.  & 1 for $r = 1$,\ 0 otherwise  & $\left[100, 500\right]$   \\
 \hline
 \end{tabular}
 \caption{Our simulation mechanism is governed by the above parameters.
-  Parameters $N_i$ and $\lambda_{ik}$ control the number and sizes of imaginary
+  Parameters $N_i$ and $\lambda_{ir}$ control the number and sizes of imaginary
   cells. $\nu_{i, \Lambda}$, $\alpha_{i, \Lambda}$, $b_{ik}$, $\nu_{iB}$,
   $\alpha_{iB}$, and $\tau_{i}$ control the overall and relative intensities of
-  the Matern process from which the cell positions are drawn. Example draws are
-  displayed in Figure \ref{fig:matern_example}}
+  the marked LCMP from which the cell positions are drawn. Example draws are
+  displayed in Figure \ref{fig:matern_example}.}
 \label{tab:sim_params}
 \end{table}
 
+These features are the underlying properties used to generate the prognosis for
+each patient $i$. Specifically, we generate $y_i = \sum_{k} \text{Influence}_{k}
+\times \left[\frac{\text{Feature}_{ik} -
+    \overline{\text{Feature}}_{k}}{SD\left(\text{Feature}_{k}\right)}\right]$ for the
+values Influence given in Table \ref{tab:sim_params}. Note that there is no
+additional noise: if the $\text{Feature}_{ik}$'s were known for each sample,
+then the $y_{i}$'s could be predicted perfectly. Therefore, the simulation
+gauges the capacity of the feature learners to recover these known underlying
+features.
 
-These features are the underlying properties used to generate survival time.
-Specifically, we generate a survival time using $y_i = \sum_{k}
-\text{Influence}\text{Feature}_{ik}$ for the values Influence given in Table
-\ref{tab:sim_params}. Note that there is no additional noise: if the
-$\text{Feature}_{ik}$'s were known for each sample, then the $y$'s could be
-predicted perfectly. Therefore, the simulation gauges the capacity of the
-feature learners to recover these known underlying features. These features are
-themselves all drawn from uniform distributions between the ranges given in the
-table.
+\subsection{Results}
 
-\subsection{Distributed features}
+We now summarize findings of our factorial experiment. All simulated data,
+trained models, and aligned features have been posted publicly; links can be
+found in the appendix.
+
+\subsubsection{Distributed features}
 
 Figure \ref{fig:distributed_hm} shows the activations of learned features across
 2000 samples for two bootstrap resamples from each of the feature learning
@@ -196,12 +206,12 @@ features per run makes this clear.
     activations of learned features; they have been reordered by a hierarchical
     clustering. The color of a cell gives the correlation between the associated
     true and learned features. Green and burgundy encode positive and negative
-    correlation, respectively. Evidently, all learned features are associated
-    with multiple true features at once.}
+    correlation, respectively. All learned features are associated with multiple
+    true features at once.}
   \label{fig:distributed_hm}
 \end{figure}
 
-\subsection{Feature Learning vs. Inference}
+\subsubsection{Feature Learning vs. Inference}
 
 It is natural to ask how the overall correlation between source and learned
 features vary as a function of the algorithms and training sample sizes used. To
@@ -294,7 +304,7 @@ appendix.
   \label{fig:selection_summary}
 \end{figure}
 
-\subsection{Stability study}
+\subsubsection{Stability study}
 
 Figures \ref{fig:embeddings_sim} and \ref{fig:selections_sim} summarize the
 results of Algorithms \ref{fig:fss} and \ref{alg:selection} applied to several
