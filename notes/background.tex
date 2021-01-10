@@ -45,11 +45,9 @@ generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data;
 $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert
 x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair
 $\xi, \varphi$ maximizing the lower bound,
-
 \begin{align*}
 \log p_{\xi}\left(x\right) \geq  \mathbb{E}_{q_{\varphi}}\left[\log p]_{\xi}(x \mid z)\right]-D_{KL}\left(q_{\varphi}(z \mid x) \| p(z)\right)
 \end{align*}
-
 where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right),
 \sigma^{2}_{\varphi}\left(x\right)\right)$ maps raw data examples to
 distributions in a latent space of more meaningful features. This optimization
@@ -63,12 +61,10 @@ empirical estimate of the risk $\mathbf{E}\|y -
 f_{W_{1:J}}\left(x\right)^{T}\beta\|_{2}^{2}$ over $W_{1:J}$ and $\beta$. Here,
 $f_{W_{1:J}}$ transforms the raw input into the ``last layer''’s features, and
 is defined recursively according to
-
 \begin{align*}
 f^{j}_{W_{1:j}}\left(x\right) &= \sigma\left(W_{j}f^{j - 1}_{W_{1:(j - 1)}}\left(x\right)\right)\\
 f^{0}\left(x\right) &= x
 \end{align*}
-
 for $\sigma\left(x\right)$ defined as $\sigma\left(x\right) := x \indic{x \geq
   0}$ and matrices $W$ restricted to the set of convolution operators. Like in
 the VAE, this optimization is nonconvex and is typically found through
@@ -100,28 +96,22 @@ effective, baseline.
 Procrustes Analysis gives a way of aligning multiple tables. Given two centered
 tables $\mathbf{X}$ and $\mathbf{Y}$, the Procrustes problem finds the rotation
 matrix $\mathbf{R}$ solving the optimization,
-
 \begin{align*}
 \min_{\mathbf{R} \in \mathcal{O}\left(p, p\right)} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{F},
 \end{align*}
-
 where $\mathcal{O}\left(p, p\right)$ denotes the space of $p\times p$
 orthonormal matrices. Using the associated Lagrangian,
-
 \begin{align*}
 \max_{\mathbf{R}, \mathbf{\Lambda} \succeq 0} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|_{F}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
 \end{align*}
-
 the solution can be shown to be $\hat{\mathbf{R}} = \mathbf{U}^{T}\mathbf{V}$
 for $\mathbf{U}$ and $\mathbf{V}$ obtained by the SVD of
 $\mathbf{X}^{T}\mathbf{Y}$. For $B$ matrices $\mathbf{X}_{1}, \dots,
 \mathbf{X}_{B}$, the generalized Procrustes problem finds $B$ rotations
 $\mathbf{R}_{1}, \dots, \mathbf{R}_{B}$ and mean matrix $\mathbf{M}$ solving
-
 \begin{align*}
 \min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}\left(p, p\right), M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{F}^{2}.
 \end{align*}
-
 While there is no closed form solution, the optimization can be solved by
 cyclically updating each $\mathbf{R}_{b}$ via standard Procrustes problems and
 then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b}
@@ -142,12 +132,10 @@ these matrices with respect to the top $K$ singular vector directions are then
 extracted, $Z_{X} = U_{X, 1:K}D_{X, 1:K}$ and $Z_{Y} = U_{Y, 1:K}D_{Y, 1:K}$.
 Finally, a canonical correlation analysis is performed on these coordinate
 matrices. That is, the top CCA directions $u_{1}, v_{1}$ are found by optimizing
-
 \begin{align*}
   \text{maximize }& u^{T}\hat{\Sigma}_{Z_{X}}^{-\frac{1}{2}}\hat{\Sigma}_{Z_{X}Z_{Y}}\hat{\Sigma}_{Z_{Y}}^{-\frac{1}{2}}v \\
   \text{subject to } & \|u\|_{2} = \|v\| = 1
 \end{align*}
-
 and subsequent directions are found by solving the same problem after
 orthogonalizing $Z_{X}$ and $Z_{Y}$ to previously extracted directions. The
 value of the objective for each of the $K$ directions extracted is denoted
@@ -166,14 +154,12 @@ Like SVCCA, we reduce dimensionality of our learned features before comparing
 them. We use both PCA and a variant called Sparse Components Analysis (SCA)
 \citep{chen2020new}. For a given data matrix $X$ and a number of components $K$,
 and sparsity parameter $\gamma$, SCA solves the optimization
-
 \begin{align*}
   \text{maximize }_{Z, B, Y} &\|X - Z B Y^{T}\|_{F} \\
   \text{subject to }Z \in &\mathcal{O}\left(n, K\right) \\
   Y \in &\mathcal{O}\left(p, k\right) \\
   \|Y\|_{1} &\leq \gamma.
 \end{align*}
-
 The matrix $Y$ provides the $K$ SCA loadings, and the product $ZB$ provide the
 coordinates of each sample with respect to that basis. Note that if $B$ is
 forced to be diagonal, then this optimization reduces to sparse PCA. This
