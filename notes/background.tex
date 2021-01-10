@@ -1,132 +1,151 @@
 
-\section{Context}
+\section{Background}
 \label{sec:context}
 
-We briefly summarize the methods used in this work.
-
+We review techniques that are used in our algorithmic proposals and
+computational experiments.
 
 \subsubsection{Stability}
 
-Many statistical algorithms revolve around the idea that meaningful conclusions should be stable to perturbations \cite{yu2013stability}. In this work, we make use of stability selection, a technique for evaluating significance in high-dimensional linear models \cite{meinshausen2010stability}.
+Many statistical quantities are based on the idea that meaningful conclusions
+should be stable to perturbations \cite{yu2013stability}. In this work, we make
+use of stability selection, a technique for evaluating significance in
+high-dimensional linear models \cite{meinshausen2010stability}.
 
 For a dataset $\mathbf{X}\in \reals^{n \times p}$ and $\mathbf{y} \in
 \reals^{n}$, stability selection proceeds as follows. First, $B$ subsamples of
 size $\lfloor \frac{n}{2} \rfloor$ are drawn from the data, and for each a lasso
-regression is run over a grid of $\lambda$ regularization parameters. Each of
-these regressions results in $p$ coefficient trajectories, and important
-features will generally become nonzero earlier on the regularization path (that
-is, even with large regularization $\lambda$). For a given $\lambda$ and feature
-$j$, let $\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples
-that had nonzero $\hat{\beta}_j\left(\lambda\right)$. The paths
-$\left(\hat{\Pi}_{j}\lambda\left(\lambda\right)\right)_{j = 1}^{p}$summarize the
-importance of the $p$ regression features. For a given stringency threshold
-$\pi_{thr}$, the procedure selects features $\hat{S} = \{j : \max_{\lambda}
-\hat{\Pi}_{j}\left(\lambda\right) \geq \pi_{thr}\}$.
+regression is run over a grid of regularization parameters $\lambda$. Each of
+these regressions results in $p$ coefficient trajectories
+$\hat{\beta}_{j}\left(\lambda\right)$, and important features are expected to
+become nonzero earlier on the regularization path (that is, even with large
+regularization $\lambda$). For a given $\lambda$ and feature $j$, let
+$\hat{\Pi}_{j}\left(\lambda\right)$ measure the fraction of subsamples for which
+$\absarg{\hat{\beta}_j\left(\lambda\right)} > 0$. The paths
+$\left(\hat{\Pi}_{j}\left(\lambda\right)\right)_{j = 1}^{p}$ describe the
+importances for each of the $p$ regression features. For a given stringency
+threshold $\pi_{thr}$, the procedure selects features $\hat{S} = \{j :
+\max_{\lambda} \hat{\Pi}_{j}\left(\lambda\right) \geq \pi_{thr}\}$.
 
 Let $q_{\Lambda} = \Eabsarg{\hat{S}_{\Lambda}}$ denote the expected number of
-selected features. It can be shown that, assuming some conditions on the
-selection procedure $\hat{S}$, and requiring a stringency $\pi_{thr} \geq
-\frac{1}{2}$, the expected number of falsely selected features is bounded by
-$\frac{1}{2\pi_{thr} - 1} \frac{q_{\Lambda}^2}{p}$. The term
-$\frac{q_{\Lambda}^2}{p}$ is like the typical fraction of selected features; the
-coefficient $\frac{q_{\Lambda}}{2\pi_{thr} - 1}$ describes the fraction of those
-that are expected to be false positives.
+selected features. It can be shown that, for $\pi_{thr} \geq \frac{1}{2}$, and
+assuming a sufficiently well-behaved $\hat{S}$, the expected number of falsely
+selected features is bounded by $\frac{1}{2\pi_{thr} - 1}
+\frac{q_{\Lambda}^2}{p}$. The term $\frac{q_{\Lambda}}{p}$ is like the typical
+fraction of selected features; the coefficient $\frac{q_{\Lambda}}{2\pi_{thr} -
+  1}$ describes the fraction of those that are expected to be false positives.
 
 \subsubsection{Feature Learning}
 
-(tk: do I need to define activation?)
-
-In this work, we will examine the behavior of three particular feature learning algorithms. The first approach is called the Variational Autoencoder (VAE). Like principal components analysis, this algorithm learns a $K$-dimensional reduction of a dataset by optimizing a reconstruction objective. Formally, the algorithm first posits some generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data; $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair $\xi, \varphi$ maximizing the lower bound,
+In this work, we consider three particular feature learning algorithms. The
+first is called the Variational Autoencoder (VAE). Like principal components
+analysis, this algorithm learns an $L$-dimensional reduction of a dataset by
+optimizing a reconstruction objective. Formally, the algorithm first posits a
+generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data;
+$p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert
+x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair
+$\xi, \varphi$ maximizing the lower bound,
 
 \begin{align*}
 \log p_{\xi}\left(x\right) \geq  \mathbb{E}_{q_{\varphi}}\left[\log p]_{\xi}(x \mid z)\right]-D_{KL}\left(q_{\varphi}(z \mid x) \| p(z)\right)
 \end{align*}
 
-where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right), \sigma^{2}_{\varphi}\left(x\right)\right)$ maps raw data examples to distributions in a latent space of more meaningful features. This optimization problem is nonconvex, and is typically solved through a variant of stochastic gradient descent.
+where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right),
+\sigma^{2}_{\varphi}\left(x\right)\right)$ maps raw data examples to
+distributions in a latent space of more meaningful features. This optimization
+problem is nonconvex, and is typically solved through a variant of stochastic
+gradient descent. There are many particular implementations of VAEs; our
+experiments are based on \citep{van2017neural}.
 
 Second, we investigate features learned in a supervised way through a
 Convolutional Neural Network (CNN). For regression, a CNN optimizes the
 empirical estimate of the risk $\mathbf{E}\|y -
-f_{W_{1:L}}\left(x\right)^{T}\beta\|_{2}^{2}$ over $W_{1:L}$ and $\beta$. Here,
-$f_{W_{1:L}}$ transforms the raw input into the ``last layer''’s features, and
+f_{W_{1:J}}\left(x\right)^{T}\beta\|_{2}^{2}$ over $W_{1:J}$ and $\beta$. Here,
+$f_{W_{1:J}}$ transforms the raw input into the ``last layer''’s features, and
 is defined recursively according to
 
 \begin{align*}
-f^{l}_{W_{1:l}}\left(x\right) &= \sigma\left(W_{l}f^{l - 1}_{W\_{1:(l - 1)}}\left(x\right)\right)\\
+f^{j}_{W_{1:j}}\left(x\right) &= \sigma\left(W_{j}f^{j - 1}_{W_{1:(j - 1)}}\left(x\right)\right)\\
 f^{0}\left(x\right) &= x
 \end{align*}
 
 for $\sigma\left(x\right)$ defined as $\sigma\left(x\right) := x \indic{x \geq
   0}$ and matrices $W$ restricted to the set of convolution operators. Like in
 the VAE, this optimization is nonconvex and is typically found through
-first-order optimization methods.
+first-order optimization methods. Our particular implementation is the CBR
+architecture described in \citep{raghu2017svcca}.
 
-Third, we consider a random convolutional features (RCF) model. Here, a random
-sample of $P$ training examples $x_{i_1}, \dots, x_{i_P} \in \reals^{w \times h
-  \times c}$ are selected; we are assuming the $x_{i}$ are $c$-channel images
-with dimension $w\times h$. For each sample, a random $s \times s$ patch is
-extracted; call the collection $w_{1}, \dots, w_{p} \in \reals^{s \times s
-  \times c}$. For any $c$-channel image $x$, the $p^{th}$ feature $z$ is found
-by convolving $x$ with $w_{p}$ and averaging over all the associated
-coordinates.
+Third, we consider a random convolutional features (RCF) model
+\citep{rahimi2008weighted}. Here, a random sample of $L$ training examples
+$x_{i_1}, \dots, x_{i_L} \in \reals^{w \times h \times c}$ are selected; the
+$x_{i}$'s are assumed to be $c$-channel images with dimension $w\times h$. For
+each sample, a random $s \times s$ patch, which we call $w_{p} \in \reals^{s
+  \times s \times c}$, is extracted. For any $c$-channel image $x$, the $l^{th}$
+feature $z_{l}$ is found by convolving $x$ with $w_{l}$ and spatially averaging
+over all activations.
 
 To train an RCF, the training data are first featurized into $\mathbf{Z} \in
-\reals^{n \times P}$ using random image patches, as described above. Then, a
+\reals^{n \times L}$ using random image patches, as described above. Then, a
 ridge regression model is trained, solving
-
 \begin{align*}
 \hat{\beta} := \arg \min_{\beta} \|y - \mathbf{Z}\beta\|_{2}^{2} + \lambda \|\beta\|_{2}
 \end{align*}
-
-For a new example $x^{\ast}$, the same image patches $w_{1}, \dots, w_{p}$ are used to create a featurization $z^{\ast}$, and predictions are made with $z^{\ast T}\hat{\beta}$. Unlike either the VAE or CNN, this model does not require gradient based training, and it can serve as a fast (and often effective) baseline.
+For a new example $x^{\ast}$, the same image patches $w_{1}, \dots, w_{L}$ are
+used to create a featurization $z^{\ast}$, and predictions are made with
+$z^{\ast T}\hat{\beta}$. Unlike either the VAE or CNN, this model does not
+require gradient based training, and it can serve as a fast, and often
+effective, baseline.
 
 \subsubsection{Procrustes Analysis}
-Procrustes Analysis gives a way of aligning multiple tables. Given two tables $\mathbf{X}$ and $\mathbf{Y}$, the Procrustes problem finds the rotation matrix $\mathbf{R}$ solving the optimization,
+Procrustes Analysis gives a way of aligning multiple tables. Given two centered
+tables $\mathbf{X}$ and $\mathbf{Y}$, the Procrustes problem finds the rotation
+matrix $\mathbf{R}$ solving the optimization,
 
 \begin{align*}
-\min_{\mathbf{R} \mathcal{O}} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{2},
+\min_{\mathbf{R} \in \mathcal{O}\left(p, p\right)} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|^{2}_{2},
 \end{align*}
 
-where $\mathcal{O}$ denotes the space of orthogonal matrices. Using the associated Lagrangian,
+where $\mathcal{O}\left(p, p\right)$ denotes the space of $p\times p$
+orthonormal matrices. Using the associated Lagrangian,
 
 \begin{align*}
-\max_{\mathbf{R}, \mathbf{\Lambda} \succ 0} \|\mathbf{X} - \mathbf{Y}\|_{2}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
+\max_{\mathbf{R}, \mathbf{\Lambda} \succeq 0} \|\mathbf{X} - \mathbf{Y}\mathbf{R}\|_{2}^{2} - \mathbf{\Lambda}\left(\mathbf{R}^{T}\mathbf{R} - \mathbf{I}\right)
 \end{align*}
 
-the solution can be shown to be $\hat{\mathbf{R}} = \mathbf{U}^{T}\mathbf{V}$ for $\mathbf{U}$ and $\mathbf{V}$ obtained by the SVD of $\mathbf{X}^{T}\mathbf{Y}$. More generally, for $B$ matrices $\mathbf{X}_{1}, \dots, \mathbf{X}_{B}$, the generalized procrustes problem finds $B$ rotations $\mathbf{R}_{1}, \dots, \mathbf{R}_{B}$ and mean matrix $\mathbf{M}$ solving
+the solution can be shown to be $\hat{\mathbf{R}} = \mathbf{U}^{T}\mathbf{V}$
+for $\mathbf{U}$ and $\mathbf{V}$ obtained by the SVD of
+$\mathbf{X}^{T}\mathbf{Y}$. For $B$ matrices $\mathbf{X}_{1}, \dots,
+\mathbf{X}_{B}$, the generalized Procrustes problem finds $B$ rotations
+$\mathbf{R}_{1}, \dots, \mathbf{R}_{B}$ and mean matrix $\mathbf{M}$ solving
 
 \begin{align*}
-\min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}, M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{2}^{2}.
+\min_{\mathbf{R}_{1}, \dots, \mathbf{R}_{B} \in \mathcal{O}\left(p, p\right), M} \sum_{b = 1}^{B} \|\mathbf{X}_{b}\mathbf{R}_{b} - \mathbf{M}\|_{2}^{2}.
 \end{align*}
 
 While there is no closed form solution, the optimization can be solved by cyclically updating each $\mathbf{R}_{b}$ via standard Procrustes problems and then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b} \mathbf{R}_{b}$.
 
 \subsubsection{Representation Analysis}
 
-Our approach is closely related to methods for representation analysis, which
-compare activations across deep learning models. One popular approach to
-representation analysis is Singular Vector CCA (SVCCA). This method can be used
-to compare pairs of representations, coming from different layers, models, or
-training epochs, for example. In SVCCA, the two representations are identified
-with two matrices, $X \in \reals^{n \times k_{1}}$ and $Y \in \reals^{n \times
-  k_{2}}$. The $ij^{th}$ cell in each matrix corresponds to the activation of
-neuron $j$ on sample $i$. Each representation effectively corresponds to a
+Our approach is closely related to Singular Vector CCA (SVCCA), a method used to
+compare features learned across deep learning models. In SVCCA, the two
+representations are identified with two matrices, $X \in \reals^{n \times
+  l_{1}}$ and $Y \in \reals^{n \times l_{2}}$. The $ij^{th}$ cell in each matrix
+corresponds to the activation of neuron $j$ on sample $i$. A representation is a
 pattern of activations across a collection of neurons.
 
-To compare these representations, SVCCA first computes singular value
-decompositions $X = U_{X}D_{X}V_{X}^{T}$ and $Y = U_{Y}D_{Y}V_{T}^{T}$. The
-coordinates of these matrices with respect to the top $K$ singular vector
-directions are then extracted, $Z_{X} = U_{X, 1:K}D_{X, 1:K}$ and $Z_{Y} = U_{Y,
-  1:K}D_{Y, 1:K}$. Finally, a canonical correlation analysis is performed on
-these coordinate matrices. That is, the top CCA directions $u_{1}, v_{1}$ are
-found by optimizing
+To compare representations, SVCCA first computes singular value decompositions
+$X = U_{X}D_{X}V_{X}^{T}$ and $Y = U_{Y}D_{Y}V_{T}^{T}$. The coordinates of
+these matrices with respect to the top $K$ singular vector directions are then
+extracted, $Z_{X} = U_{X, 1:K}D_{X, 1:K}$ and $Z_{Y} = U_{Y, 1:K}D_{Y, 1:K}$.
+Finally, a canonical correlation analysis is performed on these coordinate
+matrices. That is, the top CCA directions $u_{1}, v_{1}$ are found by optimizing
 
 \begin{align*}
   \text{maximize }& u^{T}\hat{\Sigma}_{Z_{X}}^{-\frac{1}{2}}\hat{\Sigma}_{Z_{X}Z_{Y}}\hat{\Sigma}_{Z_{Y}}^{-\frac{1}{2}}v \\
-  \text{such that } & \|u\|_{2} = \|v\| = 1
+  \text{subject to } & \|u\|_{2} = \|v\| = 1
 \end{align*}
 
-and subsequent directions are found by solving the same problem, after
+and subsequent directions are found by solving the same problem after
 orthogonalizing $Z_{X}$ and $Z_{Y}$ to previously extracted directions. The
 value of the objective for each of the $K$ directions extracted is denoted
 $\rho_{k}$, and the overall similarity between the two representations is taken
@@ -135,28 +154,26 @@ to be the average of these canonical correlations: $\frac{1}{K}\sum_{k = 1}^{K}
 
 Note that, while in principle, it would be possible to perform a CCA on the
 activations $X$ and $Y$ directly, for representations with many neurons, the
-dimensionality reduction step can lead to dramatic performance gains, because it
-avoids inverting a high-dimensional correlation matrix.
+dimensionality reduction step can simplify computation, because it avoids
+inverting a high-dimensional covariance matrix.
 
 \subsection{Sparse Components Analysis}
 
 Like SVCCA, we reduce dimensionality of our learned features before comparing
-them. We reductions using both PCA and a recently proposed variant called Sparse
-Components Analysis (SCA). For a given data matrix $X$ and a number of
-components $K$, and sparsity parameter $\gamma$, SCA solves the optimization
+them. We use both PCA and a variant called Sparse Components Analysis (SCA)
+\citep{chen2020new}. For a given data matrix $X$ and a number of components $K$,
+and sparsity parameter $\gamma$, SCA solves the optimization
 
 \begin{align*}
   \text{maximize }_{Z, B, Y} &\|X - Z B Y^{T}\|_{F} \\
-  \text{such that }Z \in &\mathcal{O}\left(n, K\right) \\
+  \text{subject to }Z \in &\mathcal{O}\left(n, K\right) \\
   Y \in &\mathcal{O}\left(p, k\right) \\
-  \|Y\|_{1} \leq \gamma.
+  \|Y\|_{1} &\leq \gamma.
 \end{align*}
 
-Here, $\mathcal{O}\left(m, n\right)$ corresponds to the space of $m \times n$
-orthogonal matrices. The matrix $Y$ provides the $K$ the SCA loadings, and the
-product $ZB$ provide the coordinates of each sample with respect to that basis.
-Note that if $B$ is forced to be diagonal, then this optimization reduces to
-previously proposed versions of sparse PCA (we work with nondiagonal $B$
-throughout this work). This optimization does not directly provide an ordering
-of the loadings. However, the proportion of variance explained by each dimension
-can still be computed, and this can be indirectly used to order the dimensions.
+The matrix $Y$ provides the $K$ SCA loadings, and the product $ZB$ provide the
+coordinates of each sample with respect to that basis. Note that if $B$ is
+forced to be diagonal, then this optimization reduces to sparse PCA. This
+optimization does not directly provide an ordering of the loadings. However, the
+proportion of variance explained by each dimension can still be computed, and
+this can be used to order the dimensions.
