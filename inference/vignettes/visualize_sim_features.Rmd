@@ -54,7 +54,6 @@ edge_data$sca <- str_extract(epaths, "pca|sca")[edge_data$path] %>%
 centroids$sca <- str_extract(epaths, "pca|sca")[centroids$path] %>%
   toupper()
 
-paths <- sapply(centroids$rel_path, dpath, d = params$tiles_dir)
 j1 <- 2
 j2 <- 1
 ```
@@ -67,14 +66,16 @@ for (perc in c("15", "50", "90")) {
   for (dimred in c("SCA", "PCA")) {
     p <- list()
     for (m in c("CNN", "RCF", "VAE")) {
-      coords <- centroids %>%
+      subset <- centroids %>%
         filter(
           method == m,
           train_perc == perc,
           sca == dimred
-        ) %>%
+        ) 
+      coords <- subset %>%
         select(one_of(cur_cols))
       colnames(coords) <- c("x", "y")
+      paths <- sapply(subset$rel_path, dpath, d = params$tiles_dir)
       
       imsize <- diff(range(coords$y)) / 14.5
       p[[m]] <- image_grid(coords, paths, min_dist = 1, density = c(12, 14), imsize = imsize) +
@@ -87,10 +88,10 @@ for (perc in c("15", "50", "90")) {
     }
     
     ga <- grid.arrange( p[[1]] + ggtitle("CNN"), p[[2]] + ggtitle("RCF"), p[[3]] + ggtitle("VAE"), ncol = 3 )
-    ggsave(
-      sprintf("~/Desktop/conceptual/learned_inference/notes/figure/sim-%s-1-2.png", dimred),
-      ga, dpi = 500, width = 12, height = 5
-    )
+    #ggsave(
+    #  sprintf("~/Desktop/conceptual/learned_inference/notes/figure/sim-imagegrid-%s-%s-1-2.png", dimred, perc),
+    #  ga, dpi = 500, width = 12, height = 5
+    #)
   }
 }
 ```

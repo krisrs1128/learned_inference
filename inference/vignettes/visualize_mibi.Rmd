@@ -42,7 +42,7 @@ ggplot(mim) +
   scale_alpha(range = c(0, 1), guide = FALSE) +
   scale_fill_brewer(palette = "Set3") +
   labs(fill = "Cell Type") +
-  facet_wrap(~L1) +
+  facet_wrap(~L1, ncol = 8) +
   theme(
     panel.grid = element_blank(),
     panel.spacing = unit(0, "cm"),

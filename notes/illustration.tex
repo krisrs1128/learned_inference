@@ -2,131 +2,133 @@
 \section{Data Analysis}
 \label{sec:dataset}
 
-We illustrate the use of this methodology on a real data analysis example. These
-spatial proteomics data\footnote{The data are
+In this section, we conduct a feature stability analysis on the spatial
+proteomics dataset\footnote{The data are
   \href{https://www.angelolab.com/mibi-data}{publicly available}. See also the
-  appendix for preprocessed versions.} were reported in the study
-\citep{keren2018structured} and describe the relationship between the spatial
-organization of cancer tumors and the progression of the disease. In a standard
-proteomics study, the expression levels for a set of proteins is measured for a
-collection of cells, but the distances between cells is unknown. In contrast,
-these data provide (1) for each patient, an image delineating cells and (2) the
-protein expression levels associated with each cell in the images.
+  appendix for preprocessed versions.} reported in the study
+\citep{keren2018structured}, which found a relationship between the spatial
+organization of Triple Negative Breast Cancer (TNBC) tissues and disease
+progression. In a classical proteomics study, the expression levels for a set of
+proteins is measured for a collection of cells, but the cell locations are
+unknown. In contrast, these data provide for each patient (1) an image
+delineating cell boundaries and (2) the protein expression levels associated
+with each cell in the images.
 
-We will work only with the spatial cellular imagery, not the protein expression
+We will work only with the spatial cell delineations, not the protein expression
 levels. This allows us to study the mechanics of feature learning within the
-images without having to worry about linking the expression and image data. What
-we lose in terms of scientific interestingness we gain in implementation
-simplicity. Our complete data are therefore 41 $2048 \times 2048$-dimensional
-images, each taken from a separate patient. We associate each pixel with one of
-7 categories of tumor and immune cell types.
+images without having to worry about linking the expression and image data,
+which is in itself a complex integration problem. Though this means we lose some
+scientific depth, we gain substantial implementation simplicity, and the
+analysis serves as a clear illustration. Our complete data are 41 $2048 \times
+2048$-dimensional images, each taken from a separate patient. We associate each
+pixel with one of 7 categories of tumor and immune cell types.
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.8\textwidth]{example_cells}
-  \caption{Example patches of TNBC data. Each cell is shaded in by its cell
-    type. Keratin+ and Mesenchymal-like cells are tumor cells, the rest are
-    immune cells. Panels are ordered by $y_i$, the (log) fraction of cells they
-    contain that belong to the tumor. The goal of the prediction algorithm in
-    this illustrative example is to correctly place patches from new patients
-    along this gradient, after having observed many patches and their
-    corresponding $y_i$'s.}
+  \includegraphics[width=\textwidth]{example_cells}
+  \caption{Example patches from the TNBC data. Keratin+ and Mesenchymal-like
+    cells are tumor cells, the rest are immune cells. Panels are ordered by
+    $y_i$, the (log) fraction of cells they contain that belong to the tumor.
+    The goal of the prediction algorithm in this example is to correctly place
+    patches from new patients along this gradient, after having observed many
+    patches and their corresponding $y_i$'s.}
   \label{fig:example_cells}
 \end{figure}
 
-
-To setup a prediction problem, we first split each image into $512 \times 512$
+To setup a prediction problem, we first split each image into $512 \times 512 \times 7$
 patches. These patches are our $x_{i}$. Patches from 32 of the patients are
-reserved form feature learning. Four among these 32 are used as a validation
+reserved form feature learning. Four among these 32 are used as a development
 split, to tune parameters of the feature learning algorithms. As a response
 variable, we use $y_{i} = \log\left(\frac{\#\{\text{Tumor cells in
-  }x_{i}\}}{\#\{\text{Immune cells in }x_i\}}\right)$.
+  }x_{i}\}}{\#\{\text{Immune cells in }x_i\}}\right)$. Example cell patches are
+shown in Figure \ref{fig:example_cells}.
 
 As a baseline, we compare against a ridge regression with pixelwise composition
-features. Specifically, we train a model with $y$ as a response and the average
-number of pixels belonging to each of the cell-type categories as a (length 7)
-feature vector. This allows us to gauge whether the model has learned more
-interesting features useful for counting cells, like cell size and boundaries,
-rather than simply referring to raw pixel values. Indeed, we find that the
-baseline achieves a test set performance of 1.58, which is noticeably worse than
-the performances of models trained on aligned features
-$\underaccent{\bar}{\mathbf{Z}}_{b}\left[I^{C}\right]$, reported in Figure
-\ref{fig:tnbc_baseline}.
+features. Specifically, we train a model with $\mathbf{y}$ as a response and the
+average number of pixels belonging to each of the cell-type categories as a
+(length 7) feature vector. This helps us to determine whether the model has
+learned more interesting features useful for counting cells, like cell size and
+boundaries, rather than simply averaging across pixel values. Indeed, Figure
+\ref{fig:tnbc_baseline} makes clear that, with the exception of the RCF-SCA
+combination, all feature learning - dimensionality reduction combinations
+outperform this manual baseline.
 
 \begin{figure}
   \centering
   \includegraphics[width=0.8\textwidth]{tnbc_baseline}
   \caption{Relative performance of feature learning strategies on the TNBC data.
-    The manual features refers to the regression model that simply uses the raw
-    pixel counts for each of the cell types.}
+    Linked points come from the same bootstrap replicate. The manual features
+    refers to the regression model that simply uses the raw pixel counts for
+    each of the cell types. Predictions from the development split are omitted;
+    this split has few patches, and the estimated MSE's have high variance.}
   \label{fig:tnbc_baseline}
 \end{figure}
 
-Stability curves associated with the learned features from the CNN, VAE, and RCF
+Stability curves associated with the learned features from the CNN, RCF, and VAE
 models are shown in Figure \ref{fig:tnbc_selection_paths-2}. Interestingly,
-across all algorithms, top features are not necessarily those with the highest
-selection probabilities. For example, CNN Feature 4 has higher selections than
-Feature 3, RCF Feature 6 has higher selection than Feature 4, and VAE Feature 5
-is more frequently selected than Feature 3. In contrast to the simulation, the
-CNN and VAE do not have substantial differences in their selection curves.
-Further, the RCF features seem to have high selection probabilities across more
-dimensions than either the CNN or VAE. This all points to the fact that the most
-salient features in $x_i$ are also relevant for predicting $y_i$. Supervision is
-not as critical in this problem as it is in the simulation.
+across all algorithms, the top aligned features are not necessarily those with
+the highest selection probabilities. For example, CNN Feature 4 has higher
+selections than Feature 3, RCF Feature 6 has higher selection than Feature 4,
+and VAE Feature 5 is more frequently selected than Feature 3. In contrast to the
+simulation, the CNN and VAE do not have substantial differences in their
+selection curves. Further, the RCF features seem to have high selection
+probabilities across more dimensions than either the CNN or VAE. This suggests
+that the most salient features in $x_i$ are also relevant for predicting $y_i$,
+and that supervision is not as critical in this problem as it was in the
+simulation.
 
 \begin{figure}
   \centering
     \makebox[\textwidth][c]{\includegraphics[width=1.5\textwidth]{tnbc_selection_paths-2}}
   \caption{Selection curves for features learned from the TNBC data. 50\% of
-    the data were used for feature learning and the PCA was used for
+    the data were used for feature learning and PCA was used for
     dimensionality reduction. Each curve is read as in Figure
-    \ref{fig:selection_paths50}. The analogous paths using SCA alignment are
-    given in Figure \ref{fig:tnbc_selection_paths-1.}}
+    \ref{fig:selection_paths-5-2}. The analogous paths using SCA alignment are
+    given in Supplementary Figure \ref{fig:tnbc_selection_paths-1}.}
   \label{fig:tnbc_selection_paths-2}
 \end{figure}
 
 Example aligned coordinates are given in Figure
 \ref{fig:tnbc_important_features}. Consistent with the conclusion, we find that
 the association with the response is clearly visible with respect to the learned
-feature dimensions. The variation in the size of the glpyhs across regions of
-the learned feature space is especially pronounced in this application. For
-example, in the VAE, the representations of samples with higher tumor-to-immune
-ratio $y_i$ are much more stable than those with low ratio.
+feature dimensions, even when using unsupervised algorithms. The changes in the
+sizes of glpyhs across regions of the learned feature space are especially
+pronounced in this application. For example, in the VAE, the representations of
+samples with higher tumor-to-immune ratio $y_i$ are much more stable than those
+with low ratio.
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{tnbc_embeddings-1-2}
   \caption{Representation of samples according to some of the important learned
-    feature dimensions, obtained using a CNN (a), RCF (b), and VAE (c). Glyphs
-    are read as in Figure \ref{fig:embeddings-test}. To interpret these
-    features, example patches are arranged according to these coordinates in
-    Figure \ref{fig:embeddings-images}.}
+    feature dimensions. Glyphs are read as in Figure
+    \ref{fig:sim_embeddings-pca-1-2}. To interpret these features, example
+    patches are arranged according to these coordinates in Figure
+    \ref{fig:tnbc_imagegrid-PCA-1-2} and Supplementary Figure
+    \ref{fig:tnbc_imagegrid-SCA-1-2}. Only a subsample of points are shown; the
+    full dataset with stars collapsed to points is shown in Figure
+    \ref{fig:tnbc_embeddings-full-both-1-2}.}
   \label{fig:tnbc_important_features}
 \end{figure}
 
-While there is no consensus on how to best interpret automatically learned
-features, we present one simple approach in \ref{fig:tnbc_imagegrid-PCA-1-2}, which
-overlays example data patches with coordinates that we have just commented upon.
-For example, in the VAE, the patches with higher values of Feature 1 tend to
-have more open gaps, compared to patches in the lower region. Those patches in
-the far left are more clearly dominated by Tumor cells. For the RCF, the bottom
-patches tend to have more immune cells, those in the top right have more gaps,
-and those in the top left have a higher density of tumor cells. The structure is
-less clear for the CNN features, though it continues to be the case that nearby
-patches do tend to have similar density or cell type configurations. The
-analogous display for learned dimensions 3 and 6, which are significant for the
-RCF but the VAE, are given in Figure \ref{fig:tnbc_imagegrid-PCA-3-6}.
+There is no consensus on how to best interpret automatically learned features
+\citep{doshi2017towards}. Nonetheless, we present one simple approach in Figure
+\ref{fig:tnbc_imagegrid-PCA-1-2}, overlaying example patches onto aligned
+coordinates. For example, in the CNN, the first dimension distinguishes between
+the relative number of tumor and immune cells, while the second dimension
+reflects the density of cells. In the RCF, the second dimension captures the
+diversity of cell types, with more uniform samples on the left and more
+heterogeneous ones on the right. The second dimension of the VAE seems related
+to both cell density and number of cell types. The analogous display from an SCA
+reduction is given in Supplementary Figure \ref{fig:tnbc_imagegrid-SCA-1-2}.
 
 \begin{figure}
   \centering
   \includegraphics[width=1.2\textwidth]{tnbc_imagegrid-PCA-1-2}
-  \caption{A version of Figure \ref{fig:tnbc_important_features} overlaying
-    representative samples across the learned feature space. Along a grid in the
-    learned feature space, the closest patch is displayed to the grid point is
-    identified and plotted. Cells are color coded as in Figure
-    \ref{fig:example_cells}. The mechanism for displaying patches means that the
-    overall shape of the region in which images are displayed are available
-    mirrors the shape of the cloud of points in Figure
-    \ref{fig:tnbc_important_features}. }
+  \caption{A version of the PCA panels of Figure \ref{fig:tnbc_embeddings-1-2}
+    that overlays representative samples across the learned feature space. Cells
+    are color coded as in Figure \ref{fig:example_cells}. Note that the overall
+    shape of the region in which images are displayed mirrors the shape of the
+    cloud of points in Figure \ref{fig:tnbc_embeddings1-2}.}
   \label{fig:tnbc_imagegrid-PCA-1-2}
 \end{figure}
