@@ -82,16 +82,21 @@ for (perc in c("15", "50", "90")) {
           x = sprintf("Learned Feature %s", j1),
           y = sprintf("Learned Feature %s", j2)
         ) +
+        scale_fill_manual(values = c("red", "green", "blue")) +
         theme(panel.grid.minor = element_blank())
     }
     
     ga <- grid.arrange( p[[1]] + ggtitle("CNN"), p[[2]] + ggtitle("RCF"), p[[3]] + ggtitle("VAE"), ncol = 3 )
     ggsave(
-      sprintf("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_imagegrid-%s-1-2.png", dimred),
+      sprintf("~/Desktop/conceptual/learned_inference/notes/figure/sim-%s-1-2.png", dimred),
       ga, dpi = 500, width = 12, height = 5
     )
   }
 }
+```
+
+```{r}
+ga
 ```
 
 Consider the original discrepancies between features and their centroids.
@@ -130,7 +135,7 @@ ggplot(edge_data_) +
     axis.text = element_text(size = 6),
     axis.ticks = element_blank()
   )
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/sim_embeddings--SCA-1-2.png", dpi = 500)
+#ggsave("~/Desktop/conceptual/learned_inference/notes/figure/sim_embeddings--SCA-1-2.png", dpi = 500)
 ```
 And place into context by showing all samples in one figure.
 
@@ -144,5 +149,5 @@ ggplot(centroids) +
   scale_color_viridis_c() +
   labs(x = sprintf("Learned Feature %s", j1), y = sprintf("Learned Feature %s", j2)) +
   theme(legend.position = "bottom")
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/sim_embeddings-full-sca-1-2.png", dpi = 500)
+#ggsave("~/Desktop/conceptual/learned_inference/notes/figure/sim_embeddings-full-sca-1-2.png", dpi = 500)
 ```

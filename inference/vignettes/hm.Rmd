@@ -40,14 +40,14 @@ for (i in seq_len(nrow(paths_df))) {
     select(-ix)
 
   H_ <- np$load(dpath(paths_df$feature[i])) %>%
-    as.data.framed()
+    as.data.frame()
 
   # some RCF cols have 0 variance, so jitter
   H_ <- H_ + matrix(runif(prod(dim(H_)), -0.1, 0.1), nrow(H_), ncol(H_))
 
   png(sprintf("sh_%s.png", i), width=900, height=400)
   sh[[i]] <- superheat(
-    t(cor(H_, H[, -1])),
+    t(cor(H_[, 1:15], H[, -1])),
     pretty.order.rows = FALSE,
     pretty.order.cols = TRUE,
     #bottom.label = "none",
