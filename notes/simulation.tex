@@ -5,14 +5,14 @@
 We use a simulation experiment to understand properties of the proposed
 algorithms. Our guiding questions are,
 
-\begin{enumerate}
+\begin{enumerate}[label=(G{{\arabic*}})]
 \item How different are the results obtained via supervised vs. unsupervised
   feature learning algorithms $T\left(\cdot; \theta\right)$?
-\item How does the dimensionality reduction approach used in $\mathcal{A}$
-  affect downstream inferences?
 \item When we vary the relative sizes of $I$ and $I^{C}$, we expect a trade-off
   between feature learning and inferential quality. Can we characterize this
   trade-off?
+\item How does the dimensionality reduction approach used in $\mathcal{A}$
+  affect downstream inferences?
 \item Is it ever possible to substitute the RCF feature learner for either of
   the more time-consuming VAE or CNN models?
 \end{enumerate}
@@ -22,10 +22,13 @@ three factors,
 
 \begin{enumerate}
 \item Relative sizes of $I$ and $I^{C}$: We use $\absarg{I} \in \left\{0.15n,
-  0.5n, 0.8n\right\}$.
+  0.5n, 0.9n\right\}$.
 \item Dimensionality reduction procedure: We use both PCA and SCA.
 \item Algorithm used: We train CNN, VAE and RCF models.
 \end{enumerate}
+
+We use $B = 20$ perturbations in each case. Hence, 180 models are trained, from
+which 360 of dimensionality-reduced features are obtained.
 
 \subsection{Simulated Data}
 
@@ -43,7 +46,8 @@ investigator only has access to the images and patient prognoses, not the true
 properties behind each image. A good feature extractor $T\left(x;
 \hat{\theta}\right)$ should recover these important cell ecosystem properties
 from the images alone. Example images for varying values of $y$ are given in
-Figure \ref{fig:matern_example}.
+Figure \ref{fig:matern_example}. In total, our simulation generates 10,000 such
+images, each of dimension $64 \times 64 \times 3$.
 
 We now give details. The locations of cells are governed by an intensity
 function drawn from a two-dimensional marked Log Cox Matern Process (LCMP)
@@ -64,10 +68,10 @@ $\Lambda\left(x\right) \sim \exp{\mathcal{N}\left(0, \mathbf{C}_{\nu_{\Lambda},
   \alpha_{\Lambda}}$ is the covariance matrix induced by the $C_{\nu_{\Lambda},
   \alpha_{\Lambda}}$ in equation \ref{eq:cov_lcmp}. This is a baseline intensity
 that determines the location of cells, regardless of cell type. Then, $R$
-further processes are simulated, $B_{r}\left(x\right) \sim \exp{b_{r} +
+further processes are simulated, $B_{r}\left(x\right) \sim \exp{\beta_{r} +
   \mathcal{N}\left(0, \mathbf{C}_{\nu_{B}, \alpha_{B}}\right)} $. These
 processes will reflect the relative frequencies of the $R$ classes at any
-location $x$; the intercept $b_r$ makes a class either more or less frequent
+location $x$; the intercept $\beta_r$ makes a class either more or less frequent
 across all positions $x$.
 
 Given these intensity functions, we can simulate $N$ cell locations by drawing
@@ -112,7 +116,7 @@ $\nu_{i,\Lambda}$    & The roughness of the overall intensity process.          
 \hline
 $\alpha_{i,\Lambda}$ & The roughness of the overall intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
 \hline
-$b_{ir}$             & The intercept controlling the frequency of class $r$. & 1 for $r = 1$,\ -1 otherwise & $\left[-0.15, 0.15\right]$ \\
+$\beta_{ir}$             & The intercept controlling the frequency of class $r$. & 1 for $r = 1$,\ -1 otherwise & $\left[-0.15, 0.15\right]$ \\
 \hline
 $\nu_{iB}$           & The roughness of the relative intensity processes.            & -0.5                        & $\left[0, 3\right]$        \\
 \hline
@@ -125,7 +129,7 @@ $\lambda_{ir}$       & The shape parameter controlling the sizes of each cell ty
 \end{tabular}
 \caption{Our simulation mechanism is governed by the above parameters.
   Parameters $N_i$ and $\lambda_{ir}$ control the number and sizes of imaginary
-  cells. $\nu_{i, \Lambda}$, $\alpha_{i, \Lambda}$, $b_{ik}$, $\nu_{iB}$,
+  cells. $\nu_{i, \Lambda}$, $\alpha_{i, \Lambda}$, $\beta_{ik}$, $\nu_{iB}$,
   $\alpha_{iB}$, and $\tau_{i}$ control the overall and relative intensities of
   the marked LCMP from which the cell positions are drawn. Example draws are
   displayed in Figure \ref{fig:matern_example}.}
@@ -150,10 +154,10 @@ found in the appendix.
 
 \subsubsection{Distributed features}
 
-Figure \ref{fig:distributed_hm} shows the activations of learned features across
-2000 samples for two bootstrap resamples from each of the feature learning
-algorithms when using 90\% of the training data for feature learning. In the
-three cases, the learned features correspond to
+To answer G1, we directly visualize example learned features. Figure
+\ref{fig:distributed_hm} shows the activations of learned features across 2000
+images for two perturbed versions of the training data when $\absarg{I} = 0.9n$.
+For the three algorithms, the learned features correspond to,
 
 \begin{itemize}
 \item CNN: Activations from the last layer of neurons, used directly as input
@@ -165,128 +169,123 @@ three cases, the learned features correspond to
   convolutional features.
 \end{itemize}
 
-Our first observation is that there is no simple correspondence between learned
-and source features (i.e., parameters of the underlying simulation). For
-example, it is not the case that one set of features represents the number of
-cells $N$, and a different set maps to the roughness $\alpha, \nu$. Rather,
-there appear to be clusters of learned features, and each cluster corresponds to
-a pattern of correlation across multiple source features. We also find large
-subsets of features, across all models, that are only weakly correlated with any
-source feature.
+Our first observation is that, across algorithms, there is no simple
+correspondence between learned and source features (i.e., parameters of the
+underlying simulation). For example, it is not the case that one set of features
+represents the number of cells $N$, and a different set maps to the roughness
+$\nu_{\Lambda}$. Rather, there appear to be clusters of learned features, and
+each cluster corresponds to a pattern across multiple source features. We also
+find large subsets of features, across all models, that are only weakly
+correlated with any source feature.
 
 Next, note that certain source features are ``easier'' to represent than others,
 in the sense that more of the learned features are strongly correlated with
 them. Many features are correlated with $N_{i}$, the total number of cells in
 the image, and $\lambda_{i1}$, the size of the cells from Process 1. Depending
-on the model the process roughness $\alpha_{ir}$, $\nu_{ir}$ and prevalence
+on the model, the bandwidth / roughness $\alpha_{ir}$, $\nu_{ir}$ and prevalence
 $\beta_{ik}$ parameters are either only weakly or not at all correlated with the
 learned features. Interestingly, the convolutional network learns to represent
 $\beta_{1}$ well, but not $\beta_{2}$ or $\beta_{3}$ -- this is consistent with
-the fact that only $\beta_{1}$ influences the response $y_{i}$.
+the fact that only $\beta_{1}$ influences the response $y_{i}$. Even when
+features learn to detect variation in $\alpha_{ir}$ and $\nu_{ir}$, they cannot
+disambiguate between these two parameters.
 
-Finally, we observe that different models learn qualitatively different sets of
-features. For example, the CNN features tend to be more clustered, with strong
-correlation across several source features. In contrast, the RCF features show
-more gradual shifts in correlation strength. They also show relatively little
-variation in correlation strength across features other than $\lambda_{i1}$ and
-$N_{i}$.
+Finally, consider differences between feature learning algorithms. The CNN and
+VAE features tend to be more clustered, with strong correlation across several
+source features. In contrast, the RCF features show more gradual shifts in
+correlation strength. They also show relatively little variation in correlation
+strength across features other than $\lambda_{i1}$ and $N_{i}$.
 
 Note that the features do not naturally map onto one another from one run to the
 next. This is not obvious from Figure \ref{fig:distributed_hm}, but a zoomed in
-version in Figure \ref{fig:distributed_hm_subset} showing only the first 15
-features per run makes this clear.
+version in Supplementary Figure \ref{fig:distributed_hm_subset} showing only the
+first 15 features per run makes this clear.
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{correlation_heatmap}
-  \caption{Each feature learning algorithm (rows) learns a distributed
+  \caption{Each feature learning algorithm learns a distributed
     representation of the true underlying features in the simulation. The two
-    columns give results from two bootstrap resamples. Within each heatmap, rows
-    correspond to the parameters in Table \ref{tab:sim_params}. Columns are
-    activations of learned features; they have been reordered by a hierarchical
-    clustering. The color of a cell gives the correlation between the associated
-    true and learned features. Green and burgundy encode positive and negative
-    correlation, respectively. All learned features are associated with multiple
-    true features at once.}
+    columns give results from two runs. Within each heatmap, rows correspond to
+    the parameters in Table \ref{tab:sim_params}. Columns are activations of
+    learned features; they have been reordered by a hierarchical clustering
+    using the package \citep{barter2018superheat}. The color of a cell gives the
+    correlation between the associated true and learned features. Green and
+    burgundy encode positive and negative correlation, respectively. All learned
+    features are associated with multiple true features at once.}
   \label{fig:distributed_hm}
 \end{figure}
 
 \subsubsection{Feature Learning vs. Inference}
 
-It is natural to ask how the overall correlation between source and learned
-features vary as a function of the algorithms and training sample sizes used. To
-this end, Figure \ref{fig:cca_sim} displays the top canonical correlations
-between learned features $\underaccent{\bar}{\mathbf{Z}}_{b}$ and the original
-source features, across bootstrap replicates and algorithms. Further, we make
-calculate these scores separately for training, development, and testing splits.
-The training and development splits are subsets of $I$. Training samples were
-used in the optimization for each feature learner; development samples were used
-to choose hyperparameters of this optimization. They are shown separate from the
-test samples $I^{C}$ to make it possible to recognize potential overfitting in
-the feature learning process.
+To answer G2 and G3, Figure \ref{fig:cca_sim} displays the top canonical
+correlations between learned features $\underaccent{\bar}{\mathbf{Z}}_{b}$ and
+the original source features, across bootstrap replicates and algorithms. Note
+that we calculate these scores separately for training, development, and testing
+splits. The training and development splits are subsets of $I$. Training samples
+were used in the optimization for each feature learner; development samples were
+used to choose hyperparameters of the optimizer. They are shown separate from
+the test samples $I^{C}$ to make it possible to recognize potential overfitting
+in the feature learning process.
 
-Like Figure \ref{fig:distributed_hm}, this figure provides further evidence that
-the feature learning process recovers important aspects of the source features.
-It further demonstrates that, even after the initial dimensionality reduction,
-only several CCA directions have high canonical correlations. The dimensionality
-reduction method used does not have a strong influence. In general, the fraction
-of data belonging to $I$ also matters little; however, there is an exception in
-the second dimension of the CNN features (top row). Here, the features learned
-when $\absarg{I}$ is only 15\% of the data have noticeably lower canonical
-correlation relative to when more data are used for feature learning.
+Even after the initial dimensionality reduction, only several CCA directions
+have high canonical correlations. The dimensionality reduction method used does
+not have much effect at this stage. In general, the fraction of data belonging
+to $I$ also matters little; however, there is an exception in the CNN features.
+Here, the features learned when $\absarg{I}$ is only 15\% of the data have
+noticeably lower canonical correlation in the second dimension. Note also that,
+from the point of view of these canonical correlations, the RCF and VAE have
+comparable feature learning behaviors.
 
 The feature learning algorithms do not seem to overfit the simulation data. If
 they did, then the canonical correlations on the training and development data
-would be larger than those on the test data. However, there are noticeable
-differences between the data splits, and this pattern will recur in later
-figures. We hypothesize that the differences are due to the alignment process.
-During the Procrustes rotation, one matrix $Z^{b}\left[I^{C}\right]$ may get
-``lucky'' and learn an alignment with axes that better reflect variation in the
-source features. In this way, even though the test data may not have been used
-to learn features, they may have higher correlation to the source than the
-original training features.
+would be larger than those on the test data. That said, there are noticeable
+differences between the data splits, and this effect will be visible in later
+figures as well. We hypothesize that the differences are due to the alignment
+process. During the Procrustes rotation, one matrix
+$\mathbf{Z}_{b}\left[I^{C}\right]$ may get ``lucky'' and learn an alignment with
+axes that better reflect variation in the source features. In this way, even
+though the test data may not have been used to learn features, they may have
+higher correlation with the source features than the original
+$\mathbf{Z}_{b}\left[I\right]$.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{cca_summary}
+  \includegraphics[width=0.8\textwidth]{cca_summary}
   \caption{The top canonical correlations between the sources features and the
-    aligned $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$. Horizontal rows correspond to
-    CNN, RCF, and VAE algorithms. Columns give the CCA dimension. Within each
-    display, the canonical correlations across all bootstraps is shown. The
-    $x$-axis within each cell gives the amount of data used for feature learning
-    and the dimensionality reduction method used. Canonical correlations are
-    computed separately for samples within training, development, and test
-    splits, indicated by each point's color. The total amount of data used for
-    feature learning does not strongly influence the canonical correlation
-    between source and learned features. From the point of view of these
-    canonical correlations, the RCF and VAE have comparable feature learning
-    behaviors.}
+    aligned $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$. Horizontal rows
+    correspond to CNN, RCF, and VAE algorithms. Columns give the CCA dimension.
+    Within each display, the canonical correlations across all bootstraps is
+    shown. The $x$-axis within each cell gives the amount of data used for
+    feature learning and the dimensionality reduction method used. Canonical
+    correlations are computed separately for samples within training,
+    development, and test splits, indicated by each point's color.}
   \label{fig:cca_summary}
 \end{figure}
 
-To shed further light on the effect of using different sized $\absarg{I}$
-training samples, Figure \ref{fig:selection_summary2} shows the median number of
-features selected by stability selection $\absarg{S\left(\lambda,
-  \pi_{thr}\right)}$ across training sample sizes. The median is taken across
-all bootstrap iterations $b = 1, \dots, 20$. We fix a regularization strength
-$\lambda$ where small perturbations in $\pi_{thr}$ can lead to large changes in
-the number of selected features. We have run stability selection for $250$
-replicates, all restricted to either training, development, or test data, as
-indicated by the color of each line.
+To shed further light on G2 and G3, Figure \ref{fig:selection_summary} shows
+the median number of features selected by stability selection
+$\absarg{S\left(\lambda, \pi_{thr}\right)}$ across training sample sizes. The
+median is taken across all bootstrap iterations. We fix a regularization
+strength $\lambda$ where small perturbations in $\pi_{thr}$ lead to large
+changes in the number of selected features. We have run stability selection for
+$250$ replicates, all restricted to either training, development, or test data,
+as indicated by the color of each line.
 
 All the curves decrease because increasing the stringency $\pi_{thr}$ leads to
 fewer selected features. We find that the features learned by the CNN are more
 frequently selected. This is expected, considering that the CNN features are
 learned in a supervised fashion. More surprising is the fact that the RCF
 features are more frequently selected than the VAE features, suggesting that the
-simple baseline might already provide features useful for interpretation.
+simple baseline might already provide features useful for interpretation, giving
+an affirmative answer to G4.
 
 Finally, it appears that $\absarg{S\left(\lambda, \pi_{thr}\right)}$ is largest
 when using 50\% of the data for feature learning. Though the features learned
 using 90\% of the data may be higher quality, it is not possible to select them
-more frequently, because stability selection will have low power when it can
-only subsample from the 10\% of the data reserved for inference. This phenomenon
-appears for features learned using both supervised and unsupervised methods. For
+as frequently, because stability selection will have low power when it can only
+subsample from the 10\% of the data reserved for inference. This phenomenon
+appears for features learned by both supervised and unsupervised methods. For
 this reason, in the remainder of this study, we will focus on results obtained
 using a 50\% split between learning and inference -- that is, $\absarg{I} =
 \absarg{I^{C}}$ -- though results using different splits are available in the
@@ -296,91 +295,81 @@ appendix.
   \centering
   \includegraphics[width=\textwidth]{selection_summary2}
   \caption{The median number of features selected by stability selection across
-    bootstrap runs $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$, viewed as a function of
-    $\pi_{thr}$. Rows and columns correspond to models and fraction of the data
-    used for training, respectively. Stability selection is run within training,
-    validation, and test splits (color) and using two dimensionality reduction
-    procedures during alignment (solid vs. dashed lines).}
+    bootstrap runs $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$, viewed as a
+    function of $\pi_{thr}$. Rows and columns correspond to models and fraction
+    of the data used for training, respectively. Stability selection is run
+    within training, validation, and test splits (color) and using two
+    dimensionality reduction procedures during alignment (solid vs. dashed
+    lines).}
   \label{fig:selection_summary}
 \end{figure}
 
-\subsubsection{Stability study}
+\subsubsection{Stability visualization}
 
-Figures \ref{fig:embeddings_sim} and \ref{fig:selections_sim} summarize the
-results of Algorithms \ref{fig:fss} and \ref{alg:selection} applied to several
-feature learners. Here, $\absarg{I} = \absarg{I^{C}} = 5000$ samples. Within a
-single panel, each star glyph corresponds to a single sample. The arms of the
-glyph link the bootstrap replicates for that given sample: $\protect z_{i}^{1},
-\dots, z_{i}^{20}$. Each glyph is colored in the true value of $y_{i}$ for that
-sample. Only the first two learned feature dimensions are shown.
+Figures \ref{fig:sim_embeddings-pca-1-2} and \ref{fig:selection_paths-5-2}
+summarize the results of Algorithms \ref{alg:fss} and \ref{alg:selection}
+applied to several feature learners. Within a single panel, each star glyph
+corresponds to a single sample. The arms of the glyph link the bootstrap
+replicates for that given sample: $\protect z_{i}^{1}, \dots, z_{i}^{20}$. Each
+glyph is colored in the true value of $y_{i}$ for that sample. Only the first
+two aligned feature dimensions are shown.
 
 Both the model and reduction strategy used influence the stability of the
 learned features. Based on the relative sizes of the glphys, the CNN features
 are least stable, those from the RCF are most stable, and the VAE features are
 intermediate. Separate regions of the learned feature space appear more stable
-than others. Dimensionality reduction using SCA results in axis-aligned
-variation, except in the case of the VAE. None of the displays exhibits an
-obvious association between the learned feature dimensions and the response $y$;
-however, we will see soon that these dimensions are nonetheless relevant for
-prediction.
+than others. Features learned with 15\% of the data are highly unstable and show
+little association with the response. For larger $\absarg{I}$'s, the learned
+features are more stable. Supplementary Figure
+\ref{fig:sim_embeddings-full-pca-1-2} shows that in this case, there are also
+stronger associations with $\mathbf{y}$.
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{sim_embeddings--pca-1-2}
-  \caption{Example aligned features
-    $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$ derived from several models
-    and alignment strategies applied to the simulation data with 50\% of the
-    data reserved for feature learning. Displays on the top and bottom were
-    obtained using PCA and SCA-reduced features, respectively. The three columns
-    correspond to features learned from the CNN, RCF, and VAE. For clarity, only
-    a subset of samples is shown, and all belong to $I^{C}$, the samples that
-    were not used for feature learning.}
+  \caption{Example aligned features $\protect\underaccent{\bar}{\mathbf{Z}}_{b}$
+    derived from several models with varying feature learning sample sizes
+    $\absarg{I}$. For clarity, only a subset of samples is shown. For a version
+    of this figure showing all samples, and collapsing each star to a point,
+    refer to Supplementary Figure \ref{fig:sim_embeddings-full-pca-1-2}.}
   \label{fig:sim_embeddings-pca-1-2}
 \end{figure}
 
- Figure \ref{fig:selection_paths50} displays stability selection paths
- $\Pi_{k}^{b}\left(\lambda\right)$ for combinations of feature learning and
- dimensionality reduction procedures. Like in Figure \ref{fig:cca_summary}, we
- find that the largest variation is between the data splits, but that
- overfitting does not appear to be a problem. Indeed, for several features, the
- dev and test splits have higher selection probabilities.
+Figure \ref{fig:selection_paths-5-2} displays stability selection paths
+$\Pi_{k}^{b}\left(\lambda\right)$ for combinations of feature learning and
+dimensionality reduction procedures. Like in Figure \ref{fig:cca_summary}, we
+find that the largest variation is between the data splits, but that
+overfitting does not appear to be a problem. Indeed, for several features, the
+development and test splits have higher selection probabilities.
 
-Next, consider differences between the paths obtained with using SCA vs. PCA for
-dimensionality reduction. The selection paths are not monotone for SCA. This is
-most likely a consequence of the correlation between SCA coordinates, a result
-of the fact that the matrix $B$ in the decomposition $X = Z B Y^{T}$ need not be
-diagonal. Further, when using the PCA, the top features are also the most
-selected ones; this is not the always the case with SCA.
+Revisiting G3, we find the first major differences between dimensionality
+reduction strategies. The selection paths are not monotone for SCA, and they
+also vary substantially across runs. This is most likely a result of the fact
+that the matrix $B$ in the decomposition $X = Z B Y^{T}$ need not be diagonal,
+which correlates the resulting coordinates. Further, when using the PCA, the top
+features are also the most selected ones; this is not the always the case with
+SCA.
 
-Between algorithms, we find that the selection paths for RCF features form a
-tighter band across all bootstrap samples. For all algorithms, this band seems
-to widen for later feature dimensions; the selection probabilities also
-generally rise more gradually. Note that for Feature 3 onwards, the selection
-paths for the VAE rise more gradually than the corresponding paths for either
-the CNN or RCF dimensions.
+Next, consider G1 and G4, from the selective perspective. Between algorithms, we
+find that the selection paths for RCF features form a tighter band across all
+bootstrap samples, another mark in its favor. For all algorithms, this band
+seems to widen for later feature dimensions; the selection probabilities also
+generally rise more gradually. For Feature 3 onwards, the selection paths for
+the VAE rise more gradually than the corresponding paths for either the CNN or
+RCF dimensions, suggesting a lack of association with $\mathbf{y}$.
 
 \begin{figure}
   \centering
-  \includegraphics[width=1.2\textwidth]{selection_paths-5}
-  \includegraphics[width=1.2\textwidth]{selection_paths-2}
+    \makebox[\textwidth][c]{\includegraphics[width=1.3\textwidth]{selection_paths-5-2}}
   \caption{Stability selection paths $\hat{\Pi}_{k}^{b}\left(\lambda\right)$ for
     10 learned features, across models and alignment strategies. Top and bottom
     groups use PCA and SCA-reduced features, respectively, and each row
-    corresponds to a feature learning algorithm. Each panel corresponds to one
+    corresponds to a feature learning algorithm. Each column corresponds to one
     learned feature dimension. Each curve gives
-    $\hat{\Pi}_{k}^{b}\left(\lambda\right)$ for one bootstrap replicate $b$ and
-    restricted to samples from either the training, development, or test set,
-    indicated by the curve color. The $x$-axis is the regularization strength
-    $\log \lambda$ and the $y$-axis is the probability of selecting that feature
-    at the given regularization strength. 50\% of the simulation data was used
-    for training each feature learner.}
-  \label{fig:selection_paths50}
+    $\hat{\Pi}_{k}^{b}\left(\lambda\right)$ for one bootstrap replicate $b$
+    restricted to samples from either the training, development, or test set.
+    The $x$-axis is the regularization strength $\log \lambda$ and the $y$-axis
+    is the probability of selecting that feature at the given regularization
+    strength.}
+  \label{fig:selection_paths-5-2}
 \end{figure}
-
-Based on these figures, we recommend using an PCA reduction either CNN or RCF
-feature learning. While the axis alignment of the SCA features is attrawctive,
-their correlation with one another complicates the interpretation of stability
-selection curves. While the CNN features are somewhat harder to align, they lead
-to a clearer distinction between important and unimportant features. The RCF
-features are easy to compute and align without sacrificing relevance in
-prediction and selection.

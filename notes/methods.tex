@@ -66,9 +66,9 @@ each $\mathbf{Z}_{b}$ to $K$ dimensions, call this $\tilde{\mathbf{Z}}_{b}$.
 Then, we solve a generalized Procrustes problem, finding $\mathbf{R}_{b}$'s so
 that the $\underaccent{\bar}{\mathbf{Z}}_{b} :=
 \tilde{\mathbf{Z}}_{b}\mathbf{R}_{b}$ have low Frobenius distance to
-$\mathbf{M}$. For the dimensionality reduction step, we use both PCA and SCA.
-Given this $\mathcal{A}$, we can compute a feature subspace stability score
-using Algorithm \ref{alg:fss}.
+$\mathbf{M}$. For the dimensionality reduction step, we apply either PCA or SCA
+after centering and scaling. Given this $\mathcal{A}$, we can compute a feature
+subspace stability score using Algorithm \ref{alg:fss}.
 
 \begin{algorithm}[H]
   \SetAlgoLined
