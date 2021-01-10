@@ -90,7 +90,7 @@ training criterion $\mathcal{L}$. Perturbation process $\mathcal{P}$.
 \begin{algorithm}[H]
   \SetAlgoLined
   \KwResult{Aligned features $\left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots,
-    \mathbf{Z}_{B}\right)$. Subspace stability score $SS_{\mathcal{A}}$.}
+    \mathbf{Z}_{B}\right)$. Subspace stability score $FSS_{\mathcal{A}}$.}
   Inputs: Learned features $\left(\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}\right)$.
   Alignment strategy $\mathcal{A}$.
 
@@ -109,7 +109,7 @@ training criterion $\mathcal{L}$. Perturbation process $\mathcal{P}$.
 
 \begin{algorithm}[H]
   \SetAlgoLined
-  \KwResult{Selection stability scores for all aligned dimensions $SS_{1}, \dots, SS_{K}$.}
+  \KwResult{Selection stability scores for all aligned dimensions $SS_{\mathcal{S}}^{1}, \dots, SS_{\mathcal{S}}^{K}$.}
   Inputs: Reserved indices $I^{C}$. Selection mechanism $\mathcal{S}$. Aligned
   features $\left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots,
   \underaccent{\bar}{\mathbf{Z}}_{B}\right)$, where each
@@ -124,7 +124,7 @@ training criterion $\mathcal{L}$. Perturbation process $\mathcal{P}$.
   2. Compute selection scores,
 
   \For{$k = 1, \dots, K$}{
-    $SS_{k} = \frac{1}{B}\sum_{b = 1}^{B} \indic{k \in S_{b}}$
+    $SS_{\mathcal{S}}^{k} = \frac{1}{B}\sum_{b = 1}^{B} \indic{k \in S_{b}}$
   }
   \caption{Selection Stability}
   \label{alg:selection}

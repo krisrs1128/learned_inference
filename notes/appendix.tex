@@ -31,6 +31,15 @@ To support code reusability between experiments, two helper packages were prepar
 \item \href{https://github.com/krisrs1128/learned_inference/tree/master/inference}{\texttt{inference}}
 \end{itemize}
 
+This packages can be installed by calling,
+
+\begin{verbatim}
+> git clone https://github.com/krisrs1128/learned_inference.git
+> Rscript -e "devtools::install('learned_inference/inference')"
+> pip3 install learned_inference/stability
+\end{verbatim}
+from the terminal.
+
 We have prepared a \href{https://hub.docker.com/r/krisrs1128/li}{docker image}
 with all necessary software installed. For example, to reproduce figure
 \ref{fig:?}, you can enter the image and execute the relevant rmarkdown document
@@ -57,9 +66,9 @@ Finally, we have released intermediate results from our analysis,
   simulation experiments.
 \item \href{https://drive.google.com/file/d/1DmzObBWCzVzDNZ1DxcUWgyIoZmC4H8gD/view?usp=sharing}{tnbc\_outputs.tar.gz}: All models trained in our illustration on
   the TNBC dataset.
-\item \href{}{simulation\_figure\_data.tar.gz}: The data written by
+\item \href{https://drive.google.com/file/d/1zJQOB2dSuy_1WYheJtUI8PZfu9PsyVGQ/view?usp=sharing}{simulation\_figure\_data.tar.gz}: The data written by
   `stability.Rmd` which was used to generate figures for our simulation.
-\item \href{}{tnbc\_figure\_data.tar.gz}: The data written by `stability.Rmd`
+\item \href{https://drive.google.com/file/d/1FaCrOysBlsNYgzul6iJiFcmgRFl2OaSE/view?usp=sharing}{tnbc\_figure\_data.tar.gz}: The data written by `stability.Rmd`
   which was used to generate figures for our data illustration.
 \item \href{https://drive.google.com/file/d/1c-ZPs9RbzkY9FzUnCCVJc8syt5dpj-4Y/view?usp=sharing}{tnbc\_raw.tar.gz}:
   The original MIBI-ToF tiffs, before splitting into patches.
@@ -79,10 +88,26 @@ Finally, we have released intermediate results from our analysis,
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{embeddings50}
-  \caption{The analogous figure to Figure \ref{fig:embeddings50-test}, but
-    showing all splits of the data.}
-  \label{fig:embeddings50}
+  \includegraphics[width=\textwidth]{sim_embeddings-full-pca-1-2}
+  \caption{The analogous figure to Figure \ref{fig:sim_embeddings--pca-1-2}, but
+    keeping only the center of each bootstrap alignment, and showing the
+    embeddings for all patches.}
+  \label{fig:sim_embeddings-full-pca-1-2}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{sim_embeddings--sca-1-2}
+  \caption{The analogous figure to Figure \ref{fig:sim_embeddings--pca-1-2}, but
+    using SCA dimensionality reduction.}
+  \label{fig:sim_embeddings--sca-1-2}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{sim_embeddings-full-sca-1-2}
+  \caption{}
+  \label{sim_embeddings-full-sca-1-2}
 \end{figure}
 
 \begin{figure}
@@ -121,27 +146,34 @@ Finally, we have released intermediate results from our analysis,
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{tnbc_selection_sca}
+  \includegraphics[width=\textwidth]{tnbc_selection_paths-1}
   \caption{Selection curves for the TNBC dataset application when using SCA for
     dimensionality reduction.}
-  \label{fig:tnbc_selection_sca}
+  \label{fig:tnbc_selection_paths-1}
 \end{figure}
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{tnbc_unimportant_features}
+  \includegraphics[width=\textwidth]{tnbc_embeddings-3-6}
   \caption{Examples of features that are found to be unimportant in the TNBC
     dataset application, according to the selection curves in Figure
     \ref{fig:tnbc_selection_svd}. Note that the relationship between the
     displayed locations and the measured $y$ are much more ambiguous here,
     compared to those in Figure \ref{fig:tnbc_important_features}.}
-  \label{fig:tnbc_unimportant_features}
+  \label{fig:tnbc_embeddings-3-6}
 \end{figure}
 
 \begin{figure}
-  \centering
-  \includegraphics[width=1.2\textwidth]{tnbc_imagegrid-3-6}
-  \label{fig:tnbc_imagegrid-3-6}
-  \caption{Dataset examples overlaid onto the features of Figure
-    \ref{fig:tnbc_unimportant_features}.}
+\centering
+  \includegraphics[width=\textwidth]{tnbc_embeddings-full-both-1-2}
+\end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=\textwidth]{tnbc_embeddings-full-both-3-6}
+\end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=\textwidth]{tnbc_imagegrid-SCA-1-2}
 \end{figure}

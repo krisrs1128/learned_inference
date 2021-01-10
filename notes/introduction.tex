@@ -1,9 +1,8 @@
-\section{Introduction}
 
-How should we perform statistical inference when our data are nontabular? One
-idea, presented in the review \citep{buhlmann2019comments}, is to first
-transform the data into a tabular form, using modern feature learning
-algorithms. The point is important enough to quote at length,
+How should we perform statistical inference on nontabular data? One idea,
+discussed in \citep{buhlmann2019comments}, is to first transform the data into
+tabular form, taking advantage of modern feature learning algorithms. The point
+is important enough to quote at length,
 
 \begin{quote}
 I would like to re-emphasize the importance of new sources of information.
@@ -16,22 +15,23 @@ statistical machine learning \citep{hastie2015statistical,
   buhlmann2011statistics}.
 \end{quote}
 
-This work explores this proposal, illustrating how methods from high-dimesional
-statistics can be used to study the inferential properties of machine-generated
-features. Specifically, we present algorithms and visualizations that can be
-used to characterize the statistical stability of features learned from
-nontabular data sources. In the process, we also uncover questions particular to
-this new setting.
+Here, we explore this proposal in depth, illustrating how methods from
+high-dimesional statistics can be used to study the inferential properties of
+machine-generated features. Specifically, we present algorithms and
+visualizations that can be used to characterize the statistical stability of
+features learned from nontabular data sources. In the process, we also uncover
+novel challenges particular to this new setting.
 
 To ground the discussion, consider the following examples,
 
 \begin{itemize}
-\item Spatial omics: In addition to measuring the gene or protein expression at
-  the cell level, it has become possible to study how expression varies
-  spatially across a tissue \citep{lundberg2019spatial}. A variety of spatial
-  features are thought to influence biological processes; for example, for some
-  types of cancer, it is thought that the amount of mixing between tumor and
-  healthy cells influence disease outlook \citep{keren2018structured}.
+\item Spatial Omics: In addition to measuring gene or protein expression at the
+  cell level, it has become possible to study how expression varies spatially
+  across a tissue \citep{lundberg2019spatial}. A variety of spatial features are
+  thought to influence biological processes. For example, for some types of
+  cancer, it is thought that the infiltration of tumors by immune cells
+  expressing particular proteins can influence disease prognosis
+  \citep{keren2018structured}.
 \item Ecological and public health: Satellite imagery are now routinely
   integrated into ecological and public health projects, since they can capture
   important environmental features and are readily available globally
@@ -41,147 +41,133 @@ To ground the discussion, consider the following examples,
   updated monitoring.
 \end{itemize}
 
-This question of how to perform inference on learned features is not a new one —
-\cite{rao1955estimation} discussed tests for scores following a factor analysis,
-\cite{diaconis1983computer} described a bootstrap for principal components,
-\cite{elguero1988confidence} developed confidence regions for exploratory
-projection pursuit. More recent work adapts this work to the types of feature
-learning algorithms that have recently become common in the analysis of
-scientific imagery, especially those from deep learning \citep{wang2020methods}.
+In both cases, machine learning methods are key for extracting useful features
+from novel sources of data. However, unlike many common machine learning
+applications, the learned features here are subject to critical examination,
+either to inform biological mechanisms or to ensure vulnerable populations are
+not put at risk.
 
-It’s worth asking why the approaches cited above haven’t become already become
-standard practice the scientific workflow. Why isn’t the bootstrap already used
-to quantify the importance of cell type mixing in cancer progression, or the
-role of infrastructure development in economic growth? We suspect that the main
-reasons are,
+This question of how to perform inference on learned features is not a new one —
+tests are available for the scores obtained in factor analysis \cite{rao1955estimation},
+principal components can be bootstrapped \cite{diaconis1983computer}, and
+confidence regions are available for exploratory projection pursuit
+\cite{elguero1988confidence}. More recently, studies have investigated the use
+of black-box predictions as features in downstream analysis
+\citep{wang2020methods}.
+
+However, for both the proteomics and satellite imagery examples presented above,
+these methods can't be directly applied, because the raw data are not tabular.
+Instead, features are typically automatically learned using deep learning. What
+is new in this setting?
 
 \begin{itemize}
-\item The learned features are effective for computational tasks, but not for
-  human understanding. This is a result of the fact that deep learning
-  representations are ``distributed'' \cite{mcclelland1986parallel}.
-  Practically, this means that any pattern observed by the algorithm, will be
-  encoded by a pattern of activations across a large number of more elementary
-  features, not any specialized feature that recognizes just that pattern. A
-  deep learning algorithm is able ot recognize a highway in a satellite image
-  not because it has a single high-level feature for recognizing highways, but
-  because it can merge evidence from across neurons (another word for an
+\item Modern learned features are ``distributed'' \cite{mcclelland1986parallel}.
+  This means that any pattern observed by the algorithm will be encoded by a
+  large number of more elementary features, not any single feature specialized
+  to that pattern. A deep learning algorithm is able to recognize a highway in a
+  satellite image because it can merge evidence from across neurons (i.e., an
   elementary learned feature) that activate when particular color, shape, and
   edge features are present. This approach turns out to be much more effective
-  for tasks like classification and simulation, but poses a challenge for human
-  inspection.
-\item From one run to the next, the learned features don’t stay the same. This
-  is unlike in principal components analysis, say, where the learned components
-  are ordered in a natural way. If the deep learning features were more
-  specialized, it might be possible to recognize the same feature across two
-  runs, and then match them. However, the features are distributed, so it isn’t
-  easy to say that any given neuron from the first run matches any other
-  neuron(s) in the second. Coupled with the fact that there are regularly
-  hundreds of neurons in any single layer of the model, it’s easy to see why an
-  investigator might give up any hope of finding anything useful from
-  bootstrapping their models.
+  than curating specialized features for many computational tasks, but it poses
+  a challenge for human inspection.
+\item From one run to the next, the learned features can change. This is unlike
+  in principal components analysis, say, where the learned components are
+  ordered in a natural way. If the deep learning features were more specialized,
+  it might be possible to recognize the same feature across two runs, and then
+  match them. However, the features are distributed, so it isn’t easy to say
+  that any given neuron from the first run matches any other neuron(s) in the
+  second.
 \item It’s impractical to bootstrap methods that take hours to run, even if they
   could be done in parallel. Moreover, it’s unclear what information should be
-  compared across bootstraps — the model parameters, the learned feature
-  activations, or summary statistics about the features — and different choices
-  have a major impact on the memory footprint of the proposal.
-\item Some form of sample-splitting must take place, to ensure that the
-  significance of features is not determined using the same data that was used
-  to learn them. However, it’s unclear how the splitting should be carried out.
-  How much data should be used for feature learning, and how much for inference?
+  compared across bootstraps — the model parameters, the learned features, or
+  summary statistics about the features.
+\item Some form of sample-splitting must take place, to ensure that features are
+  not evaluated using the same data that was used to learn them. However, it’s
+  unclear how the splitting should be carried out. How much data should be used
+  for feature learning, and how much for inference?
 \end{itemize}
 
-This work discusses these questions, providing definitions to guide future
-problem solving, providing simulations that explore natural solutions to the
-issues presented above, and illustrating these ideas through a feature analysis
-opf a spatial proteomics dataset. Our basic takeaways (in the order of the
-issues presented above) are,
+This work discusses these questions, proposing relevant definitions and
+algorithms, examining their behavior through simulation, and illustrating their
+use on a spatial proteomics dataset. Our basic takeaways are,
 
 \begin{itemize}
-\item While the learned features are individually not interpretable, the
-  associated feature subspaces often are. A feature learning algorithm may
+\item While learned features are not interpretable when viewed in isolation,
+  their associated feature subspaces often are. A feature learning algorithm may
   require a large number of elementary features in order to develop effective
   distributed representations, but the effective dimensionality of these
   representations is often small. These algorithms learn many, but highly
-  correlated, features. The requirement that trainining be done with a large
-  number of features is more an artifact of the optimization routines used to
-  train these models than a fundamental property of the underlying scientific
-  problem.
-\item The underlying feature subspaces are often stable from one run to the
-  next, and this can be quantified using a Procrustes analysis. There are
-  several possible ways to identify a feature subspace — we use both the SVD and
-  a sparse variant — and we find that those found using the sparse variant are
-  generally more stable.
-\item The stability of a sample within a learned feature space is often visible
-  using only a handful of bootstrap resamples. Further, we find that in some
-  problems, a fast approximation to full deep model training, called the random
-  convolutional features model, can suffice for a feature stability analysis.
-\item We find that, as long as the learned features lead to strong performance
-  on a validation set, then it makes little difference how the samples are
-  split. The fact that a relatively small fraction of the data can be reserved
-  for inference is a consequence of the fact that the learned feature subspaces
-  are effectively low dimensional; we do not need to perform inference on an
-  overwhelming of orthogonal features.
+  correlated, features.
+\item Given enough training data, learned feature subspaces are often stable
+  from one run to the next, and this can be quantified using a Procrustes
+  analysis. Unsupervised feature learning algorithms are typically more stable
+  than supervised ones.
+\item For problems where unsupervised feature learning is effective, a fast
+  approximation to full deep model training, called the random convolutional
+  features (RCF) model, can suffice for a feature stability analysis.
+\item Inference is less data-greedy than feature learning, in the sense that
+  when few samples are reserved for inference, stable features can still be
+  identified. This is no longer the case when few samples are reserved for
+  feature learning.
 \end{itemize}
 
 Section \ref{sec:psetup} provides a description of our problem setting. Section
 \ref{sec:context} summarizes the key technical tools used in this study. We
 present generic algorithms for measuring feature subspace stability in Section
-\ref{sec:algorithm}, and we study its properties through a simulation in Section
-\ref{sec:simulation}. We conclude with an application to a spatial proteomics
-dataset in \ref{sec:dataset}.
+\ref{sec:algorithms}, and we study its properties through a simulation in
+Section \ref{sec:simulation}. We conclude in Section \ref{sec:dataset} with an
+application to a spatial proteomics dataset.
 
 \section{Problem Setup}
 \label{sec:psetup}
 
-Our goal is to perform formal inference on features that were algorithmically
-derived. The features are derived from $n$ samples $x_i \in \mathcal{X}$. For
-example, each $x_{i}$ might be a spatial proteomics or satellite image. They
-could also be more general data types, like the audio recording for the $i^{th}$
-speaker or the graph for the $i^{th}$ molecule. Optionally, a vector
-$\mathbf{y}\in \reals^{n}$ of measured responses will be available.
+Our goal is to characterize the stability of features that were algorithmically
+derived from $n$ samples $x_i \in \mathcal{X}$. For example, each $x_{i}$ might
+be a spatial proteomics measurement or a satellite image. They could also be
+more general data types -- $x_i$ might be the audio recording for one of $n$
+speakers, or the graph derived from one of $n$ molecules. Optionally, a vector
+$\mathbf{y}\in \reals^{n}$ of responses associated with each observation will be
+available.
 
 \begin{definition}
 A \textit{feature learner} is a parameterized mapping $T\left(\cdot;
-\theta\right): \mathcal{X} \to \reals^{K}$ which takes data from the raw input
-domain $\mathcal{X}$ and represents it using a vector in $\reals^{K}$.
+\theta\right): \mathcal{X} \to \reals^{L}$ which takes data from the raw input
+domain $\mathcal{X}$ and represents it using a vector in $\reals^{L}$.
 \end{definition}
 
-For example, in the transcriptomics and economics applications, we expect the
-encoder to transform a vector of raw pixel intensities into a vector of features
-reflecting cell type or infrastructural properties, respectively. The parameter
+For example, in the proteomics and satellite applications, we expect the learner
+to transform a set of raw pixel intensities into a vector of features reflecting
+biological or environmental properties of the imaged sample. The parameter
 $\theta$ is estimated from data. An unsupervised feature extractor estimates
 $\theta$ via $\hat{\theta}\left(x_{1}, \dots, x_{n}\right)$ while a supervised
-feature extractor uses $\hat{\theta}\left(x_{1}, \dots, x_{n}, y_{1}, \dots,
-y_{n}\right)$. To cover both cases, we will just write $\hat{\theta}$. For ease
-of notation, we will write $z_{i} = T\left(x_{i}; \hat{\theta}\right)$ to denote
-the learned features associated with the $i^{th}$ observation.
+feature extractor uses $\hat{\theta}\left(x_{1}, \dots, x_{n},
+\mathbf{y}\right)$. To cover both cases, we will just write $\hat{\theta}$. For
+ease of notation, we will write $z_{i} = T\left(x_{i}; \hat{\theta}\right) \in
+\reals^{L}$ to denote the learned features associated with the $i^{th}$
+observation.
 
-It is tempting to attribute an importance to each of the $k$ coordinates of $z$
-with respect to a response $y$. For example, if $y$ measures food security level
-of a region, we would like to attribute this development to the presence of
-certain geographic features — e.g., the cultivation of a particular crop. The
-problem is to provide some sort of statistical guarantee for these attributions.
-An investigator should have confidence that, if the data were collected again,
-and if features were again extracted by some black box, then those that would be
-declared important would be closely related to those learned originally. The
-essential challenge is that the learned features are not the same from one run
-to the next; the $j^{th}$ feature from run 1 has nothing to do with the $j^{th}$
-feature from run 2.
+A first attempt might try to assign a stability score to each of the $L$
+coordinates of $z$. An investigator would then have confidence that, if data
+were sampled again from the same population, and if features were extracted by
+the same black box, then the features with high stability scores would reappear
+in the new analysis. The essential challenge is that the learned features are
+not the same from one run to the next; the $l^{th}$ learned feature from run 1
+need not have any relationship with the $l^{th}$ feature from run 2.
 
 To address this issue, we distinguish between two notions of stability, which we
-call subspace and selection stability, respectively. The idea of subspace
-stability is that, even if there is no direct correspondence between learned
-features across runs, they may all reflect the same underlying latent features.
-Different runs of the feature learning algorithm return different bases for
-nearly the same subspace. To make this more precise, suppose that the $b^{th}$
-run of the feature learning algorithm produces,
+call feature subspace and selection stability, respectively. The idea of
+subspace stability is that, even if there is no direct correspondence between
+learned features across runs, they may all reflect the same underlying latent
+features. Different runs of the feature learning algorithm return different
+bases for nearly the same subspace. To make this more precise, suppose that the
+$b^{th}$ run of the feature learning algorithm produces,
 
 \begin{align}
 \mathbf{Z}_{b} &= \begin{pmatrix}
 z^{b}_{1} \\
 \vdots \\
-z_{b}^{n}
-\end{pmatrix} \in \reals^{n \times K}
+z^{b}_{n}
+\end{pmatrix} \in \reals^{n \times L}
 \end{align}
 
 and define an alignment function $\mathcal{A}$ which takes learned to aligned
@@ -190,31 +176,34 @@ features,
 \mathcal{A}: \mathbf{Z}_{1}, \dots, \mathbf{Z}_{B} \to \mathbf{M}, \left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}\right).
 \end{align*}
 
-We think of $\mathbf{M}$ as the average of all $B$ representations and
-$\underaccent{\bar}{\mathbf{Z}}_{b}$ as the version of the $b^{th}$ learned
-representation after they have been put into a common coordinate system. In this
-work, $\mathcal{A}$ is just a Procrustes analysis. With this notation, we can
-now define subspace stability.
+We think of $\mathbf{M} \in \reals^{n \times K}$ as the average of all $B$
+representations and $\underaccent{\bar}{\mathbf{Z}}_{b} \in \reals^{n \times K}$
+as the version of the $b^{th}$ learned representation after they have been put
+into a common coordinate system. In this work, $\mathcal{A}$ is just a
+Procrustes analysis. With this notation, we can now define subspace stability.
 \begin{definition}
 The \textit{subspace stability} of $B$ learned representations $\mathbf{Z}_{1},
 \dots, \mathbf{Z}_{B}$ with respect to an alignment function $\mathcal{A}$ is
-the distance from all aligned features and their average,
+the average distance between the aligned features and $\mathbf{M}$,
 \begin{align*}
-\frac{1}{B} \sum_{b = 1}^{B} \|\underaccent{\bar}{\mathbf{Z}}_{b} - \mathbf{M}\|^{2}_{2}.
+FSS_{\mathcal{A}}\left(\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}\right) &= \frac{1}{B} \sum_{b = 1}^{B} \|\underaccent{\bar}{\mathbf{Z}}_{b} - \mathbf{M}\|^{2}_{2} \\
+\text{where } \mathbf{M}, \left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}\right) &= \mathcal{A}\left(\mathbf{Z}_{1}, \dots, \mathbf{Z}_{B}\right)
 \end{align*}
 \end{definition}
 
 By selection stability, we mean that a given aligned feature is repeatedly
 discovered by a model selection procedure. At this point, the features can be
-thought of as fixed; we are back in the more familiar statistical setting. That
-is, let $\mathcal{S}$ be a selection function, which takes
-$\underaccent{\bar}{\mathbf{Z}}_{b}$ and a response $y$ and returns a subset
-$S_{b} \subseteq \{1, \dots, K\}$ of features that are important for
-understanding variation in $y$.
+thought of as fixed; we are back on more familiar inferential ground. That is,
+let $\mathcal{S}$ be a selection function, which takes
+$\underaccent{\bar}{\mathbf{Z}}_{b}$ and a response $\mathbf{y}$ and returns a
+subset $S_{b} \subseteq \{1, \dots, K\}$ of features important for predicting
+$\mathbf{y}$.
 
 \begin{definition}
-The \textit{selection stability} of the $k^{th}$ aligned feature with respect to the selection function $\mathcal{S}$ is the fraction
+The \textit{selection stability} of the $k^{th}$ aligned feature with respect to
+the selection $\mathcal{S}$ is the
+fraction
 \begin{align*}
-\frac{1}{B}\sum_{b = 1}^{B} \indic{k \in \mathcal{S}\left(\underaccent{\bar}{\mathbf{Z}}_{b}, y\right)}.
+SS_{\mathcal{S}}^{k}\left(\underaccent{\bar}{\mathbf{Z}}_{1}, \dots, \underaccent{\bar}{\mathbf{Z}}_{B}\right) &= \frac{1}{B}\sum_{b = 1}^{B} \indic{k \in \mathcal{S}\left(\underaccent{\bar}{\mathbf{Z}}_{b}, \mathbf{y}\right)}.
 \end{align*}
 \end{definition}
