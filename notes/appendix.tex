@@ -7,30 +7,34 @@ the study's github page. Training split creation, the regression baseline, and
 feature learning can be reproduced in the ipython notebooks
 
 \begin{itemize}
-\item \texttt{tnbc\_splits.ipynb}
-\item \texttt{tnbc\_baseline.ipynb}
-\item \texttt{model\_training.ipynb}
+\item \texttt{tnbc\_splits.ipynb}: Define training and test splits for the TNBC
+  dataset.
+\item \texttt{tnbc\_baseline.ipynb}: Train a ridge regression baselien on the
+  TNBC dataset.
+\item \texttt{model\_training.ipynb}: Train either a CNN, RCF, or VAE feature
+  learner.
 \end{itemize}
 
 MIBI-ToF data preparation, generation of simulation data, feature stability
 analysis, and visualization of results are done within the rmarkdown documents,
 
 \begin{itemize}
-\item \texttt{generate.Rmd}
-\item \texttt{stability.Rmd}
-\item \texttt{visualize\_features.Rmd}
-\item \texttt{summary\_plots.Rmd}
+\item \texttt{generate.Rmd}: Simulate the LCGP cells dataset.
+\item \texttt{stability.Rmd}: Perform feature alignment and stability selection.
+\item \texttt{visualize\_features.Rmd}: Visualize the aligned and selected
+  features output by \texttt{stability.Rmd}.
+\item \texttt{summary\_plots.Rmd}: Compute the CCA and selection summaries
+  reported in Figures \ref{fig:cca_summary} and \ref{fig:selection_summary}.
 \end{itemize}
 
-To support code reusability between experiments, two helper packages were prepared,
-
+To support code reusability between experiments, two helper packages were
+prepared,
 \begin{itemize}
 \item \href{https://github.com/krisrs1128/learned_inference/tree/master/stability}{\texttt{stability}}
 \item \href{https://github.com/krisrs1128/learned_inference/tree/master/inference}{\texttt{inference}}
 \end{itemize}
 
 This packages can be installed by calling,
-
 \begin{verbatim}
 > git clone https://github.com/krisrs1128/learned_inference.git
 > Rscript -e "devtools::install('learned_inference/inference')"
@@ -39,9 +43,8 @@ This packages can be installed by calling,
 from the terminal.
 
 We have prepared a \href{https://hub.docker.com/r/krisrs1128/li}{docker image}
-with all necessary software installed. For example, to reproduce figure
-\ref{fig:?}, you can enter the image and execute the relevant rmarkdown document
-using the following commands,
+with all necessary software pre-installed. For example, to rerun our stability
+analysis, the following commands may be used,
 
 \begin{verbatim}
 shell> docker run -it krisrs1128/li:latest bash
@@ -52,7 +55,6 @@ docker shell> Rscript rmarkdown -e "rmarkdown::render('learned_inference/inferen
 \end{verbatim}
 
 Finally, we have released raw data and intermediate results from our analysis,
-
 \begin{itemize}
 \item
   \href{https://drive.google.com/file/d/1v_Ndux1Rmk2q1ul5Vv5srgI1JQ17Vx0n/view?usp=sharing}{sim\_data.tar.gz}:
@@ -97,14 +99,15 @@ Finally, we have released raw data and intermediate results from our analysis,
   \includegraphics[width=\textwidth]{sim_embeddings-full-pca-1-2}
   \caption{The analogous figure to Figure \ref{fig:sim_embeddings-pca-1-2}, but
     keeping only the center of each bootstrap alignment, and showing the
-    embeddings for all patches.}
+    embeddings for all images. This view makes the association with the response
+    $y$ clearer, especially for larger $\absarg{I}$.}
   \label{fig:sim_embeddings-full-pca-1-2}
 \end{figure}
 
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{sim_embeddings--sca-1-2}
-  \caption{The analogous figure to Figure \ref{fig:sim_embeddings--pca-1-2}, but
+  \caption{The analogous figure to Figure \ref{fig:sim_embeddings-pca-1-2}, but
     using SCA dimensionality reduction.}
   \label{fig:sim_embeddings--sca-1-2}
 \end{figure}
@@ -112,26 +115,10 @@ Finally, we have released raw data and intermediate results from our analysis,
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{sim_embeddings-full-sca-1-2}
-  \caption{}
+  \caption{The coordinates of all samples in the first two dimensions after
+    aligning the SCA-reduced features. A subset, along with the bootstrap
+    glyphs, is shown in Figure \ref{fig:sim_embeddings--sca-1-2}.}
   \label{sim_embeddings-full-sca-1-2}
-\end{figure}
-
-\begin{figure}
-  \centering
-  \includegraphics[width=1.4\textwidth]{sim-imagegrid-PCA-15-1-2}
-  \caption{Patches overlaid on the learned features in Figure
-    \ref{fig:sim_embeddings-full-pca-1-2}, to guide interpretation of regions of
-    the learned feature space. The figure is read in the same way as Figure
-    \ref{fig:tnbc_imagegrid}.}
-  \label{fig:sim_imagegrid-PCA-15-1-2}
-\end{figure}
-
-\begin{figure}
-  \centering
-  \includegraphics[width=1.4\textwidth]{sim-imagegrid-SCA-15-1-2}
-  \caption{The analogous figure to \ref{fig:sim_embeddings-full-pca-1-2}, but
-    using SCA dimensionality reduction instead.}
-  \label{fig:sim_imagegrid-SCA-15-1-2}
 \end{figure}
 
 \begin{figure}
@@ -139,23 +126,76 @@ Finally, we have released raw data and intermediate results from our analysis,
   \includegraphics[width=1.2\textwidth]{selection_paths-4}
   \includegraphics[width=1.2\textwidth]{selection_paths-1}
   \caption{Selection paths for all models when using 15\% of the data for
-    feature learning. Most features, especially those from the CNN, have lower selection
-    probability than the analogous features at other split sizes. Other key
-    characteristics of the selection curves, like the effect of SVD vs. SCA
-    reduction, and the stability of RCF features, remain the same.}
+    feature learning. Most features, especially those from the CNN, have lower
+    selection probability than the analogous features at other split sizes.
+    Other key characteristics of the selection curves, like the effect of SVD
+    vs. SCA reduction, and the stability of RCF features, remain the same.}
   \label{fig:selection_paths15}
 \end{figure}
 
 \begin{figure}
   \centering
-  \includegraphics[width=1.2\textwidth]{selection_paths-6}
-  \includegraphics[width=1.2\textwidth]{selection_paths-3}
+  \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{selection_paths-6}}
+  \makebox[\textwidth][c]{\includegraphics[width=1.2\textwidth]{selection_paths-3}}
   \caption{Selection paths for all models when using 90\% of the data for
     feature learning. The top learned features across several methods are
-    strongly related to the response; however, the width of the band across
-    bootstraps has widened, relative to the analogous plot using 50\% of the
-    data for feature learning.}
+    strongly related to the response.}
   \label{fig:selection_paths90}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \makebox[\textwidth][c]{\includegraphics[width=1.4\textwidth]{sim-imagegrid-PCA-15-1-2}}
+  \caption{Patches overlaid on the learned features in Figure
+    \ref{fig:sim_embeddings-full-pca-1-2}, to guide interpretation of regions of
+    the learned feature space. The figure is read in the same way as Figure
+    \ref{fig:tnbc_imagegrid-PCA-1-2}.}
+  \label{fig:sim_imagegrid-PCA-15-1-2}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \makebox[\textwidth][c]{\includegraphics[width=1.4\textwidth]{sim-imagegrid-SCA-15-1-2}}
+  \caption{The analogous figure to \ref{fig:sim_embeddings-full-pca-1-2}, but
+    using SCA dimensionality reduction instead.}
+  \label{fig:sim_imagegrid-SCA-15-1-2}
+\end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=\textwidth]{tnbc_embeddings-full-both-1-2}
+  \caption{The version of Figure \ref{fig:tnbc_embeddings-1-2} showing all
+    samples, and collapsing all glyphs to a point.}
+  \label{fig:tnbc_embeddings-full-both-1-2}
+\end{figure}
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{tnbc_embeddings-3-6}
+  \caption{Examples of features that are found to be less important in the TNBC
+    dataset application, according to the selection curves in Figure
+    \ref{fig:tnbc_selection_paths-2}. Note that the relationship between the
+    displayed locations and the measured $\mathbf{y}$ is harder to capture using
+    a linear boundary, compared to those in Figure
+    \ref{fig:tnbc_embeddings-1-2}.}
+  \label{fig:tnbc_embeddings-3-6}
+\end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=\textwidth]{tnbc_embeddings-full-both-3-6}
+  \caption{The version of Figure \ref{fig:tnbc_embeddings-3-6} showing all
+    samples, and collapsing all glyphs to point.}
+  \label{fig:tnbc_embeddings-full-both-3-6}
+\end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=\textwidth]{tnbc_imagegrid-SCA-1-2}
+  \caption{TNBC patches overlaid on the SCA-reduced aligned features, analogous
+    to the PCA-reduced view in Figure \ref{fig:tnbc_imagegrid-PCA-1-2}.}
+  \label{fig:tnbc_imagegrid-SCA-1-2}
 \end{figure}
 
 \begin{figure}
@@ -164,36 +204,4 @@ Finally, we have released raw data and intermediate results from our analysis,
   \caption{Selection curves for the TNBC dataset application when using SCA for
     dimensionality reduction.}
   \label{fig:tnbc_selection_paths-1}
-\end{figure}
-
-\begin{figure}
-  \centering
-  \includegraphics[width=\textwidth]{tnbc_embeddings-3-6}
-  \caption{Examples of features that are found to be unimportant in the TNBC
-    dataset application, according to the selection curves in Figure
-    \ref{fig:tnbc_selection_svd}. Note that the relationship between the
-    displayed locations and the measured $y$ are much more ambiguous here,
-    compared to those in Figure \ref{fig:tnbc_important_features}.}
-  \label{fig:tnbc_embeddings-3-6}
-\end{figure}
-
-\begin{figure}
-\centering
-  \includegraphics[width=\textwidth]{tnbc_embeddings-full-both-1-2}
-  \caption{}
-  \label{fig:tnbc_embeddings-full-both-1-2}
-\end{figure}
-
-\begin{figure}
-\centering
-  \includegraphics[width=\textwidth]{tnbc_embeddings-full-both-3-6}
-  \caption{}
-  \label{fig:tnbc_embeddings-full-both-3-6}
-\end{figure}
-
-\begin{figure}
-\centering
-  \includegraphics[width=\textwidth]{tnbc_imagegrid-SCA-1-2}
-  \caption{tmp}
-  \label{fig:tnbc_imagegrid-SCA-1-2}
 \end{figure}

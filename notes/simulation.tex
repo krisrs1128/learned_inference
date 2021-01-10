@@ -218,7 +218,7 @@ first 15 features per run makes this clear.
 
 \subsubsection{Feature Learning vs. Inference}
 
-To answer G2 and G3, Figure \ref{fig:cca_sim} displays the top canonical
+To answer G2 and G3, Figure \ref{fig:cca_summary} displays the top canonical
 correlations between learned features $\underaccent{\bar}{\mathbf{Z}}_{b}$ and
 the original source features, across bootstrap replicates and algorithms. Note
 that we calculate these scores separately for training, development, and testing
@@ -287,8 +287,8 @@ as frequently, because stability selection will have low power when it can only
 subsample from the 10\% of the data reserved for inference. This phenomenon
 appears for features learned by both supervised and unsupervised methods. For
 this reason, in the remainder of this study, we will focus on results obtained
-using a 50\% split between learning and inference -- that is, $\absarg{I} =
-\absarg{I^{C}}$ -- though results using different splits are available in the
+using a 50\% split between learning and inference, i.e., $\absarg{I} =
+\absarg{I^{C}}$, though results using different splits are available in the
 appendix.
 
 \begin{figure}
@@ -311,8 +311,8 @@ summarize the results of Algorithms \ref{alg:fss} and \ref{alg:selection}
 applied to several feature learners. Within a single panel, each star glyph
 corresponds to a single sample. The arms of the glyph link the bootstrap
 replicates for that given sample: $\protect z_{i}^{1}, \dots, z_{i}^{20}$. Each
-glyph is colored in the true value of $y_{i}$ for that sample. Only the first
-two aligned feature dimensions are shown.
+glyph is shaded by the true value of $y_{i}$ for that sample. Only the first two
+aligned feature dimensions are shown.
 
 Both the model and reduction strategy used influence the stability of the
 learned features. Based on the relative sizes of the glphys, the CNN features
