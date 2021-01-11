@@ -27,7 +27,7 @@ ix <- order(Xy$y)[seq(1, n_patch, length.out = 16)]
 ims <- map(ix, ~ np$load(file.path(params$tiles_dir, Xy$path[.])))
 ```
 
-```{r, fig.width = 5, fig.height = 6}
+```{r, fig.width = 9, fig.height = 3.5}
 mim <- melt(ims, varnames = c("w", "h", "cell_type")) %>%
   mutate(cell_type = cell_types[cell_type]) %>%
   filter(value == 1)
@@ -53,4 +53,3 @@ ggplot(mim) +
   )
 ggsave("~/Desktop/conceptual/learned_inference/notes/figure/example_cells.png", dpi = 500)
 ```
-
