@@ -43,10 +43,10 @@ analysis, this algorithm learns an $L$-dimensional reduction of a dataset by
 optimizing a reconstruction objective. Formally, the algorithm first posits a
 generative model $p\left(z\right)p_{\xi}\left(x \vert z\right)$ of the data;
 $p\left(z\right)$ is a prior on latent features and $p_{\xi}\left(x \vert
-x\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair
+z\right)$ is a likelihood parameterized by $\xi$. The algorithm finds a pair
 $\xi, \varphi$ maximizing the lower bound,
 \begin{align*}
-\log p_{\xi}\left(x\right) \geq  \mathbb{E}_{q_{\varphi}}\left[\log p]_{\xi}(x \mid z)\right]-D_{KL}\left(q_{\varphi}(z \mid x) \| p(z)\right)
+\log p_{\xi}\left(x\right) \geq  \mathbb{E}_{q_{\varphi}}\left[\log p_{\xi}(x \mid z)\right]-D_{KL}\left(q_{\varphi}(z \mid x) \| p(z)\right)
 \end{align*}
 where $q_{\varphi}\left(z \vert x\right) = N\left(\mu_{\varphi}\left(x\right),
 \sigma^{2}_{\varphi}\left(x\right)\right)$ maps raw data examples to
@@ -119,15 +119,15 @@ then updating $\mathbf{M} = \frac{1}{B} \sum_{b = 1}^{B} \mathbf{X}_{b}
 
 \subsubsection{Representation Analysis}
 
-Our approach is closely related to Singular Vector CCA (SVCCA), a method used to
-compare features learned across deep learning models. In SVCCA, the two
-representations are identified with two matrices, $X \in \reals^{n \times
-  l_{1}}$ and $Y \in \reals^{n \times l_{2}}$. The $ij^{th}$ cell in each matrix
-corresponds to the activation of neuron $j$ on sample $i$. A representation is a
-pattern of activations across a collection of neurons.
+Our approach is closely related to Singular Vector Canonical Correlation
+Analysis (SVCCA), a method used to compare features learned across deep learning
+models. In SVCCA, the two representations are identified with two matrices, $X
+\in \reals^{n \times l_{1}}$ and $Y \in \reals^{n \times l_{2}}$. The $ij^{th}$
+cell in each matrix corresponds to the activation of neuron $j$ on sample $i$. A
+representation is a pattern of activations across a collection of neurons.
 
 To compare representations, SVCCA first computes singular value decompositions
-$X = U_{X}D_{X}V_{X}^{T}$ and $Y = U_{Y}D_{Y}V_{T}^{T}$. The coordinates of
+$X = U_{X}D_{X}V_{X}^{T}$ and $Y = U_{Y}D_{Y}V_{Y}^{T}$. The coordinates of
 these matrices with respect to the top $K$ singular vector directions are then
 extracted, $Z_{X} = U_{X, 1:K}D_{X, 1:K}$ and $Z_{Y} = U_{Y, 1:K}D_{Y, 1:K}$.
 Finally, a canonical correlation analysis is performed on these coordinate
@@ -137,11 +137,10 @@ matrices. That is, the top CCA directions $u_{1}, v_{1}$ are found by optimizing
   \text{subject to } & \|u\|_{2} = \|v\| = 1
 \end{align*}
 and subsequent directions are found by solving the same problem after
-orthogonalizing $Z_{X}$ and $Z_{Y}$ to previously extracted directions. The
-value of the objective for each of the $K$ directions extracted is denoted
-$\rho_{k}$, and the overall similarity between the two representations is taken
-to be the average of these canonical correlations: $\frac{1}{K}\sum_{k = 1}^{K}
-\rho_{k}$.
+orthogonalizing $Z_{X}$ and $Z_{Y}$ to previously found directions. The value of
+the objective for each of the $K$ directions is denoted $\rho_{k}$, and the
+overall similarity between the two representations is taken to be the average of
+these canonical correlations: $\frac{1}{K}\sum_{k = 1}^{K} \rho_{k}$.
 
 Note that, while in principle, it would be possible to perform a CCA on the
 activations $X$ and $Y$ directly, for representations with many neurons, the

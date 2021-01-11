@@ -17,8 +17,8 @@ algorithms. Our guiding questions are,
   the more time-consuming VAE or CNN models?
 \end{enumerate}
 
-To answer these questions, we evaluate our proposal using a full factorial with
-three factors,
+To answer these questions, we evaluate our proposal using a full factorial
+design with three factors,
 
 \begin{enumerate}
 \item Relative sizes of $I$ and $I^{C}$: We use $\absarg{I} \in \left\{0.15n,
@@ -27,8 +27,9 @@ three factors,
 \item Algorithm used: We train CNN, VAE and RCF models.
 \end{enumerate}
 
-We use $B = 20$ perturbations in each case. Hence, 180 models are trained, from
-which 360 of dimensionality-reduced features are obtained.
+We use $B = 20$ perturbations in each case. Hence, 3 splits $\times$ 3 models
+$\times$ 20 perturbations = 180 models are trained, from which 180 $\times$ 2
+reductions $= 360$ dimensionality-reduced features are obtained.
 
 \subsection{Simulated Data}
 
@@ -47,7 +48,7 @@ properties behind each image. A good feature extractor $T\left(x;
 \hat{\theta}\right)$ should recover these important cell ecosystem properties
 from the images alone. Example images for varying values of $y$ are given in
 Figure \ref{fig:matern_example}. In total, our simulation generates 10,000 such
-images, each of dimension $64 \times 64 \times 3$.
+RGB images, each of dimension $64 \times 64 \times 3$.
 
 We now give details. The locations of cells are governed by an intensity
 function drawn from a two-dimensional marked Log Cox Matern Process (LCMP)
@@ -87,9 +88,11 @@ variation — the number of cells and the cell size. The number of cells per ima
 is drawn uniformly from 50 to 1000. The cells from class $R$ are drawn with a
 random radius drawn from $\text{Gamma}\left(5, \lambda_{r}\right)$. A summary of
 all parameters used to generate each image is given in Table
-\ref{tab:sim_params}. These parameters are the ``true'' underlying features
-associated with the simulated images; they give the most concise description of
-the variation observed across the images.
+\ref{tab:sim_params}. Each parameter is drawn uniformly within its range, which
+has been chosen to provide sufficient variation in image appearance. These
+parameters are the ``true'' underlying features associated with the simulated
+images; they give the most concise description of the variation observed across
+the images.
 
 \begin{figure}
   \centering
@@ -114,7 +117,7 @@ $N_i$                & The total number of cells.                               
 \hline
 $\nu_{i,\Lambda}$    & The roughness of the overall intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
 \hline
-$\alpha_{i,\Lambda}$ & The roughness of the overall intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
+$\alpha_{i,\Lambda}$ & The bandwidth of the overall intensity process.            & -0.5                        & $\left[0, 8\right]$        \\
 \hline
 $\beta_{ir}$             & The intercept controlling the frequency of class $r$. & 1 for $r = 1$,\ -1 otherwise & $\left[-0.15, 0.15\right]$ \\
 \hline
@@ -154,13 +157,13 @@ found in the appendix.
 
 \subsubsection{Distributed features}
 
-To answer G1, we directly visualize example learned features. Figure
+To answer guiding question G1, we directly visualize example learned features. Figure
 \ref{fig:distributed_hm} shows the activations of learned features across 2000
 images for two perturbed versions of the training data when $\absarg{I} = 0.9n$.
 For the three algorithms, the learned features correspond to,
 
 \begin{itemize}
-\item CNN: Activations from the last layer of neurons, used directly as input
+\item CNN: Activations from the final hidden layer of neurons, used directly as input
   for the regression. There are a total of 512 nonnegative
   features\footnote{They are nonnegative because they follow an ReLU layer.}.
 \item VAE: Spatially-pooled activations from the middle, encoding layer of the
@@ -182,7 +185,7 @@ Next, note that certain source features are ``easier'' to represent than others,
 in the sense that more of the learned features are strongly correlated with
 them. Many features are correlated with $N_{i}$, the total number of cells in
 the image, and $\lambda_{i1}$, the size of the cells from Process 1. Depending
-on the model, the bandwidth / roughness $\alpha_{ir}$, $\nu_{ir}$ and prevalence
+on the model, the bandwidth $\alpha_{ir}$, roughness $\nu_{ir}$, and prevalence
 $\beta_{ik}$ parameters are either only weakly or not at all correlated with the
 learned features. Interestingly, the convolutional network learns to represent
 $\beta_{1}$ well, but not $\beta_{2}$ or $\beta_{3}$ -- this is consistent with
@@ -210,7 +213,7 @@ first 15 features per run makes this clear.
     the parameters in Table \ref{tab:sim_params}. Columns are activations of
     learned features; they have been reordered by a hierarchical clustering
     using the package \citep{barter2018superheat}. The color of a cell gives the
-    correlation between the associated true and learned features. Green and
+    correlation between the associated true and learned features. Blue and
     Burgundy encode positive and negative correlation, respectively. All learned
     features are associated with multiple true features at once.}
   \label{fig:distributed_hm}
@@ -228,14 +231,14 @@ used to choose hyperparameters of the optimizer. They are shown separate from
 the test samples $I^{C}$ to make it possible to recognize potential overfitting
 in the feature learning process.
 
-Even after the initial dimensionality reduction, only several CCA directions
-have high canonical correlations. The dimensionality reduction method used does
-not have much effect at this stage. In general, the fraction of data belonging
-to $I$ also matters little; however, there is an exception in the CNN features.
-Here, the features learned when $\absarg{I}$ is only 15\% of the data have
-noticeably lower canonical correlation in the second dimension. Note also that,
-from the point of view of these canonical correlations, the RCF and VAE have
-comparable feature learning behaviors.
+Even after the initial dimensionality reduction, the CCA canonical correlations
+decay quickly. The dimensionality reduction method used does not have much
+effect at this stage. In general, the fraction of data belonging to $I$ also
+matters little; however, there is an exception in the CNN features. Here, the
+features learned when $\absarg{I}$ is only 15\% of the data have noticeably
+lower canonical correlation in the second dimension. Note also that, from the
+point of view of these canonical correlations, the RCF and VAE have comparable
+feature learning behaviors.
 
 The feature learning algorithms do not seem to overfit the simulation data. If
 they did, then the canonical correlations on the training and development data
