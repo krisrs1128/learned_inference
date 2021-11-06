@@ -141,13 +141,13 @@ $\lambda_{ir}$       & The shape parameter controlling the sizes of each cell ty
 
 These features are the underlying properties used to generate the prognosis for
 each patient $i$. Specifically, we generate $y_i = \sum_{k} \text{Influence}_{k}
-\times \left[\frac{\text{Feature}_{ik} -
-    \overline{\text{Feature}}_{k}}{SD\left(\text{Feature}_{k}\right)}\right]$ for the
-values Influence given in Table \ref{tab:sim_params}. Note that there is no
-additional noise: if the $\text{Feature}_{ik}$'s were known for each sample,
-then the $y_{i}$'s could be predicted perfectly. Therefore, the simulation
-gauges the capacity of the feature learners to recover these known underlying
-features.
+\times \left[\frac{\text{Feature}_{ik} - \overline{\text{Feature}}_{k}}{SD\left(\text{Feature}_{k}\right)}\right]$
+for the values Influence given in Table \ref{tab:sim_params}. This response
+variable guides feature learning for the CNN and RCF model, but not the VAE.
+Note that there is no additional noise: if the $\text{Feature}_{ik}$'s were
+known for each sample, then the $y_{i}$'s could be predicted perfectly.
+Therefore, the simulation gauges the capacity of the feature learners to recover
+these known underlying features.
 
 \subsection{Results}
 

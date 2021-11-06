@@ -20,8 +20,11 @@ images without having to worry about linking the expression and image data,
 which is in itself a complex integration problem. Though this means we lose some
 scientific depth, we gain substantial implementation simplicity, and the
 analysis serves as a clear illustration. Our complete data are 41 $2048 \times
-2048$-dimensional images, each taken from a separate patient. We associate each
-pixel with one of 7 categories of tumor and immune cell types.
+2048$-dimensional images, each taken from a separate patient. Each pixel has a
+value 1 through 7 encoding which of the 7 categories of tumor or immune cell
+types the pixel belongs. To ensure that the cell types are treated as
+categorical, we transform each pixel into its one-hot encoding, resulting in a
+collection of $2048 \times 2048 \times 7$ binary matrices.
 
 \begin{figure}
   \centering
@@ -39,8 +42,9 @@ patches. These patches are our $x_{i}$. Patches from 32 of the patients are
 reserved form feature learning. Four among these 32 are used as a development
 split, to tune parameters of the feature learning algorithms. As a response
 variable, we use $y_{i} = \log\left(\frac{\#\{\text{Tumor cells in
-  }x_{i}\}}{\#\{\text{Immune cells in }x_i\}}\right)$. Example cell patches are
-shown in Figure \ref{fig:example_cells}.
+}x_{i}\}}{\#\{\text{Immune cells in }x_i\}}\right)$. These $y_i$ provide
+supervision for feature learning in the CNN and RCF models. Example cell patches
+are shown in Figure \ref{fig:example_cells}.
 
 As a baseline, we compare against a ridge regression with pixelwise composition
 features. Specifically, we train a model with $\mathbf{y}$ as a response and the
