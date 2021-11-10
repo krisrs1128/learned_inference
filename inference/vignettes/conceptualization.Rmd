@@ -1,0 +1,171 @@
+---
+title: "Conceptualization Experiment"
+output: html_notebook
+---
+
+```{r}
+N <- 200
+B <- 100
+K <- 100
+D <- 1000
+S <- 10
+
+#N <- 1000
+#B <- 10
+#K <- 10
+#D <- 100
+#S <- 10
+
+rmat <- function(N, D, sd=1) {
+  matrix(rnorm(N * D, sd = sd), N, D)
+}
+
+random_permutation <- function(K) {
+  pi <- sample(K)
+  pi_mat <- matrix(0, K, K)
+  for (k in seq_len(K)) {
+    pi_mat[k, pi[k]] <- 1
+  }
+  
+  pi_mat
+}
+
+simulate_features <- function(Lambda, V, sigma = 1) {
+  K <- ncol(Lambda)
+  D <- nrow(V)
+  N <- nrow(Lambda)
+  
+  Pi <- random_permutation(K)
+  Lambda %*% Pi %*% t(V) + rmat(N, D, sigma)
+}
+
+simulate_response <- function(Lambda, beta, sigma = 1) {
+  Lambda %*% beta + rnorm(nrow(Lambda), sd = sigma)
+}
+
+Lambda <- rmat(N, K)
+V <- rmat(D, K)
+beta <- vector(length = K)
+beta[sample(K, S)] <- rnorm(S)
+y <- simulate_response(Lambda, beta, sigma = 2)
+```
+
+If we actually knew the underlying features, the lasso is able to recover it
+reasonably well.
+
+```{r}
+library(glmnet)
+fit <- glmnet(Lambda, y)
+beta_hat <- coef(fit)
+plot(beta, beta_hat[-1, 40], asp = 1)
+abline(a = 0, b = 1, col = "red")
+```
+
+But what if we first have to recover the features? Here, we use a basic PCA to
+recover the features.
+
+```{r}
+Z <- simulate_features(Lambda, V, sigma = 10)
+sv_z <- svd(Z)
+Lambda_hat <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
+
+fit <- glmnet(Lambda_hat, y)
+y_hat <- predict(fit, Lambda_hat)
+plot(y, y_hat[, ncol(y_hat)], asp = 1)
+abline(a = 0, b = 1, col = "red")
+```
+
+Prediction is easy! This is not news. But can we say anything about any of the
+recovered features? Are they "close" to the true betas in any sense? For this,
+we need to try matching the $\hat{\Lambda}$ with the underlying $\Lambda$
+
+```{r}
+max_beta <- which.max(beta)
+max_ix <- which.max(abs(cor(Lambda_hat, Lambda[, max_beta])))
+plot(Lambda_hat[, max_ix], Lambda[, max_beta])
+```
+
+```{r}
+beta_hat <- coef(fit)[-1, ncol(y_hat)]
+beta_hat[max_ix]
+beta[max_beta]
+```
+
+It's not clear whether the coefficients are going to be recovered by either
+approach, when using stability selection. That said, I still think the stability
+curves are going to look quite different when using stability selection on the
+fixed features vs. using the random features.
+
+First, let's look at some stability curves for this procedure when using fixed
+features.
+
+```{r}
+source("../R/stability.R")
+Pi_hat <- stability_selection(Lambda_hat, y, B, fit$lambda)
+```
+
+```{r}
+library(reshape2)
+library(ggplot2)
+
+mPi_hat <- melt_stability(Pi_hat)
+ggplot(mPi_hat[[2]]) +
+  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
+  facet_wrap(~ j, scale = "free_y")
+ggsave("~/Desktop/original.png", dpi = 500)
+```
+
+```{r}
+ggplot(mPi_hat[[1]]) +
+  geom_line(aes(lambda, value), size = 0.2) +
+  facet_wrap(~ j, scale = "free_y")
+ggsave("~/Desktop/original_hat.png", dpi = 500)
+```
+
+```{r}
+rowMeans(abs(cor(Lambda_hat, Lambda)))
+```
+
+Now, what if we do stability selection but bootstrapping also over the random
+selection of features? It's a little more complicated, because we first need to
+align the features with one another.
+
+```{r}
+Lambda_hats <- vector(B, mode = "list")
+
+for (b in seq_len(B)) {
+  Z <- simulate_features(Lambda, V, sigma = 10)
+  sv_z <- svd(Z)
+  Lambda_hats[[b]] <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
+}
+
+Lambda_aligned <- procrustes(Lambda_hats)
+```
+
+```{r}
+library(abind)
+Pi_hats <- vector(length = B, mode = "list")
+for (b in seq_len(B)) {
+  Pi_hats[[b]] <- stability_selection(Lambda_aligned$x_align[,, b], y, 1, fit$lambda)[[2]]
+}
+
+Pi_hats_ <- abind(Pi_hats)
+Pi_hats <- list(
+  Pi = apply(abs(Pi_hats_) > 0, c(1, 2), mean),
+  coef_paths = Pi_hats_
+)
+```
+
+```{r}
+mPi_hats <- melt_stability(Pi_hats)
+ggplot(mPi_hats[[2]]) +
+  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
+  facet_wrap(~ j, scale = "free_y")
+ggsave("~/Desktop/random.png", dpi = 500)
+
+ggplot(mPi_hats[[1]]) +
+  geom_line(aes(lambda, value), size = 0.2) +
+  facet_wrap(~ j, scale = "free_y")
+ggsave("~/Desktop/random_hat.png", dpi = 500)
+```
+
