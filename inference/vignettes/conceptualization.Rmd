@@ -2,13 +2,21 @@
 title: "Conceptualization Experiment"
 output: html_notebook
 ---
+```{r}
+library(abind)
+library(ggplot2)
+library(knitr)
+library(purrr)
+library(reshape2)
+opts_chunk$set(fig.width = 10, fig.height = 10, dpi = 80)
+```
 
 ```{r}
-N <- 200
-B <- 100
-K <- 100
+N <- 100
+B <- 50
+K <- 10
 D <- 1000
-S <- 10
+S <- 5
 
 #N <- 1000
 #B <- 10
@@ -31,12 +39,12 @@ random_permutation <- function(K) {
 }
 
 simulate_features <- function(Lambda, V, sigma = 1) {
+  N <- nrow(Lambda)
   K <- ncol(Lambda)
   D <- nrow(V)
-  N <- nrow(Lambda)
   
   Pi <- random_permutation(K)
-  Lambda %*% Pi %*% t(V) + rmat(N, D, sigma)
+  Lambda %*% Pi %*% t(V %*% Pi) + rmat(N, D, sigma)
 }
 
 simulate_response <- function(Lambda, beta, sigma = 1) {
@@ -47,7 +55,7 @@ Lambda <- rmat(N, K)
 V <- rmat(D, K)
 beta <- vector(length = K)
 beta[sample(K, S)] <- rnorm(S)
-y <- simulate_response(Lambda, beta, sigma = 2)
+y <- simulate_response(Lambda, beta, sigma = 1)
 ```
 
 If we actually knew the underlying features, the lasso is able to recover it
@@ -64,8 +72,12 @@ abline(a = 0, b = 1, col = "red")
 But what if we first have to recover the features? Here, we use a basic PCA to
 recover the features.
 
+It looks like we have a lot of attenuation, because the SVD invests energy
+trying to preserve all the features that are not actually that relevant for
+predictions.
+
 ```{r}
-Z <- simulate_features(Lambda, V, sigma = 10)
+Z <- simulate_features(Lambda, V, sigma = 1)
 sv_z <- svd(Z)
 Lambda_hat <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
 
@@ -91,6 +103,14 @@ beta_hat[max_ix]
 beta[max_beta]
 ```
 
+It seems like all the features are related in some way to the true predictor
+columns.
+
+```{r}
+round(cor(Lambda[, which(beta != 0)], Lambda_hat), 3)
+```
+
+
 It's not clear whether the coefficients are going to be recovered by either
 approach, when using stability selection. That said, I still think the stability
 curves are going to look quite different when using stability selection on the
@@ -105,9 +125,6 @@ Pi_hat <- stability_selection(Lambda_hat, y, B, fit$lambda)
 ```
 
 ```{r}
-library(reshape2)
-library(ggplot2)
-
 mPi_hat <- melt_stability(Pi_hat)
 ggplot(mPi_hat[[2]]) +
   geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
@@ -117,9 +134,8 @@ ggsave("~/Desktop/original.png", dpi = 500)
 
 ```{r}
 ggplot(mPi_hat[[1]]) +
-  geom_line(aes(lambda, value), size = 0.2) +
-  facet_wrap(~ j, scale = "free_y")
-ggsave("~/Desktop/original_hat.png", dpi = 500)
+  geom_line(aes(lambda, value, group = j), size = 0.8)
+ggsave("~/Desktop/original_hat.png")
 ```
 
 ```{r}
@@ -132,24 +148,34 @@ align the features with one another.
 
 ```{r}
 Lambda_hats <- vector(B, mode = "list")
+Zs <- vector(B, mode = "list")
+Z_hats <- vector(B, mode = "list")
 
 for (b in seq_len(B)) {
-  Z <- simulate_features(Lambda, V, sigma = 10)
+  Z <- simulate_features(Lambda, V, sigma = 1)
   sv_z <- svd(Z)
   Lambda_hats[[b]] <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
+  Zs[[b]] <- Z
+  Z_hats[[b]] <- Lambda_hats[[b]] %*% t(sv_z$v[, 1:K])
 }
 
 Lambda_aligned <- procrustes(Lambda_hats)
 ```
 
 ```{r}
-library(abind)
-Pi_hats <- vector(length = B, mode = "list")
+Z_mean <- apply(abind(Zs, along = 3), c(1, 2), mean)
+mean(map_dbl(Zs, ~ sum(. - Z_mean) ^ 2)) /  mean(map_dbl(Z_hats, ~ sum(.^2)))
+N * D / sum((Lambda %*% t(V)) ^ 2)
+```
+
+
+```{r}
+Pi_hats_ <- vector(length = B, mode = "list")
 for (b in seq_len(B)) {
-  Pi_hats[[b]] <- stability_selection(Lambda_aligned$x_align[,, b], y, 1, fit$lambda)[[2]]
+  Pi_hats_[[b]] <- stability_selection(Lambda_aligned$x_align[,, b], y, 1, fit$lambda)[[2]]
 }
 
-Pi_hats_ <- abind(Pi_hats)
+Pi_hats_ <- abind(Pi_hats_)
 Pi_hats <- list(
   Pi = apply(abs(Pi_hats_) > 0, c(1, 2), mean),
   coef_paths = Pi_hats_
@@ -161,11 +187,81 @@ mPi_hats <- melt_stability(Pi_hats)
 ggplot(mPi_hats[[2]]) +
   geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
   facet_wrap(~ j, scale = "free_y")
-ggsave("~/Desktop/random.png", dpi = 500)
+ggsave("~/Desktop/random.png")
+```
 
+
+```{r, fig.width = 8, fig.height = 8}
 ggplot(mPi_hats[[1]]) +
-  geom_line(aes(lambda, value), size = 0.2) +
-  facet_wrap(~ j, scale = "free_y")
+  geom_line(aes(lambda, value, group = j), size = 0.2)
 ggsave("~/Desktop/random_hat.png", dpi = 500)
 ```
 
+### supervision
+
+What happens to the stability curves when we deliberately supervise the
+response?
+
+```{r}
+Z <- simulate_features(Lambda, V, sigma = 1)
+y <- simulate_response(Lambda, vector(length = K), sigma = 1)
+C <- cor(Z, y)
+keep_ix <- which(abs(C) > quantile(abs(C), 1 - K / D))
+sv_z <- svd(Z[, keep_ix])
+Lambda_hat <- sv_z$u %*% diag(sv_z$d)
+Pi_hat <- stability_selection(Lambda_hat, y, B, fit$lambda) # no sample splitting, should be optimistic
+```
+
+```{r}
+mPi_hats <- melt_stability(Pi_hats)
+ggplot(mPi_hats[[2]]) +
+  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
+  facet_wrap(~ j, scale = "free_y")
+ggplot(mPi_hats[[1]]) +
+  geom_line(aes(lambda, value, group = j), size = 0.3)
+```
+
+```{r}
+Lambda_hats <- vector(B, mode = "list")
+Zs <- vector(B, mode = "list")
+Z_hats <- vector(B, mode = "list")
+
+for (b in seq_len(B)) {
+  Z <- simulate_features(Lambda, V, sigma = 1)
+  C <- cor(Z[1:(N / 2), ], y[1:(N / 2)])
+  keep_ix <- which(abs(C) > quantile(abs(C), 1 - K / D))
+  sv_z <- svd(Z[, keep_ix])
+  Lambda_hats[[b]] <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
+  Zs[[b]] <- Z
+  Z_hats[[b]] <- Lambda_hats[[b]] %*% t(sv_z$v[, 1:K])
+}
+
+Lambda_aligned <- procrustes(Lambda_hats, tol = .05)
+```
+
+
+
+```{r}
+Pi_hats_ <- vector(length = B, mode = "list")
+for (b in seq_len(B)) {
+  Pi_hats_[[b]] <- stability_selection(Lambda_aligned$x_align[(N / 2 + 1):N,, b], y[(N / 2 + 1):N], 1, fit$lambda)[[2]]
+}
+
+Pi_hats_ <- abind(Pi_hats_)
+Pi_hats <- list(
+  Pi = apply(abs(Pi_hats_) > 0, c(1, 2), mean),
+  coef_paths = Pi_hats_
+)
+```
+
+Sample splitting does seem quite important. Here, we're not selecting anything
+for quite a while.
+
+```{r}
+mPi_hats <- melt_stability(Pi_hats)
+ggplot(mPi_hats[[2]]) +
+  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
+  facet_wrap(~ j, scale = "free_y")
+ggplot(mPi_hats[[1]]) +
+  geom_line(aes(lambda, value, group = j), size = 0.3)
+```
