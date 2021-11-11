@@ -13,7 +13,7 @@ opts_chunk$set(fig.width = 10, fig.height = 10, dpi = 80)
 
 ```{r}
 N <- 100
-B <- 50
+B <- 200
 K <- 10
 D <- 1000
 S <- 5
@@ -206,9 +206,9 @@ response?
 Z <- simulate_features(Lambda, V, sigma = 1)
 y <- simulate_response(Lambda, vector(length = K), sigma = 1)
 C <- cor(Z, y)
-keep_ix <- which(abs(C) > quantile(abs(C), 1 - K / D))
+keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K / D))
 sv_z <- svd(Z[, keep_ix])
-Lambda_hat <- sv_z$u %*% diag(sv_z$d)
+Lambda_hat <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
 Pi_hat <- stability_selection(Lambda_hat, y, B, fit$lambda) # no sample splitting, should be optimistic
 ```
 
@@ -221,6 +221,29 @@ ggplot(mPi_hats[[1]]) +
   geom_line(aes(lambda, value, group = j), size = 0.3)
 ```
 
+With sample splitting, but no feature re-learning.
+
+```{r}
+Z <- simulate_features(Lambda, V, sigma = 1)
+y <- simulate_response(Lambda, vector(length = K), sigma = 1)
+C <- cor(Z[1:(N / 2), ], y[1:(N / 2)])
+keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K / D))
+sv_z <- svd(Z)
+Lambda_hat <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
+Pi_hat <- stability_selection(Lambda_hat[(N / 2 + 1):N, ], y[(N / 2 + 1):N], B, fit$lambda)
+```
+
+```{r}
+mPi_hats <- melt_stability(Pi_hats)
+ggplot(mPi_hats[[2]]) +
+  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
+  facet_wrap(~ j, scale = "free_y")
+ggplot(mPi_hats[[1]]) +
+  geom_line(aes(lambda, value, group = j), size = 0.3)
+```
+
+With feature relearning and sample splitting.
+
 ```{r}
 Lambda_hats <- vector(B, mode = "list")
 Zs <- vector(B, mode = "list")
@@ -229,14 +252,14 @@ Z_hats <- vector(B, mode = "list")
 for (b in seq_len(B)) {
   Z <- simulate_features(Lambda, V, sigma = 1)
   C <- cor(Z[1:(N / 2), ], y[1:(N / 2)])
-  keep_ix <- which(abs(C) > quantile(abs(C), 1 - K / D))
+  keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K / D))
   sv_z <- svd(Z[, keep_ix])
   Lambda_hats[[b]] <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
   Zs[[b]] <- Z
   Z_hats[[b]] <- Lambda_hats[[b]] %*% t(sv_z$v[, 1:K])
 }
 
-Lambda_aligned <- procrustes(Lambda_hats, tol = .05)
+Lambda_aligned <- procrustes(Lambda_hats)
 ```
 
 
