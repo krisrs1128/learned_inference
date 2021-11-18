@@ -12,50 +12,14 @@ opts_chunk$set(fig.width = 10, fig.height = 10, dpi = 80)
 ```
 
 ```{r}
-N <- 100
+N <- 1000
 B <- 200
 K <- 10
-D <- 1000
+D <- 100
 S <- 5
-
-#N <- 1000
-#B <- 10
-#K <- 10
-#D <- 100
-#S <- 10
-
-rmat <- function(N, D, sd=1) {
-  matrix(rnorm(N * D, sd = sd), N, D)
-}
-
-random_permutation <- function(K) {
-  pi <- sample(K)
-  pi_mat <- matrix(0, K, K)
-  for (k in seq_len(K)) {
-    pi_mat[k, pi[k]] <- 1
-  }
-  
-  pi_mat
-}
-
-simulate_features <- function(Lambda, V, sigma = 1) {
-  N <- nrow(Lambda)
-  K <- ncol(Lambda)
-  D <- nrow(V)
-  
-  Pi <- random_permutation(K)
-  Lambda %*% Pi %*% t(V %*% Pi) + rmat(N, D, sigma)
-}
-
-simulate_response <- function(Lambda, beta, sigma = 1) {
-  Lambda %*% beta + rnorm(nrow(Lambda), sd = sigma)
-}
-
-Lambda <- rmat(N, K)
-V <- rmat(D, K)
-beta <- vector(length = K)
-beta[sample(K, S)] <- rnorm(S)
-y <- simulate_response(Lambda, beta, sigma = 1)
+terms <- factor_model(N, D, K)
+response <- simulate_response(terms$L, S)
+attach(terms); attach(response)
 ```
 
 If we actually knew the underlying features, the lasso is able to recover it
@@ -63,7 +27,7 @@ reasonably well.
 
 ```{r}
 library(glmnet)
-fit <- glmnet(Lambda, y)
+fit <- glmnet(L, y)
 beta_hat <- coef(fit)
 plot(beta, beta_hat[-1, 40], asp = 1)
 abline(a = 0, b = 1, col = "red")
@@ -77,24 +41,21 @@ trying to preserve all the features that are not actually that relevant for
 predictions.
 
 ```{r}
-Z <- simulate_features(Lambda, V, sigma = 1)
-sv_z <- svd(Z)
-Lambda_hat <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
-
-fit <- glmnet(Lambda_hat, y)
-y_hat <- predict(fit, Lambda_hat)
+xi <- sca_extractor(Z, K)
+fit <- glmnet(xi(Z), y)
+y_hat <- predict(fit, xi(Z))
 plot(y, y_hat[, ncol(y_hat)], asp = 1)
 abline(a = 0, b = 1, col = "red")
 ```
 
 Prediction is easy! This is not news. But can we say anything about any of the
 recovered features? Are they "close" to the true betas in any sense? For this,
-we need to try matching the $\hat{\Lambda}$ with the underlying $\Lambda$
+we need to try matching the $\hat{L}$ with the underlying $L$
 
 ```{r}
 max_beta <- which.max(beta)
-max_ix <- which.max(abs(cor(Lambda_hat, Lambda[, max_beta])))
-plot(Lambda_hat[, max_ix], Lambda[, max_beta])
+max_ix <- which.max(abs(cor(xi(Z), L[, max_beta])))
+plot(xi(Z)[, max_ix], L[, max_beta])
 ```
 
 ```{r}
@@ -103,13 +64,12 @@ beta_hat[max_ix]
 beta[max_beta]
 ```
 
-It seems like all the features are related in some way to the true predictor
+It seems like most of the features are related in some way to the true predictor
 columns.
 
 ```{r}
-round(cor(Lambda[, which(beta != 0)], Lambda_hat), 3)
+round(cor(L[, which(beta != 0)], xi(Z)), 3)
 ```
-
 
 It's not clear whether the coefficients are going to be recovered by either
 approach, when using stability selection. That said, I still think the stability
@@ -121,7 +81,7 @@ features.
 
 ```{r}
 source("../R/stability.R")
-Pi_hat <- stability_selection(Lambda_hat, y, B, fit$lambda)
+Pi_hat <- stability_selection(xi(Z), y, B, fit$lambda)
 ```
 
 ```{r}
@@ -129,18 +89,23 @@ mPi_hat <- melt_stability(Pi_hat)
 ggplot(mPi_hat[[2]]) +
   geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
   facet_wrap(~ j, scale = "free_y")
-ggsave("~/Desktop/original.png", dpi = 500)
 ```
 
 ```{r}
 ggplot(mPi_hat[[1]]) +
   geom_line(aes(lambda, value, group = j), size = 0.8)
-ggsave("~/Desktop/original_hat.png")
 ```
 
 ```{r}
-rowMeans(abs(cor(Lambda_hat, Lambda)))
+zero_relatedness(L, xi(Z), beta, beta_hat)$score
+zero_relatedness(L, L, beta, beta_hat)$score
 ```
+
+```{r}
+er <- eta_relatedness(L, L_hat, beta)
+plot(beta_hat, er)
+```
+
 
 Now, what if we do stability selection but bootstrapping also over the random
 selection of features? It's a little more complicated, because we first need to

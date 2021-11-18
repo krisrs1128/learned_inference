@@ -58,5 +58,54 @@ estimating $\beta$? If not, how should the samples be split? We will see that
 data splitting is useful in the supervised setting.
 \end{itemize}
 
-\end{enumerate}
+\item Introduce alternatives to feature selection consistency when working with
+learned features. Why doesn’t ordinary feature selection consistency apply in
+this new setting? Why is it that ``good'' procedures should satisfy these
+properties, and provide an example of a procedure that would fail according to
+at least one of these criteria.
+
+$L$ can only be identified up to orthonormal rotation. Therefore, without
+further assumptions on the structure of $L$, there is no guarantee that
+$\hat{\beta} \beta$ as $N \to \infty$. However, we can consider properties that
+do not require perfect recovery of $L$. First, we can ask whether
+\begin{align}
+\sum_{d : \beta_{d} = 0} \left|\left< \hat{L}_{j}, L_{d}\right>\right| \hat{\beta}_{d} \to 0,
+\end{align}
+as the sample size grows. If this is true, then learned directions
+that are correlated with known irrelevant features $L_s$ are correctly ignored.
+Though weaker than consistency, this property can still fail in realistic
+settings. For example, as illustrated below, if sample splitting is not used
+when applying supervised feature learning, this property will fail.
+
+Alternatively, for each learned feature $j$, we can evaluate whether its
+measured importance reflects its correlation to the truth. Suppose the $B$ sets
+of learned features $\hat{L}^b$ have been registered to the set  $\tilde{L}^b$
+(below, we use a Procrustes rotation). Define the score
+\begin{align*}
+\eta_j &= \frac{1}{B} \sum_{b = 1}^B \sum_{d = 1}^{D} \left< \tilde{L}_j^{b}, L_d\right> \beta_d,
+\end{align*} which measures the extent to which the registered
+$\tilde{L}_j^{b}$’s are aligned with features $L_d$ with large coefficients
+$\beta_d$. If $\hat{\beta}_j$ is highly correlated with these $\eta_j$, then
+$\hat{\beta}_j$ correctly flags learned features whose corresponding latent
+features are related to the response.
+
+In summary, though we rely on consistency, it is still possible to evaluate the
+quality of the estimated $\hat{\beta}_j$. Inference on learned features is
+effective if the estimated $\hat{\beta}_j$ guides us to attend to features that
+reflect the underlying drivers of the response $y$.
+
+\item  Provide functions that simulate data according to the mechanism (1). The
+user should be free to create features with varying ``learnabilities.'' Make
+sure all parameters of the model are changeable through the function, but that
+they are also associated with reasonable default values.
+
+The first function below simulates from the model (2). By changing the
+\texttt{feature\_variance} parameter,  we can obtain versions of simulated data
+with differential variabilities.
+
+The second function simulates from the analogous model where $L$ is sampled
+from a point normal prior. Sparsity in $L$ means that each sample $i$ is a
+mixture of only a subset of underlying features. A model that encourages
+sparsity in $L$ will no longer suffer from unidentifiability.
+kend{enumerate}
 \end{document}
