@@ -64,6 +64,27 @@ sca_extractor <- function(Z, K_hat = 5) {
   }
 }
 
+supervised_svd_extractor <- function(Z, y, K_hat = 5) {
+  C <- cor(Z, y)
+  keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K_hat / ncol(Z)))
+  sv_z <- svd(Z[, keep_ix])
+  
+  function (x_star) {
+    x_star[, keep_ix] %*% sv_z$v[, 1:K_hat]
+  }
+}
+
+supervised_sca_extractor <- function(Z, y, K_hat = 5) {
+  library(epca)
+  C <- cor(Z, y)
+  keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K_hat / ncol(Z)))
+  sc_z <- sca(Z[, keep_ix], k = K_hat)
+  
+  function (x_star) {
+    x_star[, keep_ix] %*% sc_z$loadings
+  }
+}
+
 zero_relatedness <- function(L, L_hat, beta, beta_hat) {
   scores <- abs(t(L_hat) %*% L) * beta_hat
   s0 <- which(beta == 0)
@@ -73,4 +94,15 @@ zero_relatedness <- function(L, L_hat, beta, beta_hat) {
 
 eta_relatedness <- function(L, L_hat, beta, beta_hat) {
   rowSums(t(L_hat) %*% L %*% diag(beta))
+}
+
+plot_pi_hat <- function(Pi_hats) {
+  mPi_hats <- melt_stability(Pi_hats)
+  list(
+    ggplot(mPi_hats[[2]]) +
+      geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
+      facet_wrap(~ j, scale = "free_y"),
+    ggplot(mPi_hats[[1]]) +
+      geom_line(aes(lambda, value, group = j), size = 0.2)
+  )
 }

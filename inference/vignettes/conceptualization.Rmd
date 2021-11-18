@@ -102,42 +102,36 @@ zero_relatedness(L, L, beta, beta_hat)$score
 ```
 
 ```{r}
-er <- eta_relatedness(L, L_hat, beta)
+er <- eta_relatedness(L, xi(Z), beta)
 plot(beta_hat, er)
 ```
-
 
 Now, what if we do stability selection but bootstrapping also over the random
 selection of features? It's a little more complicated, because we first need to
 align the features with one another.
 
 ```{r}
-Lambda_hats <- vector(B, mode = "list")
-Zs <- vector(B, mode = "list")
-Z_hats <- vector(B, mode = "list")
+L_hats <- vector(B, mode = "list")
 
 for (b in seq_len(B)) {
-  Z <- simulate_features(Lambda, V, sigma = 1)
-  sv_z <- svd(Z)
-  Lambda_hats[[b]] <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
-  Zs[[b]] <- Z
-  Z_hats[[b]] <- Lambda_hats[[b]] %*% t(sv_z$v[, 1:K])
+  xi <- sca_extractor(Z, K)
+  L_hats[[b]] <- xi(Z)
 }
 
-Lambda_aligned <- procrustes(Lambda_hats)
+L_aligned <- procrustes(L_hats)
 ```
 
 ```{r}
-Z_mean <- apply(abind(Zs, along = 3), c(1, 2), mean)
-mean(map_dbl(Zs, ~ sum(. - Z_mean) ^ 2)) /  mean(map_dbl(Z_hats, ~ sum(.^2)))
-N * D / sum((Lambda %*% t(V)) ^ 2)
+#Z_mean <- apply(abind(Zs, along = 3), c(1, 2), mean)
+#mean(map_dbl(Zs, ~ sum(. - Z_mean) ^ 2)) /  mean(map_dbl(Z_hats, ~ sum(.^2)))
+#N * D / sum((Lambda %*% t(V)) ^ 2)
 ```
 
 
 ```{r}
 Pi_hats_ <- vector(length = B, mode = "list")
 for (b in seq_len(B)) {
-  Pi_hats_[[b]] <- stability_selection(Lambda_aligned$x_align[,, b], y, 1, fit$lambda)[[2]]
+  Pi_hats_[[b]] <- stability_selection(L_aligned$x_align[,, b], y, 1, fit$lambda)[[2]]
 }
 
 Pi_hats_ <- abind(Pi_hats_)
@@ -148,63 +142,32 @@ Pi_hats <- list(
 ```
 
 ```{r}
-mPi_hats <- melt_stability(Pi_hats)
-ggplot(mPi_hats[[2]]) +
-  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
-  facet_wrap(~ j, scale = "free_y")
-ggsave("~/Desktop/random.png")
-```
-
-
-```{r, fig.width = 8, fig.height = 8}
-ggplot(mPi_hats[[1]]) +
-  geom_line(aes(lambda, value, group = j), size = 0.2)
-ggsave("~/Desktop/random_hat.png", dpi = 500)
+plot_pi_hat(Pi_hats)
 ```
 
 ### supervision
 
 What happens to the stability curves when we deliberately supervise the
-response?
+response? The approach below does not do any sample splitting.
 
 ```{r}
-Z <- simulate_features(Lambda, V, sigma = 1)
-y <- simulate_response(Lambda, vector(length = K), sigma = 1)
-C <- cor(Z, y)
-keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K / D))
-sv_z <- svd(Z[, keep_ix])
-Lambda_hat <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
-Pi_hat <- stability_selection(Lambda_hat, y, B, fit$lambda) # no sample splitting, should be optimistic
-```
+terms <- factor_model(N, D, K)
+response <- simulate_response(terms$L, K) # all betas are 0
+detach("terms"); detach("response")
 
-```{r}
-mPi_hats <- melt_stability(Pi_hats)
-ggplot(mPi_hats[[2]]) +
-  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
-  facet_wrap(~ j, scale = "free_y")
-ggplot(mPi_hats[[1]]) +
-  geom_line(aes(lambda, value, group = j), size = 0.3)
+xi <- supervised_svd_extractor(Z, y, K)
+Pi_hat <- stability_selection(xi(Z), y, B, fit$lambda)
+plot_pi_hat(Pi_hat)
 ```
 
 With sample splitting, but no feature re-learning.
 
 ```{r}
-Z <- simulate_features(Lambda, V, sigma = 1)
-y <- simulate_response(Lambda, vector(length = K), sigma = 1)
-C <- cor(Z[1:(N / 2), ], y[1:(N / 2)])
-keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K / D))
-sv_z <- svd(Z)
-Lambda_hat <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
-Pi_hat <- stability_selection(Lambda_hat[(N / 2 + 1):N, ], y[(N / 2 + 1):N], B, fit$lambda)
-```
-
-```{r}
-mPi_hats <- melt_stability(Pi_hats)
-ggplot(mPi_hats[[2]]) +
-  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
-  facet_wrap(~ j, scale = "free_y")
-ggplot(mPi_hats[[1]]) +
-  geom_line(aes(lambda, value, group = j), size = 0.3)
+train_ix <- sample(N, N / 2)
+xi <- supervised_svd_extractor(Z[train_ix, ], y[train_ix], K)
+#xi <- supervised_sca_extractor(Z[train_ix, ], y[train_ix], K)
+Pi_hat <- stability_selection(xi(Z[-train_ix, ]), y[-train_ix], B, fit$lambda)
+plot_pi_hat(Pi_hat)
 ```
 
 With feature relearning and sample splitting.
@@ -228,7 +191,6 @@ Lambda_aligned <- procrustes(Lambda_hats)
 ```
 
 
-
 ```{r}
 Pi_hats_ <- vector(length = B, mode = "list")
 for (b in seq_len(B)) {
@@ -247,12 +209,7 @@ for quite a while. Maybe more importantly, no individual features consistently
 stand out from the rest.
 
 ```{r}
-mPi_hats <- melt_stability(Pi_hats)
-ggplot(mPi_hats[[2]]) +
-  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
-  facet_wrap(~ j, scale = "free_y")
-ggplot(mPi_hats[[1]]) +
-  geom_line(aes(lambda, value, group = j), size = 0.3)
+plot_pi_hats(Pi_hats)
 ```
 
 ### Measuring relationship with the truth
