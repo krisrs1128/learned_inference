@@ -89,6 +89,9 @@ $\beta_d$. If $\hat{\beta}_j$ is highly correlated with these $\eta_j$, then
 $\hat{\beta}_j$ correctly flags learned features whose corresponding latent
 features are related to the response.
 
+Further, we may wish to estimate $\frac{\sigma_{E}^2}{\|LF^T\|_{2}}$, the
+degree to which extracted features are reproducible, up to permutation.
+
 In summary, though we rely on consistency, it is still possible to evaluate the
 quality of the estimated $\hat{\beta}_j$. Inference on learned features is
 effective if the estimated $\hat{\beta}_j$ guides us to attend to features that
