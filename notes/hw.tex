@@ -1,0 +1,62 @@
+\documentclass[]{article}
+\input{preamble.tex}
+\begin{document}
+
+\begin{enumerate}
+
+\item Write down a simplified model of feature selection when features have to
+be learned. You do not need to explain how inference is conducted, but you
+should fully specify the generative mechanism behind an observed dataset
+(covariates and response). How does this model differ from approaches where the
+features are not considered to be learned? How does it compare and contrast to a
+standard errors-in-variables model?
+
+To model the situation where features must be learned before performing
+regression, consider,
+\begin{align*}
+Z &= LF^T + E & F &\sim \Gsn\left(0, \diag\left(\*\sigma_{F}^2\right)\right)\\
+y &= L \beta + \epsilon & E &\sim \Gsn\left(0, \sigma_{E}^2 I_{D}\right)\\
+& & \epsilon &\sim \Gsn\left(0, \sigma_{\epsilon}^2\right)
+\end{align*}
+where $L \in \reals^{N \times K}, F \in \reals^{D \times K}, Z \in \reals^{N
+\times D}, \beta \in \reals^{K}$. We assume that $\beta$ has only $S$ nonzero
+entries. We require that only $Z$ — not $L$ — is available for predicting the
+response $y$. $Z$ is interpreted as a set of features algorithmically derived
+from some collection $x_1, \dots, x_N$ (for example, a set of images or
+documents). $L$ contains the true, but inaccessible, features that generates
+$y$. The unequal variance across columns of $F$ reflects that some true features
+are more easily extracted than others. Since a feature extractor can be applied
+multiple times, we extend this to
+\begin{align*}
+Z^{b} &= \left(L\Pi^{b}\right)\left(F \Pi^{b}\right)^T + E^{b} & E^{b} &\sim \Gsn\left(0, \diag\left(\*\sigma_{E}^2\right)\right) \\
+y &= L \beta + \epsilon & \epsilon &\sim \Gsn\left(0, \sigma_{\epsilon}^2\right)
+\end{align*}
+where $b = 1, \dots, B$ and $\Pi \in \reals^{K \times K}$ is a permutation
+matrix, reflecting the fact that columns of $Z$ need not correspond across the
+$B$ runs. The inaccessibility of $L$ distinguishes this approach from standard
+regression. This model is related to the errors-in-variables in model, except
+(1) the covariates are effectively low-dimensional, and (2) $B$
+(column-permuted) versions of the same covariates can be extracted.
+
+\item Discuss alternative learning inferential approaches for the model
+discussed in (1). What choices have to be made w.r.t. supervision in feature
+learning, dimensionality of the learned features, and evaluation of learned
+feature significance?
+
+The analyst’s goal is to recover $L$ and, given that, $\beta$. We will discuss
+feasibility below. First, however, consider choices that must be made when
+pursuing this goal,
+\begin{itemize}
+\item Feature Extractor: A feature extractor is a mapping $\mathcal{Z}_{\theta}:
+\left(x, y\right) \to z$. ``Learning’’ is the process of choosing $\theta \in
+\Theta$. The family $\Theta$ of potential extractors must be chosen. They may
+differ in the dimensionality $K$ of the learned $z_i$ for example.
+\item Supervision: If $\mathcal{Z}_{\theta}$ makes use of the response $y$, then
+is called supervised. If it only requires $x$, it is unsupervised.
+\item Data splitting: Should all the data used for both learning $\theta$ and
+estimating $\beta$? If not, how should the samples be split? We will see that
+data splitting is useful in the supervised setting.
+\end{itemize}
+
+\end{enumerate}
+\end{document}
