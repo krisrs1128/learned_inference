@@ -278,7 +278,8 @@ Pi_hats <- list(
 ```
 
 Sample splitting does seem quite important. Here, we're not selecting anything
-for quite a while.
+for quite a while. Maybe more importantly, no individual features consistently
+stand out from the rest.
 
 ```{r}
 mPi_hats <- melt_stability(Pi_hats)
@@ -288,3 +289,9 @@ ggplot(mPi_hats[[2]]) +
 ggplot(mPi_hats[[1]]) +
   geom_line(aes(lambda, value, group = j), size = 0.3)
 ```
+
+### Measuring relationship with the truth
+
+One of the main issues is that the $\hat{\Lambda}$'s we're recovering may span
+the same subspace as the true $\Lambda$, but there is no specificity in which
+features are match with which others. So, we need a 
