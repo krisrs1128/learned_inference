@@ -8,16 +8,18 @@ library(ggplot2)
 library(knitr)
 library(purrr)
 library(reshape2)
+source("../R/simulation.R")
+source("../R/stability.R")
 opts_chunk$set(fig.width = 10, fig.height = 10, dpi = 80)
 ```
 
 ```{r}
-N <- 1000
+N <- 50
 B <- 200
 K <- 10
-D <- 100
+D <- 250
 S <- 5
-terms <- factor_model(N, D, K)
+terms <- algorithmic_features(N, D, K)
 response <- simulate_response(terms$L, S)
 attach(terms); attach(response)
 ```
@@ -41,7 +43,7 @@ trying to preserve all the features that are not actually that relevant for
 predictions.
 
 ```{r}
-xi <- sca_extractor(Z, K)
+xi <- sca_projector(Z, K)
 fit <- glmnet(xi(Z), y)
 y_hat <- predict(fit, xi(Z))
 plot(y, y_hat[, ncol(y_hat)], asp = 1)
@@ -80,20 +82,8 @@ First, let's look at some stability curves for this procedure when using fixed
 features.
 
 ```{r}
-source("../R/stability.R")
 Pi_hat <- stability_selection(xi(Z), y, B, fit$lambda)
-```
-
-```{r}
-mPi_hat <- melt_stability(Pi_hat)
-ggplot(mPi_hat[[2]]) +
-  geom_line(aes(lambda, value, group = b), size = 0.3, alpha = 0.1) +
-  facet_wrap(~ j, scale = "free_y")
-```
-
-```{r}
-ggplot(mPi_hat[[1]]) +
-  geom_line(aes(lambda, value, group = j), size = 0.8)
+plot_pi_hat(Pi_hat)
 ```
 
 ```{r}
@@ -112,13 +102,13 @@ align the features with one another.
 
 ```{r}
 L_hats <- vector(B, mode = "list")
-
 for (b in seq_len(B)) {
-  xi <- sca_extractor(Z, K)
-  L_hats[[b]] <- xi(Z)
+  print(b)
+  Zb <- algorithmic_features_(L, V)
+  xi <- sca_projector(Zb, K)
+  L_hats[[b]] <- xi(Zb)
 }
 
-L_aligned <- procrustes(L_hats)
 ```
 
 ```{r}
@@ -129,33 +119,30 @@ L_aligned <- procrustes(L_hats)
 
 
 ```{r}
-Pi_hats_ <- vector(length = B, mode = "list")
-for (b in seq_len(B)) {
-  Pi_hats_[[b]] <- stability_selection(L_aligned$x_align[,, b], y, 1, fit$lambda)[[2]]
-}
-
-Pi_hats_ <- abind(Pi_hats_)
-Pi_hats <- list(
-  Pi = apply(abs(Pi_hats_) > 0, c(1, 2), mean),
-  coef_paths = Pi_hats_
-)
-```
-
-```{r}
-plot_pi_hat(Pi_hats)
+Pi_hat <- aligned_stability_curves(L_hats, y)
+plot_pi_hat(Pi_hat)
 ```
 
 ### supervision
 
+```{r}
+set.seed(1234)
+```
+
 What happens to the stability curves when we deliberately supervise the
-response? The approach below does not do any sample splitting.
+response? The idea is to pretend the at the algorithmic feature extractor only
+returns the learned features $Z$ that are most correlated with the response.
+This is a proxy for the fact that our feature extraction is being modeled, not
+actually computationally performed. The approach below does not do any sample
+splitting.
 
 ```{r}
-terms <- factor_model(N, D, K)
-response <- simulate_response(terms$L, K) # all betas are 0
-detach("terms"); detach("response")
+terms <- sparse_factor_terms(N, D, K)
+k_<- select_features(terms$L, y)
+Z <- algorithmic_features_(terms$L[, k_], terms$V[, k_])
 
-xi <- supervised_svd_extractor(Z, y, K)
+response <- simulate_response(terms$L, 0) # all betas are 0
+xi <- sca_projector(Z, K)
 Pi_hat <- stability_selection(xi(Z), y, B, fit$lambda)
 plot_pi_hat(Pi_hat)
 ```
@@ -164,8 +151,19 @@ With sample splitting, but no feature re-learning.
 
 ```{r}
 train_ix <- sample(N, N / 2)
-xi <- supervised_svd_extractor(Z[train_ix, ], y[train_ix], K)
-#xi <- supervised_sca_extractor(Z[train_ix, ], y[train_ix], K)
+terms <- sparse_factor_terms(N, D, K)
+k_<- select_features(terms$L[train_ix, ], y[train_ix])
+Z <- algorithmic_features_(terms$L[-train_ix, k_], terms$V[, k_])
+
+xi <- sca_projector(Z, K)
+Pi_hat <- stability_selection(xi(Z), y[-train_ix], B, fit$lambda)
+plot_pi_hat(Pi_hat)
+```
+
+```{r}
+train_ix <- sample(N, N / 2)
+xi <- supervised_svd_projector(Z[train_ix, ], y[train_ix], K)
+#xi <- supervised_sca_projector(Z[train_ix, ], y[train_ix], K)
 Pi_hat <- stability_selection(xi(Z[-train_ix, ]), y[-train_ix], B, fit$lambda)
 plot_pi_hat(Pi_hat)
 ```
