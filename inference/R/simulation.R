@@ -22,41 +22,54 @@ factor_terms <- function(N, D, K, feature_variances=1) {
 }
 
 sparse_factor_terms <- function(N, D, K, feature_variances = 1, 
-                                delta_mass = 0.2) {
+                                delta_mass = 0.8) {
   terms <- factor_terms(N, D, K, feature_variances)
   n_entries <- length(terms$L)
   terms$L[sample(n_entries, n_entries * delta_mass)] <- 0
   terms
 }
 
-factor_model <- function(N, D, K, mode = "sparse", sigma = 1, 
-                         feature_variances = 1, delta_mass = 0.2) {
-  if (mode == "sparse") {
+algorithmic_features <- function(N, D, K, sparse = TRUE, sigma = 1, 
+                                 feature_variances = 1, delta_mass = 0.2) {
+  if (sparse) {
     terms <- sparse_factor_terms(N, D, K, feature_variances, delta_mass)
   } else {
     terms <- factor_terms(N, D, K, feature_variances)
   }
   
-  Pi <- random_permutation(K)
-  Z <- terms$L %*% Pi %*% t(terms$V %*% Pi) + rmat(N, D, sigma)
+  Z <- algorithmic_features_(terms$L, terms$V, sigma)
   list(L = terms$L, V = terms$V, Z = Z)
 }
 
+select_features <- function(L, y, q = 0.8) {
+  C <- cor(L, y)
+  which(abs(C) > quantile(abs(C), q))
+}
+
+algorithmic_features_ <- function(L, V, sigma = 1) {
+  N <- nrow(L)
+  K <- ncol(L)
+  D <- nrow(V)
+  
+  Pi <- random_permutation(K)
+  L %*% Pi %*% t(V %*% Pi) + rmat(N, D, sigma)
+}
+
 simulate_response <- function(L, S, sigma_beta = 1, sigma_y = 1) {
-  beta <- vector(length = K)
-  beta[sample(K, S)] <- rnorm(S, sd = sigma_beta)
+  beta <- vector(length = ncol(L))
+  beta[sample(ncol(L), S)] <- rnorm(S, sd = sigma_beta)
   y <- L %*% beta + rnorm(nrow(L), sd = sigma_y)
   list(beta = beta, y = y)
 }
 
-svd_extractor <- function(Z, K_hat = 5) {
+svd_projector <- function(Z, K_hat = 5) {
   sv_z <- svd(Z)
   function (x_star) {
     x_star %*% sv_z$v[, 1:K_hat]
   }
 }
 
-sca_extractor <- function(Z, K_hat = 5) {
+sca_projector <- function(Z, K_hat = 5) {
   library(epca)
   sc_z <- sca(Z, k = K_hat)
   function (x_star) {
@@ -64,7 +77,7 @@ sca_extractor <- function(Z, K_hat = 5) {
   }
 }
 
-supervised_svd_extractor <- function(Z, y, K_hat = 5) {
+supervised_svd_projector <- function(Z, y, K_hat = 5) {
   C <- cor(Z, y)
   keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K_hat / ncol(Z)))
   sv_z <- svd(Z[, keep_ix])
@@ -74,7 +87,7 @@ supervised_svd_extractor <- function(Z, y, K_hat = 5) {
   }
 }
 
-supervised_sca_extractor <- function(Z, y, K_hat = 5) {
+supervised_sca_projector <- function(Z, y, K_hat = 5) {
   library(epca)
   C <- cor(Z, y)
   keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K_hat / ncol(Z)))
@@ -104,5 +117,26 @@ plot_pi_hat <- function(Pi_hats) {
       facet_wrap(~ j, scale = "free_y"),
     ggplot(mPi_hats[[1]]) +
       geom_line(aes(lambda, value, group = j), size = 0.2)
+  )
+}
+
+aligned_stability_curves <- function(L_hats, y) {
+  library(abind)
+  
+  B <- length(L_hats)
+  L_aligned <- procrustes(L_hats)
+  Pi_hats_ <- vector(length = B, mode = "list")
+
+  for (b in seq_len(B)) {
+    Pi_hats_[[b]] <- stability_selection(
+        L_aligned$x_align[,, b], 
+        y, 1, fit$lambda
+      )[[2]]
+  }
+  
+  Pi_hats_ <- abind(Pi_hats_)
+  list(
+    Pi = apply(abs(Pi_hats_) > 0, c(1, 2), mean),
+    coef_paths = Pi_hats_
   )
 }
