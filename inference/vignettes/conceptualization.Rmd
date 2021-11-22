@@ -1,7 +1,15 @@
 ---
 title: "Conceptualization Experiment"
 output: html_notebook
+params:
+  feature_variances: "random"
+  N: 100
+  B: 500
+  K: 50
+  D: 500
+  S: 5
 ---
+
 ```{r}
 library(abind)
 library(ggplot2)
@@ -14,11 +22,11 @@ opts_chunk$set(fig.width = 10, fig.height = 10, dpi = 80)
 ```
 
 ```{r}
-N <- 50
-B <- 200
-K <- 10
-D <- 250
-S <- 5
+attach(params)
+if (feature_variances == "random") {
+  feature_variances <- rgamma(D, 1, 2)
+}
+
 terms <- algorithmic_features(N, D, K)
 response <- simulate_response(terms$L, S)
 attach(terms); attach(response)
@@ -43,7 +51,7 @@ trying to preserve all the features that are not actually that relevant for
 predictions.
 
 ```{r}
-xi <- sca_projector(Z, K)
+xi <- svd_projector(Z, K)
 fit <- glmnet(xi(Z), y)
 y_hat <- predict(fit, xi(Z))
 plot(y, y_hat[, ncol(y_hat)], asp = 1)
@@ -103,9 +111,8 @@ align the features with one another.
 ```{r}
 L_hats <- vector(B, mode = "list")
 for (b in seq_len(B)) {
-  print(b)
   Zb <- algorithmic_features_(L, V)
-  xi <- sca_projector(Zb, K)
+  xi <- svd_projector(Zb, K)
   L_hats[[b]] <- xi(Zb)
 }
 
@@ -142,12 +149,13 @@ k_<- select_features(terms$L, y)
 Z <- algorithmic_features_(terms$L[, k_], terms$V[, k_])
 
 response <- simulate_response(terms$L, 0) # all betas are 0
-xi <- sca_projector(Z, K)
+xi <- svd_projector(Z, K)
 Pi_hat <- stability_selection(xi(Z), y, B, fit$lambda)
 plot_pi_hat(Pi_hat)
 ```
 
-With sample splitting, but no feature re-learning.
+With sample splitting, but no feature re-learning. That is, there is only a
+single train / test split and we only learn one set of $Z$'s.
 
 ```{r}
 train_ix <- sample(N, N / 2)
@@ -155,59 +163,29 @@ terms <- sparse_factor_terms(N, D, K)
 k_<- select_features(terms$L[train_ix, ], y[train_ix])
 Z <- algorithmic_features_(terms$L[-train_ix, k_], terms$V[, k_])
 
-xi <- sca_projector(Z, K)
+xi <- svd_projector(Z, K)
 Pi_hat <- stability_selection(xi(Z), y[-train_ix], B, fit$lambda)
 plot_pi_hat(Pi_hat)
+rm(Pi_hat)
 ```
 
 ```{r}
-train_ix <- sample(N, N / 2)
-xi <- supervised_svd_projector(Z[train_ix, ], y[train_ix], K)
-#xi <- supervised_sca_projector(Z[train_ix, ], y[train_ix], K)
-Pi_hat <- stability_selection(xi(Z[-train_ix, ]), y[-train_ix], B, fit$lambda)
+terms <- sparse_factor_terms(N, D, K)
+L_hats <- vector(B, mode = "list")
+
+for (b in seq_len(B)) {
+  # different split each time
+  train_ix <- sample(N, N / 2)
+  k_<- select_features(terms$L[train_ix, ], y[train_ix])
+  Zb <- algorithmic_features_(terms$L[-train_ix, k_], terms$V[, k_])
+
+  # different projections of random features
+  xi <- svd_projector(Zb, K)
+  L_hats[[b]] <- xi(Zb)
+}
+
+Pi_hat <- aligned_stability_curves(L_hats, y)
 plot_pi_hat(Pi_hat)
-```
-
-With feature relearning and sample splitting.
-
-```{r}
-Lambda_hats <- vector(B, mode = "list")
-Zs <- vector(B, mode = "list")
-Z_hats <- vector(B, mode = "list")
-
-for (b in seq_len(B)) {
-  Z <- simulate_features(Lambda, V, sigma = 1)
-  C <- cor(Z[1:(N / 2), ], y[1:(N / 2)])
-  keep_ix <- which(abs(C) > quantile(abs(C), 1 - 2 * K / D))
-  sv_z <- svd(Z[, keep_ix])
-  Lambda_hats[[b]] <- sv_z$u[, 1:K] %*% diag(sv_z$d[1:K])
-  Zs[[b]] <- Z
-  Z_hats[[b]] <- Lambda_hats[[b]] %*% t(sv_z$v[, 1:K])
-}
-
-Lambda_aligned <- procrustes(Lambda_hats)
-```
-
-
-```{r}
-Pi_hats_ <- vector(length = B, mode = "list")
-for (b in seq_len(B)) {
-  Pi_hats_[[b]] <- stability_selection(Lambda_aligned$x_align[(N / 2 + 1):N,, b], y[(N / 2 + 1):N], 1, fit$lambda)[[2]]
-}
-
-Pi_hats_ <- abind(Pi_hats_)
-Pi_hats <- list(
-  Pi = apply(abs(Pi_hats_) > 0, c(1, 2), mean),
-  coef_paths = Pi_hats_
-)
-```
-
-Sample splitting does seem quite important. Here, we're not selecting anything
-for quite a while. Maybe more importantly, no individual features consistently
-stand out from the rest.
-
-```{r}
-plot_pi_hats(Pi_hats)
 ```
 
 ### Measuring relationship with the truth

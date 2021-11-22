@@ -3,8 +3,13 @@ factor_model <- function(N, D, K, S) {
   
 }
 
-rmat <- function(N, D, sd=1) {
-  matrix(rnorm(N * D, sd = sd), N, D)
+rmat <- function(N, D, sigma2=1) {
+  result <- matrix(rnorm(N * D), N, D)
+  for (d in seq_len(D)) {
+    result[, d] <- sqrt(sigma2) * result[, d]
+  }
+  
+  result
 }
 
 random_permutation <- function(K) {
@@ -22,7 +27,7 @@ factor_terms <- function(N, D, K, feature_variances=1) {
 }
 
 sparse_factor_terms <- function(N, D, K, feature_variances = 1, 
-                                delta_mass = 0.8) {
+                                delta_mass = 0.5) {
   terms <- factor_terms(N, D, K, feature_variances)
   n_entries <- length(terms$L)
   terms$L[sample(n_entries, n_entries * delta_mass)] <- 0
