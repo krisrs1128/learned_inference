@@ -1,0 +1,88 @@
+---
+title: "Consistency Experiment"
+output: html_notebook
+params:
+  feature_variances: "random"
+  N: [50, 5000]
+  grid: 50
+  B: 500
+  K: 50
+  D: 500
+  S: 5
+---
+
+### Measuring relationship with the truth
+
+One of the main issues is that the $\hat{\Lambda}$'s we're recovering may span
+the same subspace as the true $\Lambda$, but there is no specificity in which
+features are match with which others. So, we need a 
+
+```{r}
+library(abind)
+library(ggplot2)
+library(knitr)
+library(purrr)
+library(reshape2)
+library(glmnet)
+library(ggplot2)
+map(list.files("../R", full.names = TRUE), ~ source(.))
+th <- theme_minimal() + 
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.background = element_rect(fill = "#f7f7f7"),
+    panel.border = element_rect(fill = NA, color = "#0c0c0c", size = 0.6),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16),
+    legend.position = "bottom"
+  )
+theme_set(th)
+```
+
+
+```{r}
+attach(params)
+if (feature_variances == "random") {
+  fv <- rgamma(D, 1, 2)
+} else {
+  fv <- 1
+}
+```
+
+
+```{r}
+terms <- sparse_factor_terms(N[2], D, K, feature_variances = fv)
+Z <- algorithmic_features_(terms$L, terms$V)
+response <- simulate_response(terms$L, S) # all betas are 0
+attach(terms); attach(response)
+
+n_seq <- seq(max(N[1], K), N[2], length.out = grid)
+zr <- matrix(nrow = grid, ncol = K - S)
+er <- matrix(nrow = grid, ncol = K)
+for (i in seq_along(n_seq)) {
+  xi <- svd_projector(Z[1:n_seq[i], ], K)
+  fit <- glmnet(xi(Z[1:n_seq[i], ]), y[1:n_seq[i], ], intercept = FALSE)
+  beta_hat <- coef(fit)[-1, ]
+  beta_hat <- beta_hat[, as.integer(0.5 * ncol(beta_hat))]
+  zr[i, ] <- zero_relatedness(L[1:n_seq[i], ], xi(Z[1:n_seq[i], ]), beta, beta_hat)$score
+  er[i, ] <- eta_relatedness(L[1:n_seq[i], ], xi(Z[1:n_seq[i], ]), beta)
+}
+```
+
+```{r}
+for (i in seq_along(n_seq)) {
+  hist(zr[i, ])
+  print(mean(zr[i, ]))
+  print(var(zr[i, ]))
+}
+```
+
+```{r}
+cors <- vector(length = grid)
+for (i in seq_along(n_seq)) {
+  hist(er[i, ])
+  plot(beta_hat, er[i, ])
+  cors[i] <- cor(beta_hat, er[i, ])
+}
+
+plot(n_seq, abs(cors[i]))
+```
