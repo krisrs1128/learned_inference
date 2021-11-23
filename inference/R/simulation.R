@@ -4,9 +4,13 @@ factor_model <- function(N, D, K, S) {
 }
 
 rmat <- function(N, D, sigma2=1) {
+  if (length(sigma2) == 1) {
+    sigma2 <- rep(sigma2, D)
+  }
+  
   result <- matrix(rnorm(N * D), N, D)
   for (d in seq_len(D)) {
-    result[, d] <- sqrt(sigma2) * result[, d]
+    result[, d] <- sqrt(sigma2[d]) * result[, d]
   }
   
   result
@@ -70,7 +74,8 @@ simulate_response <- function(L, S, sigma_beta = 1, sigma_y = 1) {
 svd_projector <- function(Z, K_hat = 5) {
   sv_z <- svd(Z)
   function (x_star) {
-    x_star %*% sv_z$v[, 1:K_hat]
+    k <- K_hat
+    x_star %*% sv_z$v[, 1:k]
   }
 }
 
