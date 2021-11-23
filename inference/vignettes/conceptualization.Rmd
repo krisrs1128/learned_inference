@@ -1,14 +1,19 @@
 ---
 title: "Conceptualization Experiment"
-output: html_notebook
+output: html_document
 params:
-  feature_variances: "random"
+  feature_variances: "fixed"
+  supervised: TRUE
   N: 100
   B: 500
   K: 50
   D: 500
-  S: 5
+  S: 0
 ---
+
+Rscript -e "rmarkdown::render('conceptualization.Rmd', params = list(supervised = F))"
+
+Rscript -e "rmarkdown::render('conceptualization.Rmd', params = list(supervised = T))"
 
 ```{r}
 library(abind)
@@ -16,18 +21,41 @@ library(ggplot2)
 library(knitr)
 library(purrr)
 library(reshape2)
-source("../R/simulation.R")
-source("../R/stability.R")
-opts_chunk$set(fig.width = 10, fig.height = 10, dpi = 80)
+library(tidyr)
+map(list.files("../R", full.names = TRUE), ~ source(.))
+opts_chunk$set(fig.width = 8, fig.height = 8, dpi = 80)
+library(ggplot2)
+th <- theme_minimal() + 
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.background = element_rect(fill = "#f7f7f7"),
+    panel.border = element_rect(fill = NA, color = "#0c0c0c", size = 0.6),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16),
+    legend.position = "bottom"
+  )
+theme_set(th)
+
+k_switch <- function(L, y) {
+  if (params$supervised) {
+    k_<- select_features(L, y)
+  } else {
+    k_ <- 1:ncol(L)
+  }
+    
+  k_
+}
 ```
 
 ```{r}
 attach(params)
 if (feature_variances == "random") {
-  feature_variances <- rgamma(D, 1, 2)
+  fv <- rgamma(D, 1, 2)
+} else {
+  fv <- 1
 }
 
-terms <- algorithmic_features(N, D, K)
+terms <- algorithmic_features(N, D, K, feature_variances = fv)
 response <- simulate_response(terms$L, S)
 attach(terms); attach(response)
 ```
@@ -43,12 +71,10 @@ plot(beta, beta_hat[-1, 40], asp = 1)
 abline(a = 0, b = 1, col = "red")
 ```
 
-But what if we first have to recover the features? Here, we use a basic PCA to
-recover the features.
 
-It looks like we have a lot of attenuation, because the SVD invests energy
-trying to preserve all the features that are not actually that relevant for
-predictions.
+Prediction is easy! This is not news. But can we say anything about any of the
+recovered features? 
+
 
 ```{r}
 xi <- svd_projector(Z, K)
@@ -58,24 +84,15 @@ plot(y, y_hat[, ncol(y_hat)], asp = 1)
 abline(a = 0, b = 1, col = "red")
 ```
 
-Prediction is easy! This is not news. But can we say anything about any of the
-recovered features? Are they "close" to the true betas in any sense? For this,
-we need to try matching the $\hat{L}$ with the underlying $L$
-
 ```{r}
 max_beta <- which.max(beta)
 max_ix <- which.max(abs(cor(xi(Z), L[, max_beta])))
 plot(xi(Z)[, max_ix], L[, max_beta])
 ```
 
-```{r}
-beta_hat <- coef(fit)[-1, ncol(y_hat)]
-beta_hat[max_ix]
-beta[max_beta]
-```
-
-It seems like most of the features are related in some way to the true predictor
-columns.
+Are they "close" to the true betas in any sense? For this, we need to try
+matching the $\hat{L}$ with the underlying $L$ It seems like most of the
+features are related in some way to the true predictor columns.
 
 ```{r}
 round(cor(L[, which(beta != 0)], xi(Z)), 3)
@@ -86,72 +103,35 @@ approach, when using stability selection. That said, I still think the stability
 curves are going to look quite different when using stability selection on the
 fixed features vs. using the random features.
 
-First, let's look at some stability curves for this procedure when using fixed
-features.
-
-```{r}
-Pi_hat <- stability_selection(xi(Z), y, B, fit$lambda)
-plot_pi_hat(Pi_hat)
-```
-
-```{r}
-zero_relatedness(L, xi(Z), beta, beta_hat)$score
-zero_relatedness(L, L, beta, beta_hat)$score
-```
-
-```{r}
-er <- eta_relatedness(L, xi(Z), beta)
-plot(beta_hat, er)
-```
-
-Now, what if we do stability selection but bootstrapping also over the random
-selection of features? It's a little more complicated, because we first need to
-align the features with one another.
-
-```{r}
-L_hats <- vector(B, mode = "list")
-for (b in seq_len(B)) {
-  Zb <- algorithmic_features_(L, V)
-  xi <- svd_projector(Zb, K)
-  L_hats[[b]] <- xi(Zb)
-}
-
-```
-
 ```{r}
 #Z_mean <- apply(abind(Zs, along = 3), c(1, 2), mean)
 #mean(map_dbl(Zs, ~ sum(. - Z_mean) ^ 2)) /  mean(map_dbl(Z_hats, ~ sum(.^2)))
 #N * D / sum((Lambda %*% t(V)) ^ 2)
 ```
 
-
-```{r}
-Pi_hat <- aligned_stability_curves(L_hats, y)
-plot_pi_hat(Pi_hat)
-```
-
-### supervision
-
 ```{r}
 set.seed(1234)
+Pi_hats <- list()
 ```
 
-What happens to the stability curves when we deliberately supervise the
-response? The idea is to pretend the at the algorithmic feature extractor only
-returns the learned features $Z$ that are most correlated with the response.
-This is a proxy for the fact that our feature extraction is being modeled, not
-actually computationally performed. The approach below does not do any sample
-splitting.
+First, let's look at some stability curves for this procedure when using fixed
+features.
+
+(if setting supervised = TRUE, What happens to the stability curves when we
+deliberately supervise the response? The idea is to pretend the at the
+algorithmic feature extractor only returns the learned features $Z$ that are
+most correlated with the response. This is a proxy for the fact that our feature
+extraction is being modeled, not actually computationally performed. The
+approach below does not do any sample splitting.)
 
 ```{r}
-terms <- sparse_factor_terms(N, D, K)
-k_<- select_features(terms$L, y)
+terms <- sparse_factor_terms(N, D, K, feature_variances = fv)
+k_ <- k_switch(L, y)
 Z <- algorithmic_features_(terms$L[, k_], terms$V[, k_])
 
-response <- simulate_response(terms$L, 0) # all betas are 0
+response <- simulate_response(terms$L, S)
 xi <- svd_projector(Z, K)
-Pi_hat <- stability_selection(xi(Z), y, B, fit$lambda)
-plot_pi_hat(Pi_hat)
+Pi_hats[["unadjusted"]] <- stability_selection(xi(Z), y, B, fit$lambda)
 ```
 
 With sample splitting, but no feature re-learning. That is, there is only a
@@ -159,24 +139,22 @@ single train / test split and we only learn one set of $Z$'s.
 
 ```{r}
 train_ix <- sample(N, N / 2)
-terms <- sparse_factor_terms(N, D, K)
-k_<- select_features(terms$L[train_ix, ], y[train_ix])
+terms <- sparse_factor_terms(N, D, K, feature_variances = fv)
+k_ <- k_switch(terms$L[train_ix, ], y[train_ix])
 Z <- algorithmic_features_(terms$L[-train_ix, k_], terms$V[, k_])
 
 xi <- svd_projector(Z, K)
-Pi_hat <- stability_selection(xi(Z), y[-train_ix], B, fit$lambda)
-plot_pi_hat(Pi_hat)
-rm(Pi_hat)
+Pi_hats[["split"]] <- stability_selection(xi(Z), y[-train_ix], B, fit$lambda)
 ```
 
 ```{r}
-terms <- sparse_factor_terms(N, D, K)
+terms <- sparse_factor_terms(N, D, K, feature_variances = fv)
 L_hats <- vector(B, mode = "list")
 
 for (b in seq_len(B)) {
   # different split each time
   train_ix <- sample(N, N / 2)
-  k_<- select_features(terms$L[train_ix, ], y[train_ix])
+  k_ <- k_switch(terms$L[train_ix, ], y[train_ix])
   Zb <- algorithmic_features_(terms$L[-train_ix, k_], terms$V[, k_])
 
   # different projections of random features
@@ -184,12 +162,29 @@ for (b in seq_len(B)) {
   L_hats[[b]] <- xi(Zb)
 }
 
-Pi_hat <- aligned_stability_curves(L_hats, y)
-plot_pi_hat(Pi_hat)
+Pi_hats[["relearned"]] <- aligned_stability_curves(L_hats, y)
 ```
 
-### Measuring relationship with the truth
+```{r}
+library(stringr)
+library(dplyr)
+Pi <- map_dfr(Pi_hats, ~ as.data.frame(.$Pi) %>% mutate(dim = as.factor(row_number())), .id = "method") %>%
+  pivot_longer(starts_with("V")) %>%
+  mutate(lambda = as.integer(str_extract(name, "[0-9]+")))
+coef_paths <- map_dfr(Pi_hats, ~ melt(.$coef_paths), .id = "method")
+```
 
-One of the main issues is that the $\hat{\Lambda}$'s we're recovering may span
-the same subspace as the true $\Lambda$, but there is no specificity in which
-features are match with which others. So, we need a 
+```{r}
+Pi%>%
+  arrange(lambda) %>%
+  ggplot() +
+  geom_line(aes(lambda, value, col = method, group = dim)) + 
+  facet_grid(~ method)
+```
+```{r, fig.width = 20, fig.height = 4}
+head(coef_paths)
+ggplot(coef_paths %>% filter(Var1 < 30, Var1 > 1, Var3< 500)) +
+  geom_line(aes(Var2, value, group = Var3), alpha = 0.1) +
+  facet_grid(method~Var1, scale = "free_y")
+```
+
