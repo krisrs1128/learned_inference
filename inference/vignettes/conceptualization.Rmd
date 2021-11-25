@@ -3,19 +3,24 @@ title: "Conceptualization Experiment"
 output: html_document
 params:
   feature_variances: "fixed"
-  supervised: TRUE
+  supervised: FALSE
   N: 100
   B: 500
   K: 50
   D: 500
-  S: 0
+  S: 10
 ---
 
-Rscript -e "rmarkdown::render('conceptualization.Rmd', params = list(supervised = F))"
-
-Rscript -e "rmarkdown::render('conceptualization.Rmd', params = list(supervised = T))"
+```
+for s in T F; do
+  for S in 0 10 20 30 40; do
+    Rscript -e "rmarkdown::render('conceptualization.Rmd', params = list(supervised = $s, S = $S), output_file = paste0('conceptualization-', $s, '-', $S, '.html'))"
+  done;
+done;
+```
 
 ```{r}
+set.seed(1234)
 library(abind)
 library(ggplot2)
 library(knitr)
@@ -52,7 +57,7 @@ attach(params)
 if (feature_variances == "random") {
   fv <- rgamma(D, 1, 2)
 } else {
-  fv <- 1
+  fv <- 100
 }
 
 terms <- algorithmic_features(N, D, K, feature_variances = fv)
@@ -110,7 +115,6 @@ fixed features vs. using the random features.
 ```
 
 ```{r}
-set.seed(1234)
 Pi_hats <- list()
 ```
 
@@ -131,7 +135,7 @@ Z <- algorithmic_features_(terms$L[, k_], terms$V[, k_])
 
 response <- simulate_response(terms$L, S)
 xi <- svd_projector(Z, K)
-Pi_hats[["unadjusted"]] <- stability_selection(xi(Z), y, B, fit$lambda)
+Pi_hats[["unadjusted"]] <- stability_selection(scale(xi(Z)), y, B, fit$lambda)
 ```
 
 With sample splitting, but no feature re-learning. That is, there is only a
@@ -141,10 +145,11 @@ single train / test split and we only learn one set of $Z$'s.
 train_ix <- sample(N, N / 2)
 terms <- sparse_factor_terms(N, D, K, feature_variances = fv)
 k_ <- k_switch(terms$L[train_ix, ], y[train_ix])
+print(k_)
 Z <- algorithmic_features_(terms$L[-train_ix, k_], terms$V[, k_])
 
 xi <- svd_projector(Z, K)
-Pi_hats[["split"]] <- stability_selection(xi(Z), y[-train_ix], B, fit$lambda)
+Pi_hats[["split"]] <- stability_selection(scale(xi(Z)), y[-train_ix], B, fit$lambda)
 ```
 
 ```{r}
@@ -159,7 +164,7 @@ for (b in seq_len(B)) {
 
   # different projections of random features
   xi <- svd_projector(Zb, K)
-  L_hats[[b]] <- xi(Zb)
+  L_hats[[b]] <- scale(xi(Zb))
 }
 
 Pi_hats[["relearned"]] <- aligned_stability_curves(L_hats, y)
@@ -179,12 +184,15 @@ Pi%>%
   arrange(lambda) %>%
   ggplot() +
   geom_line(aes(lambda, value, col = method, group = dim)) + 
+  xlim(0, 65) +
+  ylim(0, 1) +
   facet_grid(~ method)
 ```
 ```{r, fig.width = 20, fig.height = 4}
-head(coef_paths)
 ggplot(coef_paths %>% filter(Var1 < 30, Var1 > 1, Var3< 500)) +
   geom_line(aes(Var2, value, group = Var3), alpha = 0.1) +
   facet_grid(method~Var1, scale = "free_y")
 ```
+
+
 

@@ -1,8 +1,4 @@
 
-factor_model <- function(N, D, K, S) {
-  
-}
-
 rmat <- function(N, D, sigma2=1) {
   if (length(sigma2) == 1) {
     sigma2 <- rep(sigma2, D)
@@ -41,13 +37,13 @@ sparse_factor_terms <- function(N, D, K, feature_variances = 1,
 algorithmic_features <- function(N, D, K, sparse = TRUE, sigma = 1, 
                                  feature_variances = 1, delta_mass = 0.2) {
   if (sparse) {
-    terms <- sparse_factor_terms(N, D, K, feature_variances, delta_mass)
+    elem <- sparse_factor_terms(N, D, K, feature_variances, delta_mass)
   } else {
-    terms <- factor_terms(N, D, K, feature_variances)
+    elem <- factor_terms(N, D, K, feature_variances)
   }
   
-  Z <- algorithmic_features_(terms$L, terms$V, sigma)
-  list(L = terms$L, V = terms$V, Z = Z)
+  Z <- algorithmic_features_(elem$L, elem$V, sigma)
+  list(L = elem$L, V = elem$V, Z = Z)
 }
 
 select_features <- function(L, y, q = 0.8) {
@@ -149,4 +145,9 @@ aligned_stability_curves <- function(L_hats, y) {
     Pi = apply(abs(Pi_hats_) > 0, c(1, 2), mean),
     coef_paths = Pi_hats_
   )
+}
+
+r_ortho <- function(N, K) {
+  Z <- rmat(N, K)
+  qr.Q(qr(Z))
 }
