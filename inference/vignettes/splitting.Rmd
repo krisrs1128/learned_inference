@@ -19,50 +19,74 @@ K <- 2
 U <- r_ortho(N, D)
 V <- r_ortho(D, D)
 Sigma <- c(rep(10, 2), rep(0.01, D - K))
+X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
 
-simulate_features <- function(U, V, Sigma, sigma_e = 0.01) {
-  N <- nrow(U)
-  D <- nrow(V)
-  Pi <- random_permutation(D)
-  (U %*% diag(Sigma) %*% t(V) + rmat(N, D, sigma_e)) %*% Pi
+features <- function(X, K = 2, sigma_e = 0.01) {
+  N <- nrow(X)
+  D <- nrow(X)
+  svx <- svd(X)
+  
+  function(X) {
+    Pi <- random_permutation(K)
+    (X %*% svx$v[, 1:K] %*% diag(sqrt(svx$d[1:K])) + rmat(N, K, sigma_e)) %*% Pi
+  }
 }
 
-simulate_supervised_features <- function(U, V, Sigma, y, K = 2, sigma_e = 0.01) {
-  N <- nrow(U)
-  D <- nrow(V)
-  Pi <- random_permutation(D)
-  sigma_order <- cor(y, U) %>%
+supervised_features <- function(X, y, K = 2, sigma_e = 0.01) {
+  N <- nrow(X)
+  D <- nrow(X)
+  svx <- svd(X)
+  
+  sigma_order <- cor(y, svx$u) %>%
     abs() %>%
     order(decreasing = TRUE)
+  V <- svx$v[, sigma_order[1:K]]
   
-  (U[, sigma_order] %*% diag(Sigma) %*% t(V[, sigma_order]) + rmat(N, D, sigma_e)) %*% Pi
+  function(X) {
+    Pi <- random_permutation(K)
+    (X %*% V %*% diag(sqrt(svx$d[1:K])) + rmat(N, K, sigma_e)) %*% Pi
+  }
 }
-
-y <- rnorm(N)
-Z <- simulate_supervised_features(U, V, Sigma, y)
-
-svz <- svd(Z)
-data.frame(svz$u, y = y) %>%
-  ggplot() +
-  geom_point(aes(X1, y))
 ```
 
-
-```{r}
-summary(lm(y ~ svz$u[, 1:K]))
-```
+If we use an unsupervised feature extractor, there is no problem.
 
 ```{r}
 y <- rnorm(N)
-Z <- simulate_supervised_features(U[1:(N / 2), ], V, Sigma, y[1:(N / 2)])
-
-svz <- svd(Z[1:(N / 2), ])
-data.frame(svz$u, y = y[1:(N / 2)]) %>%
-  ggplot() +
-  geom_point(aes(X1, y))
+f <- features(X)
+summary(lm(y ~ f(X)))
 ```
+
+
+When we don't split the data, the extracted features incorrectly look related to
+the response.
 
 ```{r}
-summary(lm(y[1:(N / 2)] ~ Z[1:(N / 2), ] %*% svz$v[, 1:K]))
-summary(lm(y[(N / 2 + 1):N] ~ Z[(N / 2) : N, ] %*% svz$v[, 1:K]))
+y <- rnorm(N)
+fy <- supervised_features(X, y)
+summary(lm(y ~ fy(X)))
 ```
+
+If we split, then we can see the difference clearly.
+
+```{r}
+y <- rnorm(N)
+ix <- 1:(N / 2)
+fy <- supervised_features(X[ix, ], y[ix])
+summary(lm(y[-ix] ~ fy(X[-ix, ])))
+```
+
+What if there were actually a relationship between the underlying features and
+the response? We can still detect the difference.
+
+```{r}
+beta <- c(1.8, -1.8, rep(0, D - 2))
+y <- U %*% diag(sqrt(Sigma)) %*% beta + rnorm(N)
+ix <- 1:(N / 2)
+fy <- supervised_features(X[ix, ], y[ix]) # the "Z"s
+summary(lm(y[-ix] ~ fy(X[-ix, ])))
+```
+
+Of course, this is only calling the feature extractor once. We'll need to call
+it $B$ times in order to be able to evaluate feature stability. The inference
+will be on the consensus Z's.
