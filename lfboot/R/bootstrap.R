@@ -1,6 +1,18 @@
 
 #' @export
-param_boot <- function(u_hat, d_hat, E) {
+param_boot <- function(Z, k = 2) {
+  svz <- svd(Z)
+  u_hat <- svz$u[, 1:K]
+  d_hat <- svz$d[1:K]
+  E <- Z - u_hat %*% diag(sqrt(d_hat))
+
+  function() {
+    param_boot_(u_hat, d_hat, E)
+  }
+}
+
+#' @export
+param_boot_ <- function(u_hat, d_hat, E) {
   eB <- matrix(sample(E, replace = TRUE), nrow(E), ncol(E))
   Pi <- random_permutation(ncol(E))
   Zb <- (u_hat %*% diag(sqrt(d_hat)) + eB) %*% Pi
@@ -8,7 +20,22 @@ param_boot <- function(u_hat, d_hat, E) {
 }
 
 #' @export
-param_boot_ft <- function(u_hat, d_hat, Eb) {
+param_boot_ft <- function(Zb, K = 2) {
+  ud_hats <- procrustes(Zb)$x_align %>%
+    apply(c(1, 2), mean)
+  
+  svz <- svd(ud_hats)
+  u_hat <- svz$u[, 1:K]
+  d_hat <- svz$d[1:K]
+  Eb <- map(Zb, ~ . - u_hat %*% diag(sqrt(d_hat)))
+  
+  function() {
+    param_boot_ft_(u_hat, d_hat, Eb)
+  }
+}
+  
+#' @export
+param_boot_ft_ <- function(u_hat, d_hat, Eb) {
   Estar <- do.call(cbind, Eb)
   K <- length(d_hat)
   Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
