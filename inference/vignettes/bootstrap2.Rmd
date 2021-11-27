@@ -4,6 +4,7 @@ output: html_notebook
 ---
 
 ```{r}
+set.seed(123)
 library(dplyr)
 library(ggplot2)
 library(purrr)
@@ -97,9 +98,9 @@ not using any feature relearning.
 f <- features(X)
 Zb <- rerun(10, f(X))
 boot_fun <- param_boot_ft(Zb, K)
-ud_hats <- rerun(B, param_boot_ft()$ub) %>%
+ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list()
-ud_combined <- align_with_truth(ud_hats, U, sigma)
+ud_combined <- align_with_truth(ud_hats, U, Sigma)
 ```
 
 ```{r}
