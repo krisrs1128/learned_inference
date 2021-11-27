@@ -1,0 +1,68 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(purrr)
+source("../R/simulation.R")
+source("../R/stability.R")
+```
+
+
+```{r}
+N <- 500
+D <- 100
+K <- 2
+U <- r_ortho(N, D)
+V <- r_ortho(D, D)
+Sigma <- c(rep(10, 2), rep(0.01, D - K))
+
+simulate_features <- function(U, V, Sigma, sigma_e = 0.01) {
+  N <- nrow(U)
+  D <- nrow(V)
+  Pi <- random_permutation(D)
+  (U %*% diag(Sigma) %*% t(V) + rmat(N, D, sigma_e)) %*% Pi
+}
+
+simulate_supervised_features <- function(U, V, Sigma, y, K = 2, sigma_e = 0.01) {
+  N <- nrow(U)
+  D <- nrow(V)
+  Pi <- random_permutation(D)
+  sigma_order <- cor(y, U) %>%
+    abs() %>%
+    order(decreasing = TRUE)
+  
+  (U[, sigma_order] %*% diag(Sigma) %*% t(V[, sigma_order]) + rmat(N, D, sigma_e)) %*% Pi
+}
+
+y <- rnorm(N)
+Z <- simulate_supervised_features(U, V, Sigma, y)
+
+svz <- svd(Z)
+data.frame(svz$u, y = y) %>%
+  ggplot() +
+  geom_point(aes(X1, y))
+```
+
+
+```{r}
+summary(lm(y ~ svz$u[, 1:K]))
+```
+
+```{r}
+y <- rnorm(N)
+Z <- simulate_supervised_features(U[1:(N / 2), ], V, Sigma, y[1:(N / 2)])
+
+svz <- svd(Z[1:(N / 2), ])
+data.frame(svz$u, y = y[1:(N / 2)]) %>%
+  ggplot() +
+  geom_point(aes(X1, y))
+```
+
+```{r}
+summary(lm(y[1:(N / 2)] ~ Z[1:(N / 2), ] %*% svz$v[, 1:K]))
+summary(lm(y[(N / 2 + 1):N] ~ Z[(N / 2) : N, ] %*% svz$v[, 1:K]))
+```
