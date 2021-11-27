@@ -131,3 +131,50 @@ ggplot(ud_combined, aes(X1, X2)) +
   geom_point(data = ud_combined %>% filter(b == B + 1), size = 1, shape = 15, col = "red")
 ```
 
+```{r}
+param_boot2 <- function(u_hat, d_hat, Eb) {
+  Estar <- do.call(cbind, Eb)
+  K <- length(d_hat)
+  Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
+  Pi <- random_permutation(K)
+  Zb <- (u_hat %*% diag(sqrt(d_hat)) + Estar) %*% Pi
+  list(Zb = Zb, ub = svd(Zb)$u %*% diag(sqrt(svd(Zb)$d)))
+}
+
+f <- features(X)
+Zb <- rerun(10, f(X))
+
+ud_hats <- Zb %>%
+  procrustes() %>%
+  .[["x_align"]] %>%
+  apply(c(1, 2), mean)
+
+svz <- svd(ud_hats)
+u_hat <- svz$u[, 1:K]
+d_hat <- svz$d[1:K]
+Eb <- map(Zb, ~ . - u_hat %*% diag(sqrt(d_hat)))
+
+ud_hats <- rerun(B, param_boot2(u_hat, d_hat, Eb)$ub) %>%
+  procrustes() %>%
+  .[["x_align"]] %>%
+  arr_to_list(df = F)
+
+ud_combined <- c(ud_hats, list(U %*% diag(sqrt(Sigma)))) %>%
+  procrustes() %>%
+  .[["x_align"]] %>%
+  arr_to_list(df = T) %>%
+  bind_rows(.id = "b") %>%
+  group_by(b) %>%
+  mutate(i = row_number()) %>%
+  ungroup() %>%
+  mutate(b = as.integer(b))
+```
+
+
+```{r}
+ggplot(ud_combined %>% filter(i < 10, b < B + 1), aes(X1, X2)) +
+  geom_point(alpha = 0.4, size = 0.2) +
+  geom_point(data = ud_combined %>% filter(i < 10, b == B + 1), size = 1, shape = 15, col = "red") +
+  facet_wrap(~ i, scale = "free")
+```
+
