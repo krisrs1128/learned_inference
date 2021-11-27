@@ -7,8 +7,7 @@ output: html_notebook
 library(dplyr)
 library(ggplot2)
 library(purrr)
-source("../R/simulation.R")
-source("../R/stability.R")
+library(lfboot)
 ```
 
 ```{r}
@@ -20,17 +19,6 @@ U <- r_ortho(N, D)
 V <- r_ortho(D, D)
 Sigma <- c(rep(10, 2), rep(0.01, D - K))
 X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
-
-features <- function(X, K = 2, sigma_e = 0.1) {
-  N <- nrow(X)
-  D <- nrow(X)
-  svx <- svd(X)
-  
-  function(X) {
-    Pi <- random_permutation(K)
-    (X %*% svx$v[, 1:K] %*% diag(sqrt(svx$d[1:K])) + rmat(N, K, sigma_e)) %*% Pi
-  }
-}
 ```
 
 Here is the strategy that extracts the features once and then applies a
@@ -43,23 +31,6 @@ svz <- svd(Z)
 ```
 
 ```{r}
-param_boot <- function(u_hat, d_hat, E) {
-  eB <- matrix(sample(E, replace = TRUE), nrow(E), ncol(E))
-  Pi <- random_permutation(ncol(E))
-  Zb <- (u_hat %*% diag(sqrt(d_hat)) + eB) %*% Pi
-  list(Zb = Zb, ub = svd(Zb)$u %*% diag(sqrt(svd(Zb)$d)))
-}
-
-arr_to_list <- function(x, df = F) {
-  if (df) {
-    res <- map(1:dim(x)[3], ~ data.frame(x[,, .]))
-  } else {
-    res <- map(1:dim(x)[3], ~ x[,, .])
-  }
-  
-  res
-}
-
 u_hat <- svz$u[, 1:K]
 d_hat <- svz$d[1:K]
 E <- Z - u_hat %*% diag(sqrt(d_hat))
@@ -132,15 +103,6 @@ ggplot(ud_combined, aes(X1, X2)) +
 ```
 
 ```{r}
-param_boot2 <- function(u_hat, d_hat, Eb) {
-  Estar <- do.call(cbind, Eb)
-  K <- length(d_hat)
-  Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
-  Pi <- random_permutation(K)
-  Zb <- (u_hat %*% diag(sqrt(d_hat)) + Estar) %*% Pi
-  list(Zb = Zb, ub = svd(Zb)$u %*% diag(sqrt(svd(Zb)$d)))
-}
-
 f <- features(X)
 Zb <- rerun(10, f(X))
 
@@ -154,7 +116,7 @@ u_hat <- svz$u[, 1:K]
 d_hat <- svz$d[1:K]
 Eb <- map(Zb, ~ . - u_hat %*% diag(sqrt(d_hat)))
 
-ud_hats <- rerun(B, param_boot2(u_hat, d_hat, Eb)$ub) %>%
+ud_hats <- rerun(B, param_boot_ft(u_hat, d_hat, Eb)$ub) %>%
   procrustes() %>%
   .[["x_align"]] %>%
   arr_to_list(df = F)

@@ -7,10 +7,8 @@ output: html_notebook
 library(dplyr)
 library(ggplot2)
 library(purrr)
-source("../R/simulation.R")
-source("../R/stability.R")
+library(lfboot)
 ```
-
 
 ```{r}
 N <- 500
@@ -20,33 +18,6 @@ U <- r_ortho(N, D)
 V <- r_ortho(D, D)
 Sigma <- c(rep(10, 2), rep(0.01, D - K))
 X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
-
-features <- function(X, K = 2, sigma_e = 0.01) {
-  N <- nrow(X)
-  D <- nrow(X)
-  svx <- svd(X)
-  
-  function(X) {
-    Pi <- random_permutation(K)
-    (X %*% svx$v[, 1:K] %*% diag(sqrt(svx$d[1:K])) + rmat(N, K, sigma_e)) %*% Pi
-  }
-}
-
-supervised_features <- function(X, y, K = 2, sigma_e = 0.01) {
-  N <- nrow(X)
-  D <- nrow(X)
-  svx <- svd(X)
-  
-  sigma_order <- cor(y, svx$u) %>%
-    abs() %>%
-    order(decreasing = TRUE)
-  V <- svx$v[, sigma_order[1:K]]
-  
-  function(X) {
-    Pi <- random_permutation(K)
-    (X %*% V %*% diag(sqrt(svx$d[1:K])) + rmat(N, K, sigma_e)) %*% Pi
-  }
-}
 ```
 
 If we use an unsupervised feature extractor, there is no problem.

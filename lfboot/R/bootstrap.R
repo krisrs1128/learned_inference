@@ -8,7 +8,7 @@ param_boot <- function(u_hat, d_hat, E) {
 }
 
 #' @export
-param_boot2 <- function(u_hat, d_hat, Eb) {
+param_boot_ft <- function(u_hat, d_hat, Eb) {
   Estar <- do.call(cbind, Eb)
   K <- length(d_hat)
   Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
