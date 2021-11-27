@@ -57,7 +57,7 @@ read_npys <- function(paths, data_dir = ".") {
 }
 
 #' @export
-procrustes <- function(x_list, tol = 1e-3) {
+procrustes <- function(x_list, tol = 0.05) {
   x_align <- array(dim = c(dim(x_list[[1]]), length(x_list)))
   M <- x_list[[1]]
 
