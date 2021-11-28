@@ -1,0 +1,82 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+set.seed(123)
+library(dplyr)
+library(ggplot2)
+library(purrr)
+library(lfboot)
+```
+
+
+```{r}
+align_to_list <- function(Zb, df = F, tol = 0.05) {
+  procrustes(Zb, tol = tol) %>%
+    .[["x_align"]] %>%
+    arr_to_list(df = df)
+}
+
+align_with_truth <- function(ud_hats, U, Sigma, tol = 0.05) {
+  tmp <- c(ud_hats, list(U %*% diag(sqrt(Sigma)))) %>%
+    align_to_list(tol = tol, df = T) %>%
+    bind_rows(.id = "b") %>%
+    group_by(b) %>%
+    mutate(i = row_number()) %>%
+    ungroup() %>%
+    mutate(b = as.integer(b))
+}
+```
+
+```{r}
+B <- 1000
+N <- 200
+D <- 50
+K <- 2
+U <- r_ortho(N, D)
+V <- r_ortho(D, D)
+Sigma <- c(rep(10, 2), rep(0.01, D - K))
+X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
+beta <- c(c(1, -1), rep(0, D - K))
+y <- U %*% diag(sqrt(Sigma)) %*% beta + rnorm(N, 0, 0.1)
+```
+
+```{r}
+plot(U[, 1] * sqrt(Sigma[1]), y)
+```
+
+```{r}
+ix <- sample(N, N / 2)
+f <- features(X[ix, ])
+#Zb <- rerun(B, f(X))
+#ud_hats <- align_to_list(Zb)
+#ud_combined <- align_with_truth(ud_hats, U, Sigma)
+```
+
+```{r}
+Zb <- rerun(1000, f(X[-ix, ])) %>%
+  align_to_list()
+plot(Zb[[1]][, 1], Zb[[9]][, 1])
+```
+
+
+```{r}
+beta_hats <- map(1:length(Zb), ~ lm(y[-ix] ~ Zb[[.]])) %>%
+  map_dfr(~ coef(.)) %>%
+  set_names(c("intercept", "u1", "u2"))
+```
+
+
+```{r}
+ggplot(beta_hats) +
+  geom_histogram(aes(u1))
+ggplot(beta_hats) +
+  geom_histogram(aes(u2))
+```
+
+```{r}
+
+```
+
