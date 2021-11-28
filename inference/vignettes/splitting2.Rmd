@@ -9,6 +9,7 @@ library(dplyr)
 library(ggplot2)
 library(purrr)
 library(lfboot)
+library(abind)
 ```
 
 
@@ -63,9 +64,9 @@ plot(Zb[[1]][, 1], Zb[[9]][, 1])
 
 
 ```{r}
-beta_hats <- map(1:length(Zb), ~ lm(y[-ix] ~ Zb[[.]])) %>%
+beta_hats <- map(1:length(Zb), ~ lm(y[-ix] ~ -1 + Zb[[.]])) %>%
   map_dfr(~ coef(.)) %>%
-  set_names(c("intercept", "u1", "u2"))
+  set_names(c("u1", "u2"))
 ```
 
 
@@ -77,6 +78,31 @@ ggplot(beta_hats) +
 ```
 
 ```{r}
+feature_angles <- function(z_hat, U, Sigma, K = 2) {
+  t(z_hat) %*% (U[, 1:K] %*% diag(sqrt(Sigma[1:K])))
+}
+```
 
+
+```{r}
+Z_bar <- Zb %>%
+  abind(along = 3) %>%
+  apply(c(1, 2), mean)
+
+true_scores <- feature_angles(Z_bar, U[-ix, ], Sigma) %*% beta[1:K]
+svz <- svd(Z_bar)
+boot_angles <- map(Zb, ~ feature_angles(., svz$u, svz$d))
+boot_scores <- map(seq_along(Zb), ~ boot_angles[[.]] %*% unlist(beta_hats[., ])) %>%
+  map_dfr(~ data.frame(t(.)), .id = "b")
+```
+
+```{r}
+true_scores
+ggplot(boot_scores) +
+  geom_histogram(aes(x = X1)) +
+  geom_vline(xintercept = -true_scores[1], col = "red")
+ggplot(boot_scores) +
+  geom_histogram(aes(x = X2)) +
+  geom_vline(xintercept = -true_scores[2], col = "red")
 ```
 
