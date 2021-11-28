@@ -7,7 +7,7 @@ features <- function(X, K = 2, sigma_e = 0.1) {
   
   function(X) {
     Pi <- random_permutation(K)
-    (X %*% svx$v[, 1:K] %*% diag(sqrt(svx$d[1:K])) + rmat(nrow(X), K, sigma_e)) %*% Pi
+    (X %*% svx$v[, 1:K] %*% diag(1/sqrt(svx$d[1:K])) + rmat(nrow(X), K, sigma_e)) %*% Pi
   }
 }
 
@@ -25,6 +25,6 @@ supervised_features <- function(X, y, K = 2, sigma_e = 0.01) {
   
   function(X) {
     Pi <- random_permutation(K)
-    (X %*% V %*% diag(sqrt(svx$d[1:K])) + rmat(N, K, sigma_e)) %*% Pi
+    (X %*% V %*% diag(1/sqrt(svx$d[1:K])) + rmat(N, K, sigma_e)) %*% Pi
   }
 }
