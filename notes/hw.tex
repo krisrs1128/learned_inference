@@ -11,32 +11,35 @@ should fully specify the generative mechanism behind an observed dataset
 features are not considered to be learned? How does it compare and contrast to a
 standard errors-in-variables model?
 
-To model the situation where features must be learned before performing
-regression, consider,
+Suppose the original data are a collection $x_{1}, \dots, x_{N}$ and that
+variation across $x_{i}$ is induced by latent features $u_{i} \in
+\reals^{K}$. The feature learning process is modeled according to,
 \begin{align*}
-Z &= LF^T + E & F &\sim \Gsn\left(0, \diag\left(\*\sigma_{F}^2\right)\right)\\
-y &= L \beta + \epsilon & E &\sim \Gsn\left(0, \sigma_{E}^2 I_{D}\right)\\
-& & \epsilon &\sim \Gsn\left(0, \sigma_{\epsilon}^2\right)
+Z &= U\Sigma^\frac{1}{2} + E \\
+y &= U\Sigma^\frac{1}{2} \beta + \epsilon \\
+ E &\sim \Gsn\left(0, \sigma_{E}^2 I_{D}\right) \\
+\epsilon &\sim \Gsn\left(0, \sigma_{\epsilon}^2\right)
 \end{align*}
-where $L \in \reals^{N \times K}, F \in \reals^{D \times K}, Z \in \reals^{N
-\times D}, \beta \in \reals^{K}$. We assume that $\beta$ has only $S$ nonzero
-entries. We require that only $Z$ — not $L$ — is available for predicting the
-response $y$. $Z$ is interpreted as a set of features algorithmically derived
-from some collection $x_1, \dots, x_N$ (for example, a set of images or
-documents). $L$ contains the true, but inaccessible, features that generates
-$y$. The unequal variance across columns of $F$ reflects that some true features
-are more easily extracted than others. Since a feature extractor can be applied
-multiple times, we extend this to
+where $U \in \reals^{N \times K}$ stacks the $N$ features $u_i$ and
+$\Sigma$ is a diagonal matrix with nonnegative entries. To relate the model to
+the SVD in the case that $x_i$ are high-dimensional real-valued vectors, we
+assume $U$ is orthonormal. Only $Z$ is available for predicting the response
+$y$ and can be is interpreted as a set of algorithmically derived features.
+$U$ contains the true, but inaccessible, features that generates $y$. Since a
+feature extractor can be applied multiple times, we extend the model to,
 \begin{align*}
-Z^{b} &= \left(L\Pi^{b}\right)\left(F \Pi^{b}\right)^T + E^{b} & E^{b} &\sim \Gsn\left(0, \diag\left(\*\sigma_{E}^2\right)\right) \\
-y &= L \beta + \epsilon & \epsilon &\sim \Gsn\left(0, \sigma_{\epsilon}^2\right)
+Z^{b} &= \left(U\Sigma^\frac{1}{2} + E^{b}\right)\Pi^{b} \\
+y &= U\Sigma^\frac{1}{2} \beta + \epsilon \\
+ E^{b} &\sim \Gsn\left(0, \sigma_{E}^2 I_{D}\right) \\
+\epsilon &\sim \Gsn\left(0, \sigma_{\epsilon}^2\right)
 \end{align*}
-where $b = 1, \dots, B$ and $\Pi \in \reals^{K \times K}$ is a permutation
-matrix, reflecting the fact that columns of $Z$ need not correspond across the
-$B$ runs. The inaccessibility of $L$ distinguishes this approach from standard
-regression. This model is related to the errors-in-variables in model, except
-(1) the covariates are effectively low-dimensional, and (2) $B$
-(column-permuted) versions of the same covariates can be extracted.
+where $b = 1, \dots, B$ and $\Pi \in \reals^{K \times K}$ is a random
+permutation matrix, reflecting the fact that columns of $Z$ need not correspond
+across the $B$ runs. The inaccessibility of $U, \Sigma$ distinguishes this
+approach from standard regression. This model is related to the
+errors-in-variables in model, except (1) the covariates are effectively
+low-dimensional, and (2) $B$ (noisy and column-permuted) versions of the same
+latent features can be extracted.
 
 \item Discuss alternative learning inferential approaches for the model
 discussed in (1). What choices have to be made w.r.t. supervision in feature
@@ -110,5 +113,6 @@ The second function simulates from the analogous model where $L$ is sampled
 from a point normal prior. Sparsity in $L$ means that each sample $i$ is a
 mixture of only a subset of underlying features. A model that encourages
 sparsity in $L$ will no longer suffer from unidentifiability.
-kend{enumerate}
+
+\end{enumerate}
 \end{document}
