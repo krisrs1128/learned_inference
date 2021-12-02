@@ -21,7 +21,7 @@ align_to_list <- function(Zb, df = F, tol = 0.05) {
 }
 
 align_with_truth <- function(ud_hats, U, Sigma, tol = 0.05) {
-  tmp <- c(ud_hats, list(U %*% diag(sqrt(Sigma)))) %>%
+  c(ud_hats, list(U %*% diag(sqrt(Sigma)))) %>%
     align_to_list(tol = tol, df = T) %>%
     bind_rows(.id = "b") %>%
     group_by(b) %>%

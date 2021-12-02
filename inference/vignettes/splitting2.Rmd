@@ -56,6 +56,9 @@ f <- features(X[ix, ])
 #ud_combined <- align_with_truth(ud_hats, U, Sigma)
 ```
 
+Since these features are aligned, they actually correspond to $L^{b}$ in the
+write-up.
+
 ```{r}
 Zb <- rerun(1000, f(X[-ix, ])) %>%
   align_to_list()
