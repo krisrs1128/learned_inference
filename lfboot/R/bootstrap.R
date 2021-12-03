@@ -11,8 +11,8 @@ param_boot <- function(Z, k = 2) {
   }
 }
 
-#' @export
 #' Zb here is like the Lb used in the writeup
+#' @export
 param_boot_ <- function(u_hat, d_hat, E) {
   eB <- matrix(sample(E, replace = TRUE), nrow(E), ncol(E))
   Pi <- random_permutation(ncol(E))
@@ -20,8 +20,8 @@ param_boot_ <- function(u_hat, d_hat, E) {
   list(Zb = Zb, ub = svd(Zb)$u %*% diag(sqrt(svd(Zb)$d)))
 }
 
-#' @export
 #' Zb here is like the Lb used in the writeup
+#' @export
 param_boot_ft <- function(Zb, K = 2) {
   ud_hats <- procrustes(Zb)$x_align %>%
     apply(c(1, 2), mean)
