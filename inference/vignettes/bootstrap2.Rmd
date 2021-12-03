@@ -4,11 +4,12 @@ output: html_notebook
 ---
 
 ```{r}
-set.seed(123)
+set.seed(1234)
 library(dplyr)
 library(ggplot2)
 library(purrr)
 library(lfboot)
+theme_set(min_theme())
 ```
 Here are some helper visualizations used in this script but unlikely to be
 generally useful.
@@ -32,13 +33,21 @@ align_with_truth <- function(ud_hats, U, Sigma, tol = 0.05) {
 
 plot_facets <- function(ud_combined, B = 100, max_i = 10) {
   ggplot(ud_combined %>% filter(i < max_i, b < B + 1), aes(X1, X2)) +
+    geom_hline(yintercept = 0, col = "#d3d3d3", size = 0.5) +
+    geom_vline(xintercept = 0, col = "#d3d3d3", size = 0.5) +
     geom_point(alpha = 0.4, size = 0.2) +
     geom_point(data = ud_combined %>% filter(i < 10, b == B + 1), size = 1, shape = 15, col = "red") +
-    facet_wrap(~ i, scale = "free")
+    facet_wrap(~ i, scale = "free") +
+    theme(
+      axis.text = element_text(size = 8),
+      axis.title = element_text(size = 10)
+      )
 }
 
 plot_overlay <- function(ud_combined, B = 1000) {
   ggplot(ud_combined, aes(X1, X2)) +
+    geom_hline(yintercept = 0, col = "#d3d3d3", size = 0.5) +
+    geom_vline(xintercept = 0, col = "#d3d3d3", size = 0.5) +
     geom_point(alpha = 0.4, size = 0.2) +
     geom_point(data = ud_combined %>% filter(b == B + 1), size = 1, shape = 15, col = "red")
 }
@@ -52,6 +61,7 @@ D <- 50
 K <- 2
 U <- r_ortho(N, D)
 V <- r_ortho(D, D)
+#Sigma <- 1 / (seq(1:D) ^ 2)
 Sigma <- c(rep(10, 2), rep(0.01, D - K))
 X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
 ```
@@ -69,10 +79,13 @@ ud_combined <- align_with_truth(ud_hats, U, Sigma)
 
 ```{r}
 plot_facets(ud_combined, B)
+ggsave("~/Desktop/l_approach1_facet.png", dpi = 250)
 plot_overlay(ud_combined, B)
+ggsave("~/Desktop/l_approach1.png", dpi = 250)
 plot_overlay(ud_combined, B) +
   xlim(-0.001, 0.001) +
   ylim(-0.001, 0.001)
+ggsave("~/Desktop/l_approach1_zoom.png", dpi = 250)
 ```
 
 What if we instead extract $B$ sets of features?
@@ -86,7 +99,9 @@ ud_combined <- align_with_truth(ud_hats, U, Sigma)
 
 ```{r}
 plot_facets(ud_combined, B)
+ggsave("~/Desktop/l_approach2_facet.png", dpi = 250)
 plot_overlay(ud_combined, B)
+ggsave("~/Desktop/l_approach2.png", dpi = 250)
 ```
 
 Here is a kind of compromise between repeated feature learning and a parametric
@@ -105,5 +120,7 @@ ud_combined <- align_with_truth(ud_hats, U, Sigma)
 
 ```{r}
 plot_facets(ud_combined, B)
+ggsave("~/Desktop/l_approach3_facet.png", dpi = 250)
 plot_overlay(ud_combined, B)
+ggsave("~/Desktop/l_approach3.png", dpi = 250)
 ```
