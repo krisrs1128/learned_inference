@@ -10,6 +10,7 @@ library(ggplot2)
 library(purrr)
 library(lfboot)
 library(abind)
+theme_set(min_theme())
 ```
 
 
@@ -103,9 +104,18 @@ boot_scores <- map(seq_along(Zb), ~ boot_angles[[.]] %*% unlist(beta_hats[., ]))
 true_scores
 ggplot(boot_scores) +
   geom_histogram(aes(x = X1)) +
-  geom_vline(xintercept = -true_scores[1], col = "red")
+  geom_vline(xintercept = -true_scores[1], col = "red") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0, .1, 0)) +
+  labs(x = expression(hat(eta)[1]))
+ggsave("~/Desktop/eta_hat1.png", dpi = 200)
+
 ggplot(boot_scores) +
   geom_histogram(aes(x = X2)) +
-  geom_vline(xintercept = -true_scores[2], col = "red")
+  geom_vline(xintercept = -true_scores[2], size = 2, col = "red") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0, .1, 0)) +
+  labs(x = expression(hat(eta)[2]))
+ggsave("~/Desktop/eta_hat2.png", dpi = 200)
 ```
 

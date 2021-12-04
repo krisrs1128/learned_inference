@@ -8,11 +8,12 @@ library(dplyr)
 library(ggplot2)
 library(purrr)
 library(lfboot)
+theme_set(min_theme())
 ```
 
 ```{r}
-N <- 500
-D <- 100
+N <- 200
+D <- 50
 K <- 2
 U <- r_ortho(N, D)
 V <- r_ortho(D, D)
@@ -33,9 +34,24 @@ When we don't split the data, the extracted features incorrectly look related to
 the response.
 
 ```{r}
-y <- rnorm(N)
-fy <- supervised_features(X, y)
-summary(lm(y ~ fy(X)))
+library(broom)
+library(tidyr)
+p_vals <- list()
+for (i in seq_len(1000)) {
+  y <- rnorm(N)
+  fy <- supervised_features(X, y)
+  p_vals[[i]] <- tidy(summary(lm(y ~ -1 + fy(X))))
+}
+```
+
+
+```{r, fig.width = 4, fig.height = 2}
+ggplot(bind_rows(p_vals)) +
+  geom_histogram(aes(p.value)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0, .1, 0)) +
+  facet_wrap(~ term)
+#ggsave("~/Desktop/bias_beta_0.png", dpi = 200)
 ```
 
 If we split, then we can see the difference clearly.

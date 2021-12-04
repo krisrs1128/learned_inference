@@ -124,3 +124,15 @@ ggsave("~/Desktop/l_approach3_facet.png", dpi = 250)
 plot_overlay(ud_combined, B)
 ggsave("~/Desktop/l_approach3.png", dpi = 250)
 ```
+
+```{r}
+library(purrr)
+dfs <- map(1:10, ~ data.frame(x = rnorm(10), y = rnorm(10)))
+par(mfrow = c(5, 2))
+png("~/Desktop/image.png")
+map(dfs, ~ plot(.$x, .$y))
+dev.off()
+```
+
+
+
