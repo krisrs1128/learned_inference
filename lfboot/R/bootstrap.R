@@ -80,3 +80,26 @@ procrustes <- function(x_list, tol = 0.05) {
 
   list(x_align = x_align, M = M)
 }
+
+#' @importFrom expm sqrtm
+#' @export
+within_ellipse <- function(x, new_point, level = 0.95) {
+  params <- cov.wt(x)
+  new_point_ <- solve(sqrtm(params$cov)) %*% (new_point - params$center)
+  sum(new_point_ ^ 2) < sqrt(2 * qf(level, 2, 2))
+}
+
+#' @importFrom dplyr %>% select
+#' @importFrom purrr map map2_dbl
+#' @export
+coverage <- function(samples, centers, level = 0.95) {
+  samples <- samples %>%
+    split(.$i) %>%
+    map(~ as.matrix(select(., X1, X2)))
+  
+  centers <- centers %>%
+    split(.$i) %>%
+    map(~ unlist(select(., X1, X2)))
+    
+  map2_dbl(samples, centers, ~ within_ellipse(.x, .y, level = level))
+}
