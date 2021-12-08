@@ -1,0 +1,63 @@
+\documentclass[]{article}
+\input{preamble.tex}
+\title{Generative Modeling Brainstorm}
+\author{Kris Sankaran}
+\begin{document}
+\maketitle
+
+\section{Themes}
+
+\subsection{10/22 Meeting}
+
+\begin{enumerate}
+\item Experimental Design: By simulating hypothetical experimental results, we can make informed choices about design. Trade-offs that might be difficult to evaluate analytically can be characterized computationally. Effective sample size, sequencing depth, windows during which to increase / decrease sampling frequency — these decisions can be hard to make without additional guidance.
+\item Unidentifiability: If we want to determine whether a scientific / statistical parameter is identifiable, we could simulate a few different datasets with differing values of those parameters. The parameter is identifiable iff the datasets can be distinguished from one another.
+\item Goodness-of-Fit: Generation facilitates model criticism. E.g., a large residual on its own can be due to bias or variance, but viewing an ensemble of simulated fits can distinguish between these two types of modeling issues. There is also a broader sense in which generation can support iterative structuration. Rather than starting with a single, complex model, we can gradually explain more and more heterogeneity by layering new terms on top of already-understood models.
+\end{enumerate}
+
+\subsection{Other Themes}
+Here are a few other themes, (with some of my biases...),
+\begin{enumerate}
+\item Generation and latent structure: All sorts of latent structure can be encoded in generative models — clusters, gradients, prototypes, subspaces, manifolds. A nice  property is that it’s possible to experiment with slightly different assumptions on the latent structure by just changing isolated components in a larger model.
+\item Generation and multi-modality: Models from several modalities can be tied together by positing some shared latent structure in the generative mechanism. This makes it easy to build on existing models for individual modes. The flexibility is analogous to how optimization-based algorithms can be extended by adding or deleting terms from the objective function.
+\item Generation and nonparametrics: In the last 10 years, it’s become much easier to fit flexible generative models, thanks to progress in Bayesian Nonparametrics and generative deep learning.
+\item Generation and visualization / communication / attribution: This theme is maybe too diffuse, but the point is that, even though most of the themes have been data analyst-centric, generation can be helpful for communicating results more broadly. Terms in a model can be used for attribution. Uncertainty in specific estimates can be directly visualized as hypothetical outcomes.
+\end{enumerate}
+
+\section{Examples}
+
+What examples should we draw from? There are many examples from the lab we could draw from, and each can be cross-classified with themes above. I’ve sorted them according to where they occur in the data analysis workflow,
+
+\begin{enumerate}
+\item Avoid rarefaction: The Gamma-Poisson simulation served as a tangible artifact for guiding discussion about rarefaction (and preprocessing more generally).
+\item Anne-Maud's package: A good visualization can support navigation across a whole suite of potential designs. We don't have to constrain ourselves to just a few proposals -- we can explore the whole space of designs.
+\item DADA2: Illustrates how a generative model can encode a specific scientific insight (there is structure in sequencing errors), and how that insight can improve preprocessing early in the workflow.
+\item decontam: Like DAD2, shows how a potentially ambiguous problem — how to remove contaminants in a sample? — can be made transparent by proposing a specific model. Also an illustration of model-guided decision making.
+\item BUDS: Illustrates the potential for generative models to be useful in discovering latent structure, even when the only data available are distances.
+\item LDA: Also an example of studying latent structure using generative models. Interesting because it is only a slight modification of the standard clustering setup, and yet gives very different interpretations.
+\item diffTop: More than just exploring latent structure, a generative model can be used for formal inference as well.
+\item Dependent Dirichlet Process: Another example of encoding a scientific insight (we only observe a fraction of all existing species) using a generative mechanism. Also highlights how recent progress in more theoretical communities translates into practical tools for data analysis.
+\item Registration: Not a specific example from the lab, but a recurring technique throughout our work for aligning posterior samples across latent factors.
+\end{enumerate}
+
+Are there other examples that we should consider? On the one hand, the list above is already very rich, and any new examples might not appear to have been thought out as deeply as already published projects. On the other, this could be a good excuse to study something that has been on our minds.
+
+\begin{enumerate}
+\item For each of the projects in the previous list, we could design a minimal example that highlights the value of a generative approach. For example, in analogy to DADA2, we could actually analyze a made up banana, bannnana, ... words dataset.
+\item I think an illustration of iterative structuration would be valuable. It is a common implicit theme across projects, but it could be interesting to construct an explicit sequence of models in a real data analysis problem of interest.
+\item We could setup a simplified experimental design example. We could imagine a hypothetical study where simulation can guide a few design decisions and then implement a shiny app (similar to Anne-Maud's, but smaller in scope).
+\item We could try something with deep generative models, like VAE’s or GANs (maybe it fits into the iterative structuration / goodness-of-fit example). They aren’t worth mentioning just because they are popular. On the other hand, it would show that we are aware of these developments and can probably share a unique perspective on them.
+\end{enumerate}
+
+\section{Learning Outcomes}
+
+If we were going to come up with a set of learning outcomes for a reader of the review, what would they look like? (It is a strange question, but it's been fun to apply what I learn from teaching to research). Here are some ideas,
+
+\begin{enumerate}
+\item Given a description of a modern biological study, identify several stages of statistical design or analysis where a generative model could be useful. For each stage, compare and contrast the generative approach with alternatives.
+\item Critique a proposed experimental strategy by writing an appropriate simulation. For example, discuss whether all parameters are identifiable,  the sample size is sufficient, the temporal resolution is appropriate, etc..
+\item Incorporate a high-level scientific insight into the generative mechanism for an existing model. Discuss how technical implementation / analysis results from the modified model will differ from those the original one (both advantages and disadvantages).
+\item For a prespecified dataset, plan and implement an iteratively structurated generative analysis. Plan visual and statistical artifacts that could guide model evaluation at each stage.
+\end{enumerate}
+
+\end{document}

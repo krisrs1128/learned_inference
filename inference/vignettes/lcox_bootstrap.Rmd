@@ -1,0 +1,96 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(reticulate)
+```
+
+```{r}
+untar_all <- function(paths, data_dir = ".") {
+  for (i in seq_along(paths)) {
+    exdir <- file.path(data_dir, tools::file_path_sans_ext(basename(paths[[i]])))
+    if (!dir.exists(exdir)) {
+      untar(paths[i], exdir = exdir)
+    }
+  }
+}
+
+paths <- list.files("~/Downloads/stability2/vaes/", "*.tar.gz", full = T)
+untar_all(paths, "/Users/ksankaran/Desktop/")
+```
+
+```{r}
+library(reticulate)
+library(purrr)
+np <- import("numpy")
+mu_paths <- list.files("~/Desktop/", "mu_best*", recursive = T, full = T)
+features <- map(mu_paths, ~ np$load(.))
+```
+```{r}
+library(readr)
+ix <- list.files("~/Desktop/", "*subset*", recursive = TRUE, full = T) %>%
+  map_dfr(~ read_csv(.), .id = "b")
+```
+
+```{r}
+library(dplyr)
+ix %>%
+  filter(b == 1) %>%
+  count(split)
+```
+
+
+```{r}
+bootstraps <- read_csv("/Users/ksankaran/Downloads/chtc_stability/stability_outputs/bootstraps.csv")
+ix <- read_csv("~/Downloads/chtc_stability/stability_outputs/vae15/features/subset.csv")
+```
+```{r}
+splits <- read_csv("/Users/ksankaran/Downloads/chtc_stability/stability_outputs/splits.csv")
+```
+
+```{r}
+splits %>%
+  count(split)
+```
+
+
+```{r}
+splits <- read_csv("/Users/ksankaran/Downloads/chtc_stability/stability_outputs/splits_0.5-train.csv")
+splits %>%
+  count(split)
+```
+
+```{r}
+subsets <- read_csv("~/Downloads/chtc_stability/stability_outputs/vae15/features/subset.csv")
+subsets$X1 %>% max()
+```
+
+```{r}
+library(stringr)
+splits %>%
+  mutate(path_ix = as.numeric(str_extract(path, "[0-9]+"))) %>%
+  group_by(split) %>%
+  summarise(max(path_ix))
+```
+
+```{r}
+features1 <- np$load("/Users/ksankaran/Downloads/chtc_stability/stability_outputs/vae50/features/mu_best.npy")
+features2 <- np$load("/Users/ksankaran/Downloads/chtc_stability/stability_outputs/vae50.1/features/mu_best.npy")
+ix1 <- read_csv("/Users/ksankaran/Downloads/chtc_stability/stability_outputs/vae50/features/subset.csv")
+ix2 <- read_csv("/Users/ksankaran/Downloads/chtc_stability/stability_outputs/vae50.1/features/subset.csv")
+```
+
+```{r}
+head(ix1)
+head(ix2)
+```
+
+```{r}
+dist(features1[1:10, ])
+dist(features2[1:10, ])
+```
+
