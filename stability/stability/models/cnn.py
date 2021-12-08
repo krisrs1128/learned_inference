@@ -3,27 +3,27 @@ import torch
 from torch import nn
 
 class CBRNet(nn.Module):
-    def __init__(self, p_in=3, trunc_output=False):
+    def __init__(self, p_in=3, nf=32, trunc_output=False):
         super(CBRNet, self).__init__()
 
         self.cnn_layers = nn.Sequential(
             # Three layer fully convolutional net
-            nn.Conv2d(p_in, 128, kernel_size=(5,5), stride=1, padding=2),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(p_in, nf, kernel_size=(5,5), stride=1, padding=2),
+            nn.BatchNorm2d(nf),
             nn.ReLU(inplace=True),
 
-            nn.Conv2d(128, 256, kernel_size=(5,5), stride=1, padding=2),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(nf, nf * 2, kernel_size=(5,5), stride=1, padding=2),
+            nn.BatchNorm2d(nf * 2),
             nn.ReLU(inplace=True),
 
-            nn.Conv2d(256, 512, kernel_size=(5,5), stride=1, padding=2),
-            nn.BatchNorm2d(512),
+            nn.Conv2d(nf * 2, nf * 4, kernel_size=(5,5), stride=1, padding=2),
+            nn.BatchNorm2d(nf * 4),
             nn.ReLU(inplace=True),
 
             nn.AdaptiveAvgPool2d((1, 1))
         )
 
-        final_layer = [nn.Linear(in_features=512, out_features=1, bias=True)]
+        final_layer = [nn.Linear(in_features=nf * 3, out_features=1, bias=True)]
         self.linear_layers = nn.Sequential(*final_layer)
 
     def forward_(self, x):
