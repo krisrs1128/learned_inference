@@ -1,10 +1,11 @@
 
 #' @export
-param_boot <- function(Z, k = 2) {
+param_boot <- function(Z, K = 2) {
   svz <- svd(Z)
   u_hat <- svz$u[, 1:K]
   d_hat <- svz$d[1:K]
-  E <- Z - u_hat %*% diag(sqrt(d_hat))
+  v_hat <- svz$v[, 1:K]
+  E <- Z - u_hat %*% diag(sqrt(d_hat)) %*% t(v_hat)
 
   function() {
     param_boot_(u_hat, d_hat, E)
@@ -14,8 +15,8 @@ param_boot <- function(Z, k = 2) {
 #' Zb here is like the Lb used in the writeup
 #' @export
 param_boot_ <- function(u_hat, d_hat, E) {
-  eB <- matrix(sample(E, replace = TRUE), nrow(E), ncol(E))
-  Pi <- random_permutation(ncol(E))
+  eB <- matrix(sample(E, nrow(E) * length(d_hat), replace = TRUE), nrow(E), length(d_hat))
+  Pi <- random_permutation(length(d_hat))
   Zb <- (u_hat %*% diag(sqrt(d_hat)) + eB) %*% Pi
   list(Zb = Zb, ub = svd(Zb)$u %*% diag(sqrt(svd(Zb)$d)))
 }
@@ -29,7 +30,8 @@ param_boot_ft <- function(Zb, K = 2) {
   svz <- svd(ud_hats)
   u_hat <- svz$u[, 1:K]
   d_hat <- svz$d[1:K]
-  Eb <- map(Zb, ~ . - u_hat %*% diag(sqrt(d_hat)))
+  v_hat <- svz$v[, 1:K]
+  Eb <- map(Zb, ~ . - u_hat %*% diag(sqrt(d_hat)) %*% t(v_hat))
   
   function() {
     param_boot_ft_(u_hat, d_hat, Eb)

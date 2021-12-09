@@ -47,20 +47,10 @@ ix <- read_csv(ix_[[1]]) %>%
   rename(ix = X1) %>%
   left_join(Xy)
 
-align_to_list <- function(Zb, df = F, tol = 0.05) {
+align_to_list <- function(Zb, df = F, tol = 0.01) {
   procrustes(Zb, tol = tol) %>%
     .[["x_align"]] %>%
     arr_to_list(df = df)
-}
-
-align_with_truth <- function(ud_hats, U, Sigma, tol = 0.05) {
-  c(ud_hats, list(U %*% diag(sqrt(Sigma)))) %>%
-    align_to_list(tol = tol, df = T) %>%
-    bind_rows(.id = "b") %>%
-    group_by(b) %>%
-    mutate(i = row_number()) %>%
-    ungroup() %>%
-    mutate(b = as.integer(b))
 }
 ```
 
@@ -69,15 +59,17 @@ align_with_truth <- function(ud_hats, U, Sigma, tol = 0.05) {
 K <- 10
 B <- 100
 Zb_ <- Zb[[1]][ix$split == "train", ]
-f <- features(Zb_, K)
-boot_fun <- param_boot(f(Zb_), K)
+boot_fun <- param_boot(Zb_, K)
 ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list(df = F) %>%
-  map(~ bind_cols(data.frame(., i = seq_len(nrow(.))), ix[ix$split == "train", ]))
+  map_dfr(~ data.frame(.), .id = "b") %>%
+  group_by(b) %>%
+  mutate(i = row_number()) %>%
+  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number()))
 ```
 
 ```{r}
-plot_facets <- function(ud_combined, B = 100, max_i = 10, level = 0.95, facet = TRUE) {
+plot_facets <- function(ud_combined, max_i = 10, level = 0.95, facet = TRUE) {
   ud_combined <- filter(ud_combined, i < max_i)
   p <- ggplot(ud_combined, aes(X1, X2, col = y)) +
     geom_hline(yintercept = 0, col = "#d3d3d3", size = 0.5) +
@@ -96,49 +88,22 @@ plot_facets <- function(ud_combined, B = 100, max_i = 10, level = 0.95, facet = 
 ```
 
 ```{r}
-plot_facets(bind_rows(ud_hats))
-plot_facets(ud_hats[[1]], max_i = 100, facet = F)
+plot_facets(ud_hats)
+plot_facets(ud_hats, facet = F, max_i = 100)
 ```
-
 
 ```{r}
 Zb_ <- Zb %>%
   map(~ .[ix$split == "train", ])
-ud_hats <- align_to_list(Zb_)
-
-svx <- ix %>%
-  filter(split == "train") %>%
-  select(starts_with("X")) %>%
-  as.matrix() %>%
-  svd()
-ud_combined <- align_with_truth(ud_hats, svx$u, 10 * diag(svx$d)) %>%
+ud_hats <- align_to_list(Zb_) %>%
+  map_dfr(~ data.frame(.), .id = "b") %>%
   group_by(b) %>%
   mutate(i = row_number()) %>%
   left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) 
 ```
-
-
 ```{r}
-plot_facets2 <- function(ud_combined, B = 100, max_i = 10, level = 0.95, facet = F) {
-  ud_combined <- filter(ud_combined, i < max_i)
-  p <- ggplot(ud_combined %>% filter(b < B + 1), aes(X1, X2)) +
-    geom_hline(yintercept = 0, col = "#d3d3d3", size = 0.5) +
-    geom_vline(xintercept = 0, col = "#d3d3d3", size = 0.5) +
-    geom_point(aes(col = y), alpha = 0.4, size = 0.2) +
-    stat_ellipse(aes(group = i), col = "#5f9ea0", level = level, type = "norm") +
-    geom_point(data = ud_combined %>% filter(i < max_i, b == B + 1), size = 1, shape = 15, col = "red") +
-    theme(
-      axis.text = element_text(size = 8),
-      axis.title = element_text(size = 10)
-      )
-  if (facet) {
-    p <- p + facet_wrap(~ i, scale = "free")
-  }
-  p
-}
-
-plot_facets2(ud_combined, B = 20)
-plot_facets2(ud_combined, B = 20, facet = F, max_i = 100)
+plot_facets(ud_hats)
+plot_facets(ud_hats, facet = F, max_i = 100)
 ```
 
 
@@ -147,6 +112,14 @@ Zb_ <- Zb %>%
   map(~ .[ix$split == "train", ])
 boot_fn <- param_boot_ft(Zb_, K)
 ud_hats <- rerun(B, boot_fun()$ub) %>%
-  align_to_list()
+  align_to_list() %>%
+  map_dfr(~ data.frame(.), .id = "b") %>%
+  group_by(b) %>%
+  mutate(i = row_number()) %>%
+  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) 
 ```
 
+```{r}
+plot_facets(ud_hats)
+plot_facets(ud_hats, facet = F, max_i = 100)
+```
