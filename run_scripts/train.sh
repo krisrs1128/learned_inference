@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export TRAIN_YAML=conf/cnn_k32.yaml
+export BOOTSTRAP=1
+
 # unzip data and source environmental variables
 tar -zxvf stability_data.tar.gz
 git clone https://github.com/krisrs1128/learned_inference.git

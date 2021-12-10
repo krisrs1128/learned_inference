@@ -16,14 +16,14 @@ class CBRNet(nn.Module):
             nn.BatchNorm2d(nf * 2),
             nn.ReLU(inplace=True),
 
-            nn.Conv2d(nf * 2, nf * 4, kernel_size=(5,5), stride=1, padding=2),
+            nn.Conv2d(nf * 2, nf * 4, kernel_size=(6,5), stride=1, padding=2),
             nn.BatchNorm2d(nf * 4),
             nn.ReLU(inplace=True),
 
             nn.AdaptiveAvgPool2d((1, 1))
         )
 
-        final_layer = [nn.Linear(in_features=nf * 3, out_features=1, bias=True)]
+        final_layer = [nn.Linear(in_features=nf * 4, out_features=1, bias=True)]
         self.linear_layers = nn.Sequential(*final_layer)
 
     def forward_(self, x):
