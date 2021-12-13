@@ -7,9 +7,9 @@ output: html_notebook
 set.seed(1234)
 library(dplyr)
 library(ggplot2)
-library(purrr)
 library(lfboot)
-theme_set(min_theme())
+library(purrr)
+library(tidyr)
 ```
 Here are some helper visualizations used in this script but unlikely to be
 generally useful.
@@ -44,46 +44,47 @@ Sigma <- c(rep(10, 2), rep(0.01, D - K))
 X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
 ```
 
-Here is the strategy that extracts the features once and then applies a
-parametric bootstrap according to the assumed model.
 
 ```{r}
-f <- features(X)
-boot_fun <- param_boot(f(X), K)
-ud_hats <- rerun(B, boot_fun()$ub) %>%
-  align_to_list(df = F)
-ud_combined <- align_with_truth(ud_hats, U, Sigma)
+n_rep <- 500
+coverage_rates <- matrix(0, n_rep, 3)
+
+for (i in seq_len(n_rep)) {
+  # extract once
+  f <- features(X)
+  boot_fun <- param_boot(f(X), K)
+  ud_hats <- rerun(B, boot_fun()$ub) %>%
+    align_to_list(df = F)
+  ud_combined <- align_with_truth(ud_hats, U, Sigma)
+  
+  contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
+  coverage_rates[i, 1] <- mean(contained)
+  
+  # extract B times
+  Zb <- rerun(B, f(X))
+  ud_hats <- align_to_list(Zb)
+  ud_combined <- align_with_truth(ud_hats, U, Sigma)
+
+  contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
+  coverage_rates[i, 2] <- mean(contained)
+  
+  # compromise
+  Zb <- rerun(10, f(X))
+  boot_fun <- param_boot_ft(Zb, K)
+  ud_hats <- rerun(B, boot_fun()$ub) %>%
+    align_to_list()
+  ud_combined <- align_with_truth(ud_hats, U, Sigma)
+  contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
+  coverage_rates[i, 3] <- mean(contained)
+}
 ```
 
-```{r}
-contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
-mean(contained)
-```
-
-What if we instead extract $B$ sets of features?
 
 ```{r}
-f <- features(X)
-Zb <- rerun(B, f(X))
-ud_hats <- align_to_list(Zb)
-ud_combined <- align_with_truth(ud_hats, U, Sigma)
-```
-
-```{r}
-contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
-mean(contained)
-```
-
-Here is a kind of compromise between repeated feature learning and a parametric
-bootstrap. The simulated samples are somewhat complicated (projected mixtures,
-it seems like). But it is computationally simpler and does seem more honest than
-not using any feature relearning.
-
-```{r}
-f <- features(X)
-Zb <- rerun(10, f(X))
-boot_fun <- param_boot_ft(Zb, K)
-ud_hats <- rerun(B, boot_fun()$ub) %>%
-  align_to_list()
-ud_combined <- align_with_truth(ud_hats, U, Sigma)
+coverage_rates2 <- data.frame(coverage_rates) %>%
+  set_names(c("single", "repeat", "compromise")) %>%
+  pivot_longer(single:compromise, names_to = "method", values_to = "coverage")
+ggplot(coverage_rates2, aes(method, y = coverage)) +
+  geom_hline(yintercept = 0.95, col = "red") +
+  geom_point(position = position_dodge2(w = .1))
 ```

@@ -61,7 +61,7 @@ arr_to_list <- function(x, df = F) {
 }
 
 #' @export
-procrustes <- function(x_list, tol = 0.05) {
+procrustes <- function(x_list, tol = 0.001) {
   x_align <- array(dim = c(dim(x_list[[1]]), length(x_list)))
   M <- x_list[[1]]
 
