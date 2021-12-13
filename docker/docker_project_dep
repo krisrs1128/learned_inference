@@ -1,4 +1,4 @@
-FROM krisrs1128/rpy:123001
+FROM krisrs1128/rpy:2021121301
 
 # packages more specific to this project
 RUN apt-get install -y libx11-dev 
