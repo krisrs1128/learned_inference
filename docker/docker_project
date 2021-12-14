@@ -2,5 +2,7 @@ FROM krisrs1128/lidep:2021121301
 
 # our own packages (at end, so can recompile easily)
 RUN git clone https://github.com/krisrs1128/learned_inference.git
-RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference')"
+RUN python3 --version
+RUN pip3 install torch==1.8.2+cu111 torchvision==0.9.2+cu111 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
 RUN pip3 install learned_inference/stability
+RUN Rscript -e "devtools::install_github('krisrs1128/learned_inference/inference')"
