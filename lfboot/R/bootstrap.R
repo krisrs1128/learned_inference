@@ -77,6 +77,7 @@ procrustes <- function(x_list, tol = 0.001) {
     M_old <- M
     M <- apply(x_align, c(1, 2), mean)
     coord_change <- mean(abs(M - M_old))
+    print(coord_change)
     if (coord_change < tol) break
   }
 
