@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # unzip data and source environmental variables
-tar -zxvf stability_data.tar.gz
+tar -zxvf stability_data_tnbc.tar.gz
+tar -zxvf stability_data_sim.tar.gz
 git clone https://github.com/krisrs1128/learned_inference.git
 source learned_inference/.env
 
