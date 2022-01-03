@@ -12,3 +12,4 @@ inference/vignettes/*.png
 *html
 *cache*
 .Rproj.user
+data/*
