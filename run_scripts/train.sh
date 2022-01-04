@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # unzip data and source environmental variables
-for f in $(ls stability*.tar.gz); do tar -zxvf $f; done;
+tar -zxvf ${DATASET}
 git clone https://github.com/krisrs1128/learned_inference.git
 source learned_inference/.env
 
