@@ -5,12 +5,13 @@ params:
   #input_dir: "/Users/ksankaran/Desktop/learned_inference/data/vae_data/"
   #layer_prefix: "mu_best*"
   #transform: "none"
-  input_dir: "/Users/ksankaran/Desktop/learned_inference/data/cnn_data/"
+  input_dir: "/Users/ksankaran/Desktop/learned_inference/data/rcf_data/"
+  #input_dir: "/Users/ksankaran/Desktop/learned_inference/data/cnn_data/"
   #input_dir: "/Users/ksankaran/Desktop/learned_inference/data/tnbc_cnn_data/"
-  layer_prefix: "linear_best*"
+  layer_prefix: "full_best*"
   K: 10
   B: 100
-  transform: "log"
+  transform: "none"
 ---
 
 ```{r}
