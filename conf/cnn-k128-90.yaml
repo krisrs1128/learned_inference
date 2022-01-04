@@ -2,7 +2,7 @@ organization: # all relative to $DATA_DIR
   features_dir: "features/"
   metadata: "layers.csv"
   model: "model_best.pt"
-  splits: "splits_0.5-train.csv"
+  splits: "splits_0.9-train.csv"
   xy: "Xy.csv"
 train:
   batch_size: 128
@@ -18,4 +18,5 @@ train:
   save_every: 50
   save_subset: 2000
 bootstrap:
-  path: "bootstraps_0.5-train.csv"
+  path: "bootstraps_0.9-train.csv"
+  B: 100

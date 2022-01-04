@@ -15,8 +15,8 @@ train:
   patience: 20
   save_every: 50
   save_subset: 2000
-  z_dim: 64
+  z_dim: 32
 bootstrap:
   path: "bootstraps_0.5-train.csv"
   index: null
-  B: 20
+  B: 100

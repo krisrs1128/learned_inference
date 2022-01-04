@@ -19,3 +19,4 @@ train:
   save_subset: 2000
 bootstrap:
   path: "bootstraps_0.5-train.csv"
+  B: 100

@@ -13,3 +13,4 @@ train:
   l1_ratio: 0.1 # mixing parameter l1 vs l2
 bootstrap:
   path: "bootstraps_0.5-train.csv"
+  B: 100
