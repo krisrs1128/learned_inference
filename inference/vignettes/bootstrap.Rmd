@@ -4,177 +4,91 @@ output: html_notebook
 ---
 
 ```{r}
+set.seed(1234)
 library(dplyr)
 library(ggplot2)
 library(purrr)
-source("../R/simulation.R")
-source("../R/stability.R")
+library(lfboot)
+theme_set(min_theme())
 ```
-
-
 ```{r}
-N <- 100
-D <- 3
+B <- 1000
+N <- 200
+D <- 50
 K <- 2
 U <- r_ortho(N, D)
 V <- r_ortho(D, D)
-Sigma <- c(rep(10, K), rep(0.01, D - K))
+Sigma <- c(rep(10, 2), rep(0.01, D - K))
+X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
+beta <- c(c(1, -1), rep(0, D - K))
+y <- U %*% diag(sqrt(Sigma)) %*% beta + rnorm(N, 0, 0.1)
+```
 
-simulate_features <- function(U, V, Sigma, sigma_e = 0.01) {
-  N <- nrow(U)
-  D <- nrow(V)
-  Pi <- random_permutation(D)
-  (U %*% diag(Sigma) %*% t(V) + rmat(N, D, sigma_e)) %*% Pi
-}
+Here is the strategy that extracts the features once and then applies a
+parametric bootstrap according to the assumed model.
 
-Z <- data.frame(simulate_features(U, V, Sigma))
-ggplot(Z) +
-  geom_point(aes(X1, X2))
+```{r}
+f <- features(X)
+boot_fun <- param_boot(f(X), K)
+ud_hats <- rerun(B, boot_fun()$ub) %>%
+  align_to_list(df = F)
+ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
+  left_join(data.frame(i = seq_along(y), y = y))
 ```
 
 ```{r}
-Zb <- map(1:100, ~ simulate_features(U, V, Sigma))
-Z_aligned <- procrustes(Zb)
-Z_aligned_df <- map(1:100, ~ data.frame(Z_aligned$x_align[,, .]))
-ggplot(bind_rows(Z_aligned_df)) +
-  geom_point(aes(X1, X2)) +
-  coord_fixed()
+plot_facets(ud_combined)
+plot_facets(ud_combined, facet = FALSE)
+#ggsave("~/Desktop/l_approach1_facet.png", dpi = 250)
+plot_overlay(ud_combined, max_i = 100)
+#ggsave("~/Desktop/l_approach1.png", dpi = 250)
 ```
 
 ```{r}
-U_hats_ <- map(Z_aligned_df, ~ data.frame(svd(.)$u))
-U2 <- append(U_hats_, list(U))
-U_aligned <- procrustes(map(U2, ~ as.matrix(.)))$x_align
-
-U_hats <- bind_rows(map(1:dim(U_aligned)[3], ~ data.frame(U_aligned[,, .])), .id = "b") %>% 
-  mutate(b = as.integer(b))
-ggplot(U_hats) +
-  geom_point(aes(X1, X2, col = b < 101), alpha = 0.6)
+contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
+mean(contained)
 ```
 
-If we had used one replicate of the Z's...
+What if we instead extract $B$ sets of features?
 
 ```{r}
-sv1 <- svd(Zb[[1]])
-E <- Zb[[1]] - sv1$u[, 1:K] %*% diag(sv1$d[1:K]) %*% t(sv1$v[, 1:K])
+f <- features(X)
+Zb <- rerun(B, f(X))
+ud_hats <- align_to_list(Zb)
+ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
+  left_join(data.frame(i = seq_along(y), y = y))
 ```
 
 ```{r}
-param_boot <- function(u_hat, v_hat, d_hat, E) {
-  eB <- matrix(sample(E, replace = TRUE), nrow(E), ncol(E))
-  Pi <- random_permutation(ncol(E))
-  Zb <- (u_hat %*% diag(d_hat) %*% t(v_hat) + eB) %*% Pi
-  ub <- svd(Zb)$u
-  list(Zb = Zb, ub = ub)
-}
+contained <- coverage(ud_combined %>% filter(b < max(b)),  ud_combined %>% filter(b == max(b)))
+mean(contained)
 ```
 
 ```{r}
-U_hats_ <- rerun(100, param_boot(sv1$u, sv1$v, sv1$d, E)$ub)
-U2 <- append(U_hats_, list(U))
-U_aligned <- procrustes(map(U2, ~ as.matrix(.)))$x_align
+plot_facets(ud_combined)
+#ggsave("~/Desktop/l_approach2_facet.png", dpi = 250)
+plot_overlay(ud_combined, 100)
+#ggsave("~/Desktop/l_approach2.png", dpi = 250)
+```
 
-U_hats2 <- bind_rows(map(1:dim(U_aligned)[3], ~ data.frame(U_aligned[,, .])), .id = "b") %>%
-  mutate(b = as.integer(b))
+Here is a kind of compromise between repeated feature learning and a parametric
+bootstrap. The simulated samples are somewhat complicated (projected mixtures,
+it seems like). But it is computationally simpler and does seem more honest than
+not using any feature relearning.
+
+```{r}
+f <- features(X)
+Zb <- rerun(10, f(X))
+boot_fun <- param_boot_ft(Zb, K)
+ud_hats <- rerun(B, boot_fun()$ub) %>%
+  align_to_list()
+ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
+  left_join(data.frame(i = seq_along(y), y = y))
 ```
 
 ```{r}
-ggplot(U_hats2) +
-  geom_point(aes(X1, X2, col = b < 100))
-```
-
-
-Is there a compromise between simulating 100 `Zb`'s and using a parametric
-bootstrap with just one?
-
-```{r}
-Zb <- map(1:5, ~ simulate_features(U, V, Sigma))
-Z_aligned <- procrustes(Zb)
-Z_aligned_df <- map(1:5, ~ data.frame(Z_aligned$x_align[,, .]))
-```
-
-```{r}
-decompositions <- map(Z_aligned_df, ~ svd(.)) %>%
-  map(~ list(u = .$u, d = .$d, v = .$v))
-
-average_arrays <- function(s) {
-  library(abind)
-  abind(s, along = 3) %>%
-    apply(c(1, 2), mean)
-}
-
-u_bar <- decompositions %>%
-  map(~ .$u) %>%
-  average_arrays()
-
-v_bar <- decompositions %>%
-  map(~ .$v) %>%
-  average_arrays()
-
-d_bar <- decompositions %>% 
-  map(~ .$d) %>% 
-  abind(along = 2) %>% 
-  rowMeans()
-```
-
-```{r}
-d_bar[-c(1:K)] <- 0
-Eb <- map(Z_aligned_df, ~ . - u_bar %*% diag(d_bar) %*% t(v_bar))
-```
-
-```{r}
-bind_rows(Eb, .id = "b") %>%
-  filter(as.integer(b) < 20) %>%
-  ggplot() +
-  geom_point(aes(X1, X2, col = b)) +
-  facet_wrap(~ b)
-```
-
-
-```{r}
-param_boot2 <- function(u_bar, d_bar, v_bar, Eb) {
-  N <- nrow(Eb[[1]])
-  D <- ncol(Eb[[1]])
-  
-  Estar <- do.call(cbind, Eb)
-  Estar <- as.matrix(Estar[, sample(D, replace = T)])
-  Pi <- random_permutation(D)
-  Zstar <- (u_bar %*% diag(d_bar) %*% t(v_bar) + Estar) %*% Pi
-
-  svz <- svd(Zstar)
-  list(Zstar = Zstar, ustar = svz$u)
-}
-```
-
-```{r}
-Zstars <- rerun(500, param_boot2(u_bar, d_bar, v_bar, Eb)) %>%
-  map(~ .$Zstar)
-
-z_aligned <- procrustes(Zstars, tol = 1e-4)$x_align
-us <- map(1:dim(z_aligned)[3], ~ data.frame(svd(z_aligned[,, .])$u)) %>%
-  append(list(U))
-
-u_aligned <- procrustes(map(us, ~ as.matrix(.)))$x_align
-
-u_hats <- bind_rows(map(1:dim(u_aligned)[3], ~ data.frame(u_aligned[,, .])), .id = "b") %>% 
-  group_by(b) %>%
-  mutate(i = as.integer(row_number())) %>%
-  ungroup() %>%
-  mutate(b = as.integer(b))
-```
-
-
-```{r}
-ggplot(u_hats) +
-  geom_point(aes(X1, X2, col = as.factor(i), shape = b < 101), alpha = 0.6) +
-  theme(legend.position = "none") +
-  facet_wrap(~ b < 101)
-```
-
-```{r}
-ggplot(u_hats %>% filter(i < 20), aes(X1, X2, col = as.factor(i))) +
-  geom_point(data = u_hats %>% filter(i < 20, b < 500), alpha = 0.1, size = 0.1) +
-  geom_point(data = u_hats %>% filter(i < 20, b == 501), alpha = 1, shape = 15, size = 2) +
-  theme(legend.position = "none") +
-  facet_wrap(~ i)
+plot_facets(ud_combined)
+#ggsave("~/Desktop/l_approach3_facet.png", dpi = 250)
+plot_overlay(ud_combined)
+#ggsave("~/Desktop/l_approach3.png", dpi = 250)
 ```
