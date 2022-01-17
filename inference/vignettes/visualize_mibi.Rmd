@@ -2,29 +2,33 @@
 title: "Visualize MIBI"
 output: html_notebook
 params:
-  tiles_dir: "/Users/kris/Documents/tiles_dir/"
+  tnbc_data: "data/stability_data_tnbc.tar.gz"
 ---
 
 ```{r}
-library("reticulate")
-library("dplyr")
-library("ggplot2")
-library("readr")
-library("purrr")
-library("reshape2")
+library(dplyr)
+library(ggplot2)
+library(lfboot)
+library(purrr)
+library(readr)
+library(reshape2)
+library(reticulate)
+library(stringr)
 np <- import("numpy")
-theme_set(theme_bw())
+theme_set(min_theme())
 ```
 
 ```{r}
-Xy <- read_csv(file.path(params$tiles_dir, "Xy.csv"), col_types = cols())
+exdir <- str_remove(params$tnbc_data, ".tar.gz")
+untar(params$tnbc_data, exdir = exdir)
+Xy <- read_csv(file.path(exdir, "stability_data", "Xy.csv"), col_types = cols())
 cell_types <- c("B", "CD4", "CD8", "Keratin+ tumor", "Macrophages", "Mesenchymal-like", "Other")
 ```
 
 ```{r}
 n_patch <- nrow(Xy)
 ix <- order(Xy$y)[seq(1, n_patch, length.out = 16)]
-ims <- map(ix, ~ np$load(file.path(params$tiles_dir, Xy$path[.])))
+ims <- map(ix, ~ np$load(file.path(exdir,"stability_data",  Xy$path[.])))
 ```
 
 ```{r, fig.width = 9, fig.height = 3.5}
@@ -33,13 +37,11 @@ mim <- melt(ims, varnames = c("w", "h", "cell_type")) %>%
   filter(value == 1)
 
 ggplot(mim) +
-  geom_raster(
-    aes(x = w, y = h, fill = cell_type)
-  ) +
+  geom_raster(aes(w, h, fill = cell_type)) +
   coord_fixed() +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
-  scale_alpha(range = c(0, 1), guide = FALSE) +
+  scale_alpha(range = c(0, 1), guide = "none") +
   scale_fill_brewer(palette = "Set3") +
   labs(fill = "Cell Type") +
   facet_wrap(~L1, ncol = 8) +
@@ -51,5 +53,6 @@ ggplot(mim) +
     axis.ticks = element_blank(),
     legend.position = "bottom"
   )
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/example_cells.png", dpi = 500)
+
+ggsave("example_cells.png", dpi = 500)
 ```
