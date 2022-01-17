@@ -14,10 +14,15 @@ params:
   transform: "none"
 ---
 
-```{r}
+```{r, echo = FALSE}
 library(knitr)
 opts_chunk$set(warning = FALSE, message = FALSE)
 ```
+
+This script takes features and constructs bootstrap
+confidence sets around them.
+
+We first load some packages that will be used in this script.
 
 ```{r}
 set.seed(1234)
@@ -62,7 +67,7 @@ plot_facets <- function(ud_combined, max_i = 10, level = 0.9, facet = TRUE, alph
     theme(
       axis.text = element_text(size = 8),
       axis.title = element_text(size = 10)
-      )
+    )
   if (facet) {
     p <- p + facet_wrap(~ i, scale = "free")
   }
@@ -107,8 +112,6 @@ ggplot(z_df)+
   scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
 ```
 
-
-
 ```{r}
 Zb_ <- Zb[[1]][ix$split == "train", ]
 boot_fun <- param_boot(Zb_, K)
@@ -134,11 +137,11 @@ ud_hats <- align_to_list(Zb_) %>%
   mutate(i = row_number()) %>%
   left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) 
 ```
+
 ```{r}
 plot_facets(ud_hats)
 plot_facets(ud_hats, facet = F, max_i = 50, alpha = 0.3)
 ```
-
 
 
 ```{r}

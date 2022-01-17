@@ -1,0 +1,93 @@
+---
+title: "R Notebook"
+output: html_notebook
+params:
+  input_model: "data/cnn_data/cnn-k64.yaml_0.tar.gz"
+  layer_prefix: "linear_best*"
+  K: 10
+  B: 100
+  transform: "log"
+---
+
+```{r, echo = FALSE}
+library(knitr)
+opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+This script takes learned features from one training run and generates a
+visualization of feature stability using a parametric bootstrap model (give the
+formulation). The inputs are,
+
+```{r}
+set.seed(1234)
+library(dplyr)
+library(ggplot2)
+library(lfboot)
+library(purrr)
+library(readr)
+library(reticulate)
+library(stringr)
+source("visualization_functions.R")
+np <- import("numpy")
+theme_set(min_theme())
+```
+
+```{r}
+attach(params)
+exdir <- str_remove(input_model, ".tar.gz")
+untar(input_model, exdir = exdir)
+```
+
+```{r}
+z_path <- list.files(exdir, layer_prefix, recursive = T, full = T)
+f <- ifelse(transform == "log", function(x) log(1 + x), identity)
+Zb <- f(drop(np$load(z_path)))
+Xy <- read_csv(list.files(exdir, "Xy.csv", recursive = T, full = T))
+```
+
+```{r}
+ix <- list.files(exdir, "*subset*", recursive = TRUE, full = T) %>%
+  read_csv() %>%
+  rename(ix = X1) %>%
+  left_join(Xy)
+```
+
+Before any sort of bootstrapping / alignment, this is what the learned features
+for one of the models looks like.
+
+```{r}
+z_df <- data.frame(z = princomp(Zb)$scores, y = ix$y)
+ggplot(z_df)+
+  geom_point(aes(z.Comp.1, z.Comp.2, col = y)) +
+  scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
+```
+
+```{r}
+Zb_ <- Zb[ix$split == "train", ]
+boot_fun <- param_boot(Zb_, K)
+ud_hats <- rerun(B, boot_fun()$ub) %>%
+  align_to_list(df = F) %>%
+  map_dfr(~ data.frame(.), .id = "b") %>%
+  group_by(b) %>%
+  mutate(i = row_number()) %>%
+  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number()))
+```
+
+```{r}
+plot_facets(ud_hats)
+plot_facets(ud_hats, facet = F, max_i = 100)
+```
+
+The block below compares performance when using the learned features vs. a naive
+baseline.
+
+```{r}
+y <- ix %>%
+  filter(split == "train") %>%
+  pull(y)
+fit <- lm(y ~ Zb[ix$split == "train", ])
+y_hat <- predict(fit)
+mean((y - y_hat) ^ 2)
+mean((y - mean(ix$y)) ^ 2)
+```
+

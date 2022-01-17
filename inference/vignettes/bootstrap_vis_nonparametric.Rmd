@@ -1,0 +1,79 @@
+---
+title: "R Notebook"
+output: html_notebook
+params:
+  input_dir: "data/cnn_data/"
+  layer_prefix: "linear_best*"
+  K: 10
+  B: 100
+  transform: "log"
+---
+
+```{r, echo = FALSE}
+library(knitr)
+opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+This script takes features and constructs bootstrap
+confidence sets around them.
+
+We first load some packages that will be used in this script.
+
+```{r}
+set.seed(1234)
+library(dplyr)
+library(ggplot2)
+library(lfboot)
+library(purrr)
+library(readr)
+library(reticulate)
+library(stringr)
+source("visualization_functions.R")
+np <- import("numpy")
+theme_set(min_theme())
+```
+
+```{r}
+attach(params)
+untar_all(list.files(input_dir, "*.tar.gz", full = T))
+```
+
+```{r}
+z_paths <- list.files(input_dir, layer_prefix, recursive = T, full = T)
+f <- ifelse(transform == "log", function(x) log(1 + x), identity)
+Zb <- map(z_paths, ~ f(drop(np$load(.))))
+Xy <- read_csv(list.files(input_dir, "Xy.csv", recursive = T, full = T)[1])
+```
+
+```{r}
+ix <- list.files(input_dir, "*subset*", recursive = TRUE, full = T) %>%
+  .[[1]] %>%
+  read_csv() %>%
+  rename(ix = X1) %>%
+  left_join(Xy)
+```
+
+Before any sort of bootstrapping / alignment, this is what the learned features
+for one of the models looks like.
+
+```{r}
+z_df <- data.frame(z = princomp(Zb[[1]])$scores, y = ix$y)
+ggplot(z_df)+
+  geom_point(aes(z.Comp.1, z.Comp.2, col = y)) +
+  scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
+```
+
+```{r}
+Zb_ <- Zb %>%
+  map(~ .[ix$split == "train", ])
+ud_hats <- align_to_list(Zb_) %>%
+  map_dfr(~ data.frame(.), .id = "b") %>%
+  group_by(b) %>%
+  mutate(i = row_number()) %>%
+  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) 
+```
+
+```{r}
+plot_facets(ud_hats)
+plot_facets(ud_hats, facet = F, max_i = 50, alpha = 0.3)
+```
