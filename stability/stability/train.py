@@ -21,8 +21,7 @@ def log_stage(stage, epoch, model, loss, loader, writer, device):
         if epoch == 0:
             writer.add_image(f"x/{stage}", make_grid(x[:, :3]), epoch)
         x_hat = model(x.to(device))["x_hat"]
-        if (epoch + 1) % 20 == 0:
-            writer.add_image(f"x_hat/{stage}", make_grid(x_hat[:, :3]), epoch)
+        writer.add_image(f"x_hat/{stage}", make_grid(x_hat[:, :3]), epoch)
     else:
         y_hat = model(x.to(device))["y_hat"]
         for i, yi in enumerate(y_hat):

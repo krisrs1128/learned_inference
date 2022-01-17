@@ -1,6 +1,6 @@
 #!/bin/bash
 universe = docker
-docker_image = krisrs1128/li:2022011701
+docker_image = krisrs1128/li:20211214
 log = /home/ksankaran/logs/tnbc_split.log
 error = /home/ksankaran/logs/tnbc_split.err
 output = /home/ksankaran/logs/tnbc_split.out
