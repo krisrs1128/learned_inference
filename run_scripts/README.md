@@ -17,3 +17,17 @@ for s in 15 50 90; do
   done;
 done;
 ```
+
+To run the different models for data analysis, we can use
+
+```
+for k in 32 64 128; do
+  for model in cnn vae; do
+    bash train.submit conf/tnbc_${model}-k${k}.yaml stability_data_tnbc.tar.gz
+  done;
+done;
+
+for k in 256 512 1024; do
+  bash train.submit conf/tnbc_rcf-k${k}.yaml stability_data_tnbc.tar.gz
+done;
+```
