@@ -2,11 +2,12 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  input_model: "data/cnn_data/cnn-k64.yaml_0.tar.gz"
+  input_dir: "data/simulation_outputs/"
+  subset: "cnn-k128-15"
   layer_prefix: "linear_best*"
   K: 10
   B: 100
-  transform: "log"
+  transform: "none"
 ---
 
 ```{r, echo = FALSE}
@@ -34,19 +35,19 @@ theme_set(min_theme())
 
 ```{r}
 attach(params)
-exdir <- str_remove(input_model, ".tar.gz")
-untar(input_model, exdir = exdir)
+list.files(input_dir, str_c(subset, "*"), full = T) %>%
+  untar_all(file.path(input_dir, subset))
 ```
 
 ```{r}
-z_path <- list.files(exdir, layer_prefix, recursive = T, full = T)
+z_paths <- list.files(input_dir, layer_prefix, recursive = T, full = T)
 f <- ifelse(transform == "log", function(x) log(1 + x), identity)
-Zb <- f(drop(np$load(z_path)))
-Xy <- read_csv(list.files(exdir, "Xy.csv", recursive = T, full = T))
+Zb <- f(drop(np$load(z_paths[1])))
+Xy <- read_csv(list.files(input_dir, "Xy.csv", recursive = T, full = T)[1])
 ```
 
 ```{r}
-ix <- list.files(exdir, "*subset*", recursive = TRUE, full = T) %>%
+ix <- list.files(input_dir, "*subset*", recursive = TRUE, full = T)[1] %>%
   read_csv() %>%
   rename(ix = X1) %>%
   left_join(Xy)
@@ -69,13 +70,15 @@ ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list(df = F) %>%
   map_dfr(~ data.frame(.), .id = "b") %>%
   group_by(b) %>%
-  mutate(i = row_number()) %>%
-  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number()))
+  mutate(i = row_number(), subset = params$subset, bootstrap = "parametric") %>%
+  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) %>%
+  select(subset, b, i, ix, path, split, y, X.N, matches("beta"), matches("alpha"), X.nu, X.tau, X.lambda_1, starts_with("X[0-9]+"))
 ```
 
 ```{r}
-plot_facets(ud_hats)
-plot_facets(ud_hats, facet = F, max_i = 100)
+write_csv(ud_hats, str_c(input_dir, subset, "_parametric.csv"))
+#plot_facets(ud_hats)
+#plot_facets(ud_hats, facet = F, max_i = 100)
 ```
 
 The block below compares performance when using the learned features vs. a naive

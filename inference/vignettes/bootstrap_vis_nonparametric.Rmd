@@ -2,11 +2,12 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  input_dir: "data/cnn_data/"
+  input_dir: "data/simulation_outputs/"
+  subset: "cnn-k128-15"
   layer_prefix: "linear_best*"
   K: 10
   B: 100
-  transform: "log"
+  transform: "none"
 ---
 
 ```{r, echo = FALSE}
@@ -14,8 +15,7 @@ library(knitr)
 opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
-This script takes features and constructs bootstrap
-confidence sets around them.
+This script takes features and constructs bootstrap confidence sets around them.
 
 We first load some packages that will be used in this script.
 
@@ -35,7 +35,8 @@ theme_set(min_theme())
 
 ```{r}
 attach(params)
-untar_all(list.files(input_dir, "*.tar.gz", full = T))
+list.files(input_dir, str_c(subset, "*"), full = T) %>%
+  untar_all(file.path(input_dir, subset))
 ```
 
 ```{r}
@@ -69,11 +70,13 @@ Zb_ <- Zb %>%
 ud_hats <- align_to_list(Zb_) %>%
   map_dfr(~ data.frame(.), .id = "b") %>%
   group_by(b) %>%
-  mutate(i = row_number()) %>%
-  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) 
+  mutate(i = row_number(), subset = params$subset, bootstrap = "nonparametric") %>%
+  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number()))  %>%
+  select(subset, b, i, ix, path, split, y, X.N, matches("beta"), matches("alpha"), X.nu, X.tau, X.lambda_1, starts_with("X[0-9]+"))
 ```
 
 ```{r}
-plot_facets(ud_hats)
-plot_facets(ud_hats, facet = F, max_i = 50, alpha = 0.3)
+write_csv(ud_hats, str_c(input_dir, subset, "_nonparametric.csv"))
+#plot_facets(ud_hats)
+#plot_facets(ud_hats, facet = F, max_i = 50, alpha = 0.3)
 ```
