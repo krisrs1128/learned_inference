@@ -2,16 +2,11 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  #input_dir: "/Users/ksankaran/Desktop/learned_inference/data/vae_data/"
-  #layer_prefix: "mu_best*"
-  #transform: "none"
-  input_dir: "/Users/ksankaran/Desktop/learned_inference/data/rcf_data/"
-  #input_dir: "/Users/ksankaran/Desktop/learned_inference/data/cnn_data/"
-  #input_dir: "/Users/ksankaran/Desktop/learned_inference/data/tnbc_cnn_data/"
-  layer_prefix: "full_best*"
+  input_dir: "data/cnn_data/"
+  layer_prefix: "linear_best*"
   K: 10
   B: 100
-  transform: "none"
+  transform: "log"
 ---
 
 ```{r, echo = FALSE}
@@ -32,68 +27,28 @@ library(lfboot)
 library(purrr)
 library(readr)
 library(reticulate)
+library(stringr)
+source("visualization_functions.R")
+np <- import("numpy")
 theme_set(min_theme())
 ```
 
 ```{r}
-untar_all <- function(paths, data_dir = ".") {
-  for (i in seq_along(paths)) {
-    exdir <- file.path(data_dir, tools::file_path_sans_ext(basename(paths[[i]])))
-    if (!dir.exists(exdir)) {
-      untar(paths[i], exdir = exdir)
-    }
-  }
-}
-
-align_to_list <- function(Zb, df = F, tol = 0.001) {
-  procrustes(Zb, tol = tol) %>%
-    .[["x_align"]] %>%
-    arr_to_list(df = df)
-}
-
-plot_facets <- function(ud_combined, max_i = 10, level = 0.9, facet = TRUE, alpha = 0.05) {
-  ud_combined <- filter(ud_combined, i < max_i)
-  ud_mean <- ud_combined %>%
-    group_by(i, y) %>%
-    summarise(across(starts_with("X"), mean))
-  
-  p <- ggplot(ud_combined, aes(X1, X2, col = y, fill = y)) +
-    stat_ellipse(aes(group = i), geom = "polygon", level = level, type = "norm", alpha = alpha, size = 0.1) +
-    geom_point(data = ud_mean, size = 0.8) +
-    geom_hline(yintercept = 0, col = "#d3d3d3", size = 0.5) +
-    geom_vline(xintercept = 0, col = "#d3d3d3", size = 0.5) +
-    scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7") +
-    scale_fill_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7") +
-    theme(
-      axis.text = element_text(size = 8),
-      axis.title = element_text(size = 10)
-    )
-  if (facet) {
-    p <- p + facet_wrap(~ i, scale = "free")
-  }
-  p
-}
-```
-
-
-```{r, warning = FALSE, message = FALSE}
 attach(params)
-dir.create(file.path(input_dir, "unzipped"))
-paths <- list.files(input_dir, "*.tar.gz", full = T)
-untar_all(paths, input_dir)
+untar_all(list.files(input_dir, "*.tar.gz", full = T))
 ```
 
 ```{r}
-np <- import("numpy")
-mu_paths <- list.files(input_dir, layer_prefix, recursive = T, full = T)
+z_paths <- list.files(input_dir, layer_prefix, recursive = T, full = T)
 f <- ifelse(transform == "log", function(x) log(1 + x), identity)
-Zb <- map(mu_paths, ~ f(drop(np$load(.))))
+Zb <- map(z_paths, ~ f(drop(np$load(.))))
 Xy <- read_csv(list.files(input_dir, "Xy.csv", recursive = T, full = T)[1])
 ```
 
 ```{r}
-ix_ <- list.files(input_dir, "*subset*", recursive = TRUE, full = T)
-ix <- read_csv(ix_[[1]]) %>%
+ix <- list.files(input_dir, "*subset*", recursive = TRUE, full = T) %>%
+  .[[1]] %>%
+  read_csv() %>%
   rename(ix = X1) %>%
   left_join(Xy)
 ```
@@ -102,47 +57,11 @@ Before any sort of bootstrapping / alignment, this is what the learned features
 for one of the models looks like.
 
 ```{r}
-z_df <- data.frame(
-  z = princomp(Zb[[1]])$scores,
-  y = ix$y
-)
-
+z_df <- data.frame(z = princomp(Zb[[1]])$scores, y = ix$y)
 ggplot(z_df)+
   geom_point(aes(z.Comp.1, z.Comp.2, col = y)) +
   scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
 ```
-
-```{r}
-Zb_ <- Zb[[1]][ix$split == "train", ]
-boot_fun <- param_boot(Zb_, K)
-ud_hats <- rerun(B, boot_fun()$ub) %>%
-  align_to_list(df = F) %>%
-  map_dfr(~ data.frame(.), .id = "b") %>%
-  group_by(b) %>%
-  mutate(i = row_number()) %>%
-  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number()))
-```
-
-```{r}
-plot_facets(ud_hats)
-plot_facets(ud_hats, facet = F, max_i = 100)
-```
-
-```{r}
-Zb_ <- Zb %>%
-  map(~ .[ix$split == "train", ])
-ud_hats <- align_to_list(Zb_) %>%
-  map_dfr(~ data.frame(.), .id = "b") %>%
-  group_by(b) %>%
-  mutate(i = row_number()) %>%
-  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) 
-```
-
-```{r}
-plot_facets(ud_hats)
-plot_facets(ud_hats, facet = F, max_i = 50, alpha = 0.3)
-```
-
 
 ```{r}
 Zb_ <- Zb %>%
@@ -160,17 +79,3 @@ ud_hats <- rerun(B, boot_fun()$ub) %>%
 plot_facets(ud_hats)
 plot_facets(ud_hats, facet = F, max_i = 100)
 ```
-
-The block below compares performance when using the learned features vs. a naive
-baseline.
-
-```{r}
-y <- ix %>%
-  filter(split == "train") %>%
-  pull(y)
-fit <- lm(y ~ Zb[[4]][ix$split == "train", ])
-y_hat <- predict(fit)
-mean((y - y_hat) ^ 2)
-mean((y - mean(ix$y)) ^ 2)
-```
-

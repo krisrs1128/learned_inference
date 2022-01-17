@@ -90,4 +90,3 @@ y_hat <- predict(fit)
 mean((y - y_hat) ^ 2)
 mean((y - mean(ix$y)) ^ 2)
 ```
-
