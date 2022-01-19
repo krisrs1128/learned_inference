@@ -5,7 +5,7 @@ param_boot <- function(Z, K = 2) {
   u_hat <- svz$u[, 1:K]
   d_hat <- svz$d[1:K]
   v_hat <- svz$v[, 1:K]
-  E <- Z - u_hat %*% diag(sqrt(d_hat)) %*% t(v_hat)
+  E <- Z - u_hat %*% diag(d_hat) %*% t(v_hat)
 
   function() {
     param_boot_(u_hat, d_hat, E)
@@ -17,8 +17,8 @@ param_boot <- function(Z, K = 2) {
 param_boot_ <- function(u_hat, d_hat, E) {
   eB <- matrix(sample(E, nrow(E) * length(d_hat), replace = TRUE), nrow(E), length(d_hat))
   Pi <- random_permutation(length(d_hat))
-  Zb <- (u_hat %*% diag(sqrt(d_hat)) + eB) %*% Pi
-  list(Zb = Zb, ub = svd(Zb)$u %*% diag(sqrt(svd(Zb)$d)))
+  Zb <- (u_hat %*% diag(d_hat) + eB) %*% Pi
+  list(Zb = Zb, ub = svd(Zb)$u %*% diag(svd(Zb)$d))
 }
 
 #' Zb here is like the Lb used in the writeup
@@ -31,7 +31,7 @@ param_boot_ft <- function(Zb, K = 2) {
   u_hat <- svz$u[, 1:K]
   d_hat <- svz$d[1:K]
   v_hat <- svz$v[, 1:K]
-  Eb <- map(Zb, ~ . - u_hat %*% diag(sqrt(d_hat)) %*% t(v_hat))
+  Eb <- map(Zb, ~ . - u_hat %*% diag(d_hat) %*% t(v_hat))
   
   function() {
     param_boot_ft_(u_hat, d_hat, Eb)
@@ -44,8 +44,8 @@ param_boot_ft_ <- function(u_hat, d_hat, Eb) {
   K <- length(d_hat)
   Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
   Pi <- random_permutation(K)
-  Zb <- (u_hat %*% diag(sqrt(d_hat)) + Estar) %*% Pi
-  list(Zb = Zb, ub = svd(Zb)$u %*% diag(sqrt(svd(Zb)$d)))
+  Zb <- (u_hat %*% diag(d_hat) + Estar) %*% Pi
+  list(Zb = Zb, ub = svd(Zb)$u %*% diag(svd(Zb)$d))
 }
 
 #' @importFrom purrr map

@@ -8,7 +8,7 @@ untar_all <- function(paths, exdir = "archive") {
   }
 }
 
-align_to_list <- function(Zb, df = F, tol = 0.001) {
+align_to_list <- function(Zb, df = F, tol = 0.01) {
   procrustes(Zb, tol = tol) %>%
     .[["x_align"]] %>%
     arr_to_list(df = df)
@@ -61,8 +61,8 @@ plot_overlay <- function(ud_combined, max_i = 10, level = 0.95, alpha = 0.05) {
     geom_segment(data = ud_truth_wide, aes(xend = X1_true, yend = X2_true), size = 0.3, alpha = 0.8)
 }
 
-align_with_truth <- function(ud_hats, U, Sigma, tol = 0.05) {
-  c(ud_hats, list(U %*% diag(sqrt(Sigma)))) %>%
+align_with_truth <- function(ud_hats, U, Sigma, tol = 0.01) {
+  c(ud_hats, list(U %*% diag(Sigma))) %>%
     align_to_list(tol = tol, df = T) %>%
     bind_rows(.id = "b") %>%
     group_by(b) %>%

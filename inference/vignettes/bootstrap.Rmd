@@ -9,19 +9,20 @@ library(dplyr)
 library(ggplot2)
 library(purrr)
 library(lfboot)
+source("visualization_functions.R")
 theme_set(min_theme())
 ```
 ```{r}
-B <- 1000
-N <- 200
-D <- 50
+B <- 100
+N <- 1000
+D <- 100
 K <- 2
 U <- r_ortho(N, D)
 V <- r_ortho(D, D)
-Sigma <- c(rep(10, 2), rep(0.01, D - K))
-X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.01)
+Sigma <- c(rep(100, 2), rep(0.0, D - K))
+X <- U %*% diag(Sigma) %*% t(V) + rmat(N, D, 0.1)
 beta <- c(c(1, -1), rep(0, D - K))
-y <- U %*% diag(sqrt(Sigma)) %*% beta + rnorm(N, 0, 0.1)
+y <- U %*% diag(sqrt(Sigma)) %*% beta + rnorm(N, 0, .1)
 ```
 
 Here is the strategy that extracts the features once and then applies a
@@ -44,6 +45,7 @@ plot_overlay(ud_combined, max_i = 100)
 #ggsave("~/Desktop/l_approach1.png", dpi = 250)
 ```
 
+
 ```{r}
 contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
 mean(contained)
@@ -53,7 +55,11 @@ What if we instead extract $B$ sets of features?
 
 ```{r}
 f <- features(X)
-Zb <- rerun(B, f(X))
+Zb <- rerun(B, {
+  full_features <- f(X)
+  svf <- svd(full_features) 
+  svf$u[, 1:K] %*% diag(svf$d[1:K])
+})
 ud_hats <- align_to_list(Zb)
 ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
   left_join(data.frame(i = seq_along(y), y = y))
@@ -79,16 +85,21 @@ not using any feature relearning.
 ```{r}
 f <- features(X)
 Zb <- rerun(10, f(X))
-boot_fun <- param_boot_ft(Zb, K)
+boot_fun <- param_boot_ft(Zb)
 ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list()
-ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
+ud_combined <- align_with_truth(ud_hats, U[, 1:K], Sigma[1:K]) %>%
   left_join(data.frame(i = seq_along(y), y = y))
 ```
 
 ```{r}
 plot_facets(ud_combined)
 #ggsave("~/Desktop/l_approach3_facet.png", dpi = 250)
-plot_overlay(ud_combined)
+plot_overlay(ud_combined, 100)
 #ggsave("~/Desktop/l_approach3.png", dpi = 250)
 ```
+```{r}
+contained <- coverage(ud_combined %>% filter(b < max(b)),  ud_combined %>% filter(b == max(b)))
+mean(contained)
+```
+
