@@ -13,7 +13,7 @@ source("visualization_functions.R")
 theme_set(min_theme())
 ```
 ```{r}
-B <- 100
+B <- 1000
 N <- 1000
 D <- 100
 K <- 2
@@ -84,11 +84,11 @@ not using any feature relearning.
 
 ```{r}
 f <- features(X)
-Zb <- rerun(10, f(X))
+Zb <- rerun(100, f(X))
 boot_fun <- param_boot_ft(Zb)
 ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list()
-ud_combined <- align_with_truth(ud_hats, U[, 1:K], Sigma[1:K]) %>%
+ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
   left_join(data.frame(i = seq_along(y), y = y))
 ```
 

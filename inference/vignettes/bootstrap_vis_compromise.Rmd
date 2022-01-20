@@ -3,7 +3,7 @@ title: "R Notebook"
 output: html_notebook
 params:
   input_dir: "data/simulation_outputs/"
-  subset: "cnn-k128-15"
+  subset: "cnn-k64-15"
   layer_prefix: "linear_best*"
   K: 10
   B: 100
@@ -40,7 +40,7 @@ untar_all(list.files(input_dir, "*.tar.gz", full = T))
 ```
 
 ```{r}
-z_paths <- list.files(input_dir, layer_prefix, recursive = T, full = T)
+z_paths <- list.files(file.path(input_dir, subset), layer_prefix, recursive = T, full = T)
 f <- ifelse(transform == "log", function(x) log(1 + x), identity)
 Zb <- map(z_paths, ~ f(drop(np$load(.))))
 Xy <- read_csv(list.files(input_dir, "Xy.csv", recursive = T, full = T)[1])
@@ -59,15 +59,15 @@ for one of the models looks like.
 
 ```{r}
 z_df <- data.frame(z = princomp(Zb[[1]])$scores, y = ix$y)
-ggplot(z_df)+
-  geom_point(aes(z.Comp.1, z.Comp.2, col = y)) +
-  scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
+#ggplot(z_df)+
+#  geom_point(aes(z.Comp.1, z.Comp.2, col = y)) +
+#  scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
 ```
 
 ```{r}
 Zb_ <- Zb %>%
-  map(~ .[ix$split == "train", ])
-boot_fun <- param_boot_ft(Zb_, K)
+  map(~ .[ix$split %in% c("test", "dev"), ])
+boot_fun <- param_boot_ft(Zb_)
 ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list() %>%
   map_dfr(~ data.frame(.), .id = "b") %>%

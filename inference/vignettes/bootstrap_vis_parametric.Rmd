@@ -40,7 +40,7 @@ list.files(input_dir, str_c(subset, "*"), full = T) %>%
 ```
 
 ```{r}
-z_paths <- list.files(input_dir, layer_prefix, recursive = T, full = T)
+z_paths <- list.files(file.path(input_dir, subset), layer_prefix, recursive = T, full = T)
 f <- ifelse(transform == "log", function(x) log(1 + x), identity)
 Zb <- f(drop(np$load(z_paths[1])))
 Xy <- read_csv(list.files(input_dir, "Xy.csv", recursive = T, full = T)[1])
@@ -58,9 +58,9 @@ for one of the models looks like.
 
 ```{r}
 z_df <- data.frame(z = princomp(Zb)$scores, y = ix$y)
-ggplot(z_df)+
-  geom_point(aes(z.Comp.1, z.Comp.2, col = y)) +
-  scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
+#ggplot(z_df)+
+#  geom_point(aes(z.Comp.1, z.Comp.2, col = y)) +
+#  scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7")
 ```
 
 ```{r}
@@ -71,8 +71,7 @@ ud_hats <- rerun(B, boot_fun()$ub) %>%
   map_dfr(~ data.frame(.), .id = "b") %>%
   group_by(b) %>%
   mutate(i = row_number(), subset = params$subset, bootstrap = "parametric") %>%
-  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number())) %>%
-  select(subset, b, i, ix, path, split, y, X.N, matches("beta"), matches("alpha"), X.nu, X.tau, X.lambda_1, starts_with("X[0-9]+"))
+  left_join(ix %>% filter(split == "train") %>% mutate(i = row_number()))
 ```
 
 ```{r}
