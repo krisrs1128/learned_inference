@@ -6,6 +6,8 @@ output: html_notebook
 ```{r}
 set.seed(1234)
 library(dplyr)
+library(expm)
+library(irlba)
 library(ggplot2)
 library(purrr)
 library(lfboot)
@@ -57,8 +59,8 @@ What if we instead extract $B$ sets of features?
 f <- features(X)
 Zb <- rerun(B, {
   full_features <- f(X)
-  svf <- svd(full_features) 
-  svf$u[, 1:K] %*% diag(svf$d[1:K])
+  svf <- irlba(full_features, nv=K) 
+  svf$u %*% diag(svf$d)
 })
 ud_hats <- align_to_list(Zb)
 ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
