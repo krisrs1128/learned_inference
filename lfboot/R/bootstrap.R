@@ -22,33 +22,29 @@ param_boot_ <- function(u_hat, d_hat, E) {
 }
 
 #' Zb here is like the Lb used in the writeup
+#' @importFrom irlba irlba
+#' @importFrom purrr map
 #' @export
 param_boot_ft <- function(Zb, K = 2) {
-  ud_hats <- procrustes(Zb)$x_align %>%
-    apply(c(1, 2), mean)
-  
-  svz <- svd(ud_hats)
-  u_hat <- svz$u[, 1:K]
-  d_hat <- svz$d[1:K]
-  v_hat <- svz$v[, 1:K]
-  print(dim(Zb))
-  print(dim(ud_hats))
-  Eb <- map(Zb, ~ . - u_hat %*% diag(d_hat) %*% t(v_hat))
+  svz <- map(Zb, ~ irlba(., nv=K))
+  Eb <- map2(Zb, svz, ~ .x - .y$u %*% diag(.y$d) %*% t(.y$v))
+  ud_hats <- map(svz, ~ .$u %*% diag(.$d)) %>%
+    procrustes()
   
   function() {
-    param_boot_ft_(u_hat, d_hat, Eb)
+    param_boot_ft_(ud_hats$M, Eb)
   }
 }
   
 #' @export
-param_boot_ft_ <- function(u_hat, d_hat, Eb) {
+param_boot_ft_ <- function(M, Eb) {
   Estar <- do.call(cbind, Eb)
-  K <- length(d_hat)
-  #Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
-  Estar <- matrix(sample(Estar, nrow(Estar) * length(d_hat), replace = TRUE), nrow(Estar), length(d_hat))
+  K <- ncol(M)
+  Estar <- matrix(sample(Estar, nrow(Estar) * K, replace = TRUE), nrow(Estar), K)
   Pi <- random_permutation(K)
-  Zb <- (u_hat %*% diag(d_hat) + Estar) %*% Pi
-  list(Zb = Zb, ub = svd(Zb)$u %*% diag(svd(Zb)$d))
+  Zb <- (M + Estar) %*% Pi
+  svz <- svd(Zb)
+  list(Zb = Zb, ub = svz$u %*% diag(svz$d))
 }
 
 #' @importFrom purrr map
@@ -64,10 +60,11 @@ arr_to_list <- function(x, df = F) {
 }
 
 #' @export
-procrustes <- function(x_list, tol = 0.001) {
+procrustes <- function(x_list, tol = 0.001, max_iter=100) {
   x_align <- array(dim = c(dim(x_list[[1]]), length(x_list)))
   M <- x_list[[1]]
 
+  iter <- 1
   while (TRUE) {
     # solve each problem
     for (i in seq_along(x_list)) {
@@ -80,7 +77,9 @@ procrustes <- function(x_list, tol = 0.001) {
     M_old <- M
     M <- apply(x_align, c(1, 2), mean)
     coord_change <- mean(abs(M - M_old))
-    if (coord_change < tol) break
+    if (coord_change < tol | iter > max_iter) break
+    iter <- iter + 1
+    message(iter)
   }
 
   list(x_align = x_align, M = M)
