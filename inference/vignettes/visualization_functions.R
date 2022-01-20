@@ -70,3 +70,17 @@ align_with_truth <- function(ud_hats, U, Sigma, tol = 0.01) {
     ungroup() %>%
     mutate(b = as.integer(b))
 }
+  
+plot_overlay_combined <- function(configuration, means) {
+  ggplot(configuration, aes(X1, X2, col = y, fill = y)) +
+      stat_ellipse(aes(group = i), geom = "polygon", level = 0.95, type = "norm", alpha = 0.5, size = 0.1) +
+      geom_point(data = means, size = 0.1) +
+      geom_hline(yintercept = 0, col = "#d3d3d3", size = 0.5) +
+      geom_vline(xintercept = 0, col = "#d3d3d3", size = 0.5) +
+      scale_color_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7") +
+      scale_fill_gradient2(low = "#A6036D", high = "#03178C", mid = "#F7F7F7") +
+      theme(
+        axis.text = element_text(size = 8),
+        axis.title = element_text(size = 10)
+      )
+}
