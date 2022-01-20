@@ -31,6 +31,8 @@ param_boot_ft <- function(Zb, K = 2) {
   u_hat <- svz$u[, 1:K]
   d_hat <- svz$d[1:K]
   v_hat <- svz$v[, 1:K]
+  print(dim(Zb))
+  print(dim(ud_hats))
   Eb <- map(Zb, ~ . - u_hat %*% diag(d_hat) %*% t(v_hat))
   
   function() {
@@ -42,7 +44,8 @@ param_boot_ft <- function(Zb, K = 2) {
 param_boot_ft_ <- function(u_hat, d_hat, Eb) {
   Estar <- do.call(cbind, Eb)
   K <- length(d_hat)
-  Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
+  #Estar <- as.matrix(Estar[, sample(ncol(Estar), K, replace = T)])
+  Estar <- matrix(sample(Estar, nrow(Estar) * length(d_hat), replace = TRUE), nrow(Estar), length(d_hat))
   Pi <- random_permutation(K)
   Zb <- (u_hat %*% diag(d_hat) + Estar) %*% Pi
   list(Zb = Zb, ub = svd(Zb)$u %*% diag(svd(Zb)$d))
@@ -77,7 +80,6 @@ procrustes <- function(x_list, tol = 0.001) {
     M_old <- M
     M <- apply(x_align, c(1, 2), mean)
     coord_change <- mean(abs(M - M_old))
-    print(coord_change)
     if (coord_change < tol) break
   }
 

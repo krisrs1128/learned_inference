@@ -13,7 +13,7 @@ features <- function(X, K = 50, sigma_e = 0.1) {
 
 #' @importFrom dplyr %>%
 #' @export
-supervised_features <- function(X, y, K = 2, sigma_e = 0.01) {
+supervised_features <- function(X, y, K = 2, sigma_e = 0.1) {
   N <- nrow(X)
   D <- nrow(X)
   svx <- svd(X)
