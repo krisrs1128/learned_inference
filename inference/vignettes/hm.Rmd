@@ -1,15 +1,15 @@
 ---
 title: Heatmap of Raw Features
 params:
-  data_dir: "/Users/kris/Documents/stability_features"
+  data_dir: "."
 ---
 
 ```{r}
-library("dplyr")
-library("ggplot2")
-library("readr")
-library("reticulate")
-library("superheat")
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(reticulate)
+library(superheat)
 np <- import("numpy")
 
 dpath <- function(s) {
@@ -22,8 +22,8 @@ xy_path <- dir(params$data_dir, "Xy*", recursive = TRUE)[1]
 Xy <- read_csv(dpath(xy_path), col_types = cols())
 
 paths_df <- data.frame(
-  subset = c("b0/cnn90/features/subset.csv", "b1/cnn90/features/subset.csv", "b0/rcf90/features/subset.csv", "b1/rcf90/features/subset.csv", "b0/vae90/features/subset.csv", "b1/vae90/features/subset.csv"),
-  feature = c("b0/cnn90/features/linear_best.npy", "b1/cnn90/features/linear_best.npy", "b0/rcf90/features/full_best.npy", "b1/rcf90/features/full_best.npy", "b0/vae90/features/mu_99.npy", "b1/vae90/features/mu_99.npy")
+  subset = c("data/simulation_outputs/model_features/cnn/features/subset.csv", "data/simulation_outputs/model_features/vae/features/subset.csv", "data/simulation_outputs/model_features/rcf/features/subset.csv"),
+  feature = c("data/simulation_outputs/model_features/cnn/features/linear_best.npy", "data/simulation_outputs/model_features/vae/features/mu_best.npy", "data/simulation_outputs/model_features/rcf/features/full_best.npy")
 )
 ```
 
@@ -47,7 +47,7 @@ for (i in seq_len(nrow(paths_df))) {
 
   png(sprintf("sh_%s.png", i), width=900, height=400)
   sh[[i]] <- superheat(
-    t(cor(H_[, 1:15], H[, -1])),
+    t(cor(H_, H[, -1])),
     pretty.order.rows = FALSE,
     pretty.order.cols = TRUE,
     #bottom.label = "none",
@@ -58,7 +58,8 @@ for (i in seq_len(nrow(paths_df))) {
     left.label.size = 0.15,
     grid.hline = FALSE,
     grid.vline = FALSE,
-    legend = FALSE
+    legend = FALSE,
+    bottom.label = "none"
   )
   dev.off()
 }

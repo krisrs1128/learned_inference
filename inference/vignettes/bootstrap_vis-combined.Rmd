@@ -32,7 +32,7 @@ coordinates <- map_dfr(paths, ~ read_csv(.), .id = "path") %>%
     bootstrap = str_remove(bootstrap, "_")
   ) %>%
   filter(i < 100) %>%
-  group_by(bootstrap, model) %>%
+  group_by(bootstrap, model, k, s) %>%
   mutate(across(starts_with("X"), scale))
 
 means <- coordinates %>%
@@ -44,23 +44,22 @@ means <- coordinates %>%
 for (s_ in c(15, 50, 90)) {
   for (k_ in c(32, 64, 128)) {
     coordinates %>%
-      filter(s == s_, k = k_) %>%
-      plot_overlay_combined(means) +
+      filter(s == s_, k == k_) %>%
+      plot_overlay_combined(means %>% filter(s == s_, k == k_)) +
       facet_grid(bootstrap ~ model, scale = "free")
-    ggsave(str_c(s_, "_", k_, "_", "coordinates.png"), dpi = 100, height = 6, width = 4)
+    ggsave(str_c(s_, "_", k_, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
   }
 }
 
-for (m in c("vae", "cnn", "rcf")) {
+for (m in c("vae", "cnn")) {
   for (bt in c("nonparametric", "parametric", "compromise")) {
     configuration <- coordinates %>%
       filter(bootstrap == bt, model == m) %>%
-    plot_overlay_combined(configuration, means) +
+    plot_overlay_combined(means %>% filter(bootstrap == bt, model == m)) +
       facet_grid(k ~ s)
-    ggsave(str_c(m, "_", bt, "_", "coordinates.png"), dpi = 100, height = 6, width = 4)
+    ggsave(str_c(m, "_", bt, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
       
   }
 }
 
 ```
-
