@@ -1,100 +1,101 @@
 ---
-title: "TNBC Performance Evaluation"
+title: "R Notebook"
 output: html_notebook
 params:
-  output_path: "/Users/kris/Downloads/figs/tnbc/"
+  input_dir: "data/data_analysis_outputs/"
+  layer_prefix: "full_best*"
 ---
 
 ```{r}
-library("ggplot2")
-library("readr")
-library("inference")
-library("glmnet")
-library("purrr")
-library("stringr")
-library("dplyr")
-theme_set(theme_bw())
-dpath <- function(s, d=params$output_path) {
-  file.path(d, s)
-}
+set.seed(1234)
+library(dplyr)
+library(glmnet)
+library(ggplot2)
+library(lfboot)
+library(purrr)
+library(readr)
+library(reticulate)
+library(stringr)
+source("visualization_functions.R")
+np <- import("numpy")
+theme_set(min_theme())
+```
+
+
+```{r}
+attach(params)
+layer_prefix <- "*_best.npy"
+z_paths <- list.files(input_dir, layer_prefix, recursive = T, full = T)
+Zb <- map(z_paths, ~ drop(np$load(.)))
+Xy <- read_csv(list.files(input_dir, "Xy.csv", recursive = T, full = T)[1])
 ```
 
 ```{r}
-fit_lassos <- function(xy) {
-  performances <- data.frame(i = names(xy), MSE = 0) %>%
-    mutate(
-      B = str_extract(i, "[0-9]+"),
-      split = str_extract(i, "[a-z]+"),
-      split = factor(split, levels = c("train", "dev", "test"))
-    )
-  
-  for (i in seq_along(xy)) {
-    x <- xy[[i]]$X
-    y <- xy[[i]]$y
-    fit <- cv.glmnet(x, y)
-    performances$MSE[i] <- mean((y - predict(fit, x)) ^ 2)
-  }
-  performances 
-}
+ix <- list.files(input_dir, "*subset*", recursive = TRUE, full = T) %>%
+  .[[1]] %>%
+  read_csv() %>%
+  rename(ix = X1) %>%
+  left_join(Xy)
 ```
-
 ```{r}
-# from tnbc_baseline.ipynb
-baseline <- data.frame("dev"= 1.443717800608584, "train"= 1.2302844792243133, "test"= 1.5837075913302505) %>%
-  melt(variable.name = "split", value.name = "MSE") %>%
-  filter(split != "dev")
-```
-
-```{r}
-rdata_paths <- dir(params$output_path, "*RData", recursive = TRUE, full = TRUE)
 performances <- list()
-load(rdata_paths[1])
-performances[["cnn_sca"]] <- fit_lassos(xy)
-load(rdata_paths[2])
-performances[["cnn_svd"]] <- fit_lassos(xy)
-load(rdata_paths[3])
-performances[["rcf_sca"]] <- fit_lassos(xy)
-load(rdata_paths[4])
-performances[["rcf_svd"]] <- fit_lassos(xy)
-load(rdata_paths[5])
-performances[["vae_sca"]] <- fit_lassos(xy)
-load(rdata_paths[6])
-performances[["vae_svd"]] <- fit_lassos(xy)
+
+for (i in seq_along(z_paths)) {
+  tmp <- as.data.frame(Zb[[i]]) %>%
+    mutate(ix = ix$ix) %>%
+    left_join(ix)
+  
+  x_train <- tmp %>% filter(split == "train") %>% select(starts_with("V")) %>% as.matrix()
+  y_train <- tmp %>% filter(split == "train") %>% pull(y)
+  fit <- cv.glmnet(x_train, y_train)
+  
+  x_test <- tmp %>% filter(split == "test") %>% select(starts_with("V")) %>% as.matrix()
+  y_test <- tmp %>% filter(split == "test") %>% pull(y)
+  performances[[i]] <- data.frame(
+    path = z_paths[i],
+    split = c("train", "test"),
+    mse = c(mean((predict(fit, x_train) - y_train) ^ 2), "test" = mean((predict(fit, x_test) - y_test) ^ 2))
+  )
+}
+
 ```
 
-```{r, fig.height = 3, fig.width = 5}
-performances_df <- bind_rows(performances, .id = "method_ix") %>%
+```{r}
+performances <- bind_rows(performances)
+rownames(performances) <- NULL
+performances <- performances %>%
   mutate(
-    method = str_extract(method_ix, "cnn|vae|rcf") %>% toupper(),
-    dimred = str_extract(method_ix, "sca|svd") %>% toupper(),
+    k = str_extract(path, "k[0-9]+"),
+    k = as.integer(str_remove(k, "k")),
+    b = str_extract(path, "/[0-9]+/") %>% str_remove_all("/"),
+    model = str_extract(path, "tnbc_[A-z]+") %>% str_remove("tnbc_"),
+    model = factor(model, levels = c("cnn", "vae", "rcf")),
+    model = forcats::fct_recode(model, "CNN" = "cnn", "VAE" = "vae", "RCF" = "rcf"),
+    split = factor(split, levels = c("train", "test"))
   )
 
-performances_df$dimred[performances_df$dimred == "SVD"] <- "PCA"
-performances_edges <- performances_df %>%
-  dcast(method + dimred + B ~ split, value.var = "MSE")
+baseline <- data.frame(
+  split = c("train", "test"),
+  mse = c(1.0976247318043064, 1.9567960844047563), # from notebooks/tnbc_baseline.ipynb
+  k = NA, b = NA
+)
 
-ggplot(performances_df %>% filter(split %in% c("train", "test"))) +
-  geom_point(
-    data = baseline,
-    aes(x = split, y = MSE), size = 3, col = "black"
-  ) +
-  geom_line(
-    data = baseline, 
-    aes(x = split, y = MSE, group = 1), size = .5, col = "black"
-  ) +
-  geom_point(
-    aes(x = split, y = MSE, col = method),
-    size = 1
-  ) +
-  scale_color_manual(values = c("#486378", "#c5a9d1", "#d7673f")) +
-  geom_line(
-    aes(
-      x = split, y = MSE, col = method,
-      group = interaction(B, method),
-    ),
-    size = 0.2
-  ) +
-  facet_grid(. ~ dimred)
-ggsave("~/Desktop/conceptual/learned_inference/notes/figure/tnbc_baseline.png", dpi = 400)
+baseline <- baseline[rep(1:2, 3), ]
+baseline$model <- factor(rep(c("CNN", "VAE", "RCF"), each = 2), levels = c("CNN", "VAE", "RCF"))
 ```
 
+```{r}
+ggplot(performances, aes(split, mse, col = as.factor(k))) +
+  geom_point(alpha = 0.8) +
+  geom_line(aes(group = interaction(b, k)), alpha = 0.2) +
+  geom_line(data = baseline, col = "black", group = 1, size = 1.5) +
+  geom_point(data = baseline, col = "black", size = 3) +
+  facet_wrap(~ model) +
+  labs(x = "Data Split", y = "Mean Squared Error", color = "K") +
+  scale_color_brewer(palette = "Set1") +
+  theme(
+    strip.text = element_text(size = 14),
+    legend.position = "right"
+  )
+ggsave("~/Desktop/tnbc_baseline.png", dpi = 200, width = 8, height = 3.7)
+```
