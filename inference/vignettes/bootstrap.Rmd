@@ -35,21 +35,13 @@ f <- features(X)
 boot_fun <- param_boot(f(X), K)
 ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list(df = F)
-ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
+ud_combined <- list()
+ud_combined[["parametric"]] <- align_with_truth(ud_hats, U, Sigma) %>%
   left_join(data.frame(i = seq_along(y), y = y))
 ```
 
 ```{r}
-plot_facets(ud_combined)
-plot_facets(ud_combined, facet = FALSE)
-#ggsave("~/Desktop/l_approach1_facet.png", dpi = 250)
-plot_overlay(ud_combined, max_i = 100)
-#ggsave("~/Desktop/l_approach1.png", dpi = 250)
-```
-
-
-```{r}
-contained <- coverage(ud_combined %>% filter(b < B + 1),  ud_combined %>% filter(b == B + 1))
+contained <- coverage(ud_combined[[1]] %>% filter(b < B + 1),  ud_combined[[1]] %>% filter(b == B + 1))
 mean(contained)
 ```
 
@@ -63,20 +55,13 @@ Zb <- rerun(B, {
   svf$u %*% diag(svf$d)
 })
 ud_hats <- align_to_list(Zb)
-ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
+ud_combined[["nonparametric"]] <- align_with_truth(ud_hats, U, Sigma) %>%
   left_join(data.frame(i = seq_along(y), y = y))
 ```
 
 ```{r}
-contained <- coverage(ud_combined %>% filter(b < max(b)),  ud_combined %>% filter(b == max(b)))
+contained <- coverage(ud_combined[[2]] %>% filter(b < max(b)),  ud_combined[[2]] %>% filter(b == max(b)))
 mean(contained)
-```
-
-```{r}
-plot_facets(ud_combined)
-#ggsave("~/Desktop/l_approach2_facet.png", dpi = 250)
-plot_overlay(ud_combined, 100)
-#ggsave("~/Desktop/l_approach2.png", dpi = 250)
 ```
 
 Here is a kind of compromise between repeated feature learning and a parametric
@@ -90,18 +75,21 @@ Zb <- rerun(100, f(X))
 boot_fun <- param_boot_ft(Zb)
 ud_hats <- rerun(B, boot_fun()$ub) %>%
   align_to_list()
-ud_combined <- align_with_truth(ud_hats, U, Sigma) %>%
+ud_combined[["compromise"]] <- align_with_truth(ud_hats, U, Sigma) %>%
   left_join(data.frame(i = seq_along(y), y = y))
 ```
-
 ```{r}
-plot_facets(ud_combined)
-#ggsave("~/Desktop/l_approach3_facet.png", dpi = 250)
-plot_overlay(ud_combined, 100)
-#ggsave("~/Desktop/l_approach3.png", dpi = 250)
-```
-```{r}
-contained <- coverage(ud_combined %>% filter(b < max(b)),  ud_combined %>% filter(b == max(b)))
+contained <- coverage(ud_combined[[3]] %>% filter(b < max(b)),  ud_combined[[3]] %>% filter(b == max(b)))
 mean(contained)
 ```
 
+```{r, width=6, height=1.6}
+plot_overlay(bind_rows(ud_combined, .id = "bootstrap") %>% mutate(bootstrap = factor(bootstrap, levels = c("parametric", "nonparametric", "compromise"))), 100) +
+  facet_wrap(~ bootstrap, scales = "free") +
+  labs(x = "Aligned Scores 1", y = "Aligned Scores 2") +
+  theme(
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    strip.text = element_text(size = 14)
+  )
+```

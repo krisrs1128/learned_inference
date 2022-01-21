@@ -42,7 +42,7 @@ plot_facets <- function(ud_combined, max_i = 10, level = 0.9, facet = TRUE, alph
 plot_overlay <- function(ud_combined, max_i = 10, level = 0.95, alpha = 0.05) {
   ud_combined <- filter(ud_combined, i < max_i)
   ud_mean <- ud_combined %>%
-    group_by(i, y) %>%
+    group_by(i, y, bootstrap) %>%
     summarise(across(starts_with("X"), mean))
   
   ud_truth <- filter(ud_combined, b == max(b))

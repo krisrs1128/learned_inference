@@ -2,7 +2,7 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  input_dir: "data/simulation_outputs/"
+  input_dir: "data/data_analysis_outputs/"
 ---
 
 ```{r}
@@ -32,8 +32,7 @@ coordinates <- map_dfr(paths, ~ read_csv(.), .id = "path") %>%
     bootstrap = str_remove(bootstrap, "_")
   ) %>%
   filter(i < 100) %>%
-  group_by(bootstrap, model, k, s) %>%
-  mutate(across(starts_with("X"), scale))
+  group_by(bootstrap, model, k, s)
 
 means <- coordinates %>%
   group_by(i, bootstrap, model, s, k) %>%
@@ -41,25 +40,45 @@ means <- coordinates %>%
 ```
 
 ```{r}
-for (s_ in c(15, 50, 90)) {
-  for (k_ in c(32, 64, 128)) {
-    coordinates %>%
-      filter(s == s_, k == k_) %>%
-      plot_overlay_combined(means %>% filter(s == s_, k == k_)) +
-      facet_grid(bootstrap ~ model, scale = "free")
-    ggsave(str_c(s_, "_", k_, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
+if (str_detect(params$input_dir, "simulation")) {
+  for (s_ in c(15, 50, 90)) {
+    for (k_ in c(32, 64, 128)) {
+      coordinates %>%
+        filter(s == s_, k == k_) %>%
+        filter(k == k_) %>%
+        plot_overlay_combined(means %>% filter(s == s_, k == k_)) +
+        facet_wrap(model ~ bootstrap, scale = "free", ncol = 3)
+      ggsave(str_c(params$input_dir, "/", s_, "_", k_, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
+    }
   }
-}
-
-for (m in c("vae", "cnn")) {
-  for (bt in c("nonparametric", "parametric", "compromise")) {
-    configuration <- coordinates %>%
-      filter(bootstrap == bt, model == m) %>%
-    plot_overlay_combined(means %>% filter(bootstrap == bt, model == m)) +
-      facet_grid(k ~ s)
-    ggsave(str_c(m, "_", bt, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
-      
+  
+  for (m in c("vae", "cnn", "rcf")) {
+    for (bt in c("nonparametric", "parametric", "compromise")) {
+      configuration <- coordinates %>%
+        filter(bootstrap == bt, model == m) %>%
+      plot_overlay_combined(means %>% filter(bootstrap == bt, model == m)) +
+        facet_wrap(k ~ s, ncol = 3, scale = "free")
+      ggsave(str_c(params$input_dir, m, "_", bt, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
+        
+    }
   }
+} else {
+    for (k_ in c(32, 64, 128)) {
+      coordinates %>%
+        filter(k == k_) %>%
+        plot_overlay_combined(means %>% filter(k == k_)) +
+        facet_wrap(model ~ bootstrap, scale = "free", ncol = 3)
+      ggsave(str_c(params$input_dir, "/", s_, "_", k_, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
+    }
+  
+    for (m in c("vae", "cnn", "rcf")) {
+      for (bt in c("nonparametric", "parametric", "compromise")) {
+        configuration <- coordinates %>%
+          filter(bootstrap == bt, model == m) %>%
+        plot_overlay_combined(means %>% filter(bootstrap == bt, model == m)) +
+          facet_wrap(~ k, ncol = 3, scale = "free")
+        ggsave(str_c(params$input_dir, m, "_", bt, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
+      }
+    }
 }
-
 ```
