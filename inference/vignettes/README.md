@@ -21,6 +21,12 @@ for s in 15 50 90; do
     done;
   done;
 done;
+
+export k=64
+export s=90
+for script in parametric nonparametric compromise; do
+  Rscript -e "rmarkdown::render('bootstrap_vis_${script}.Rmd', params = list(subset='vae-k${k}-${s}', layer_prefix='mu_best*'))"
+done
 ```
 
 The analogous run for the data analysis visualizations is given below,

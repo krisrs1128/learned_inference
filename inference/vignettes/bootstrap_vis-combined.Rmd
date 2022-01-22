@@ -2,18 +2,34 @@
 title: "R Notebook"
 output: html_notebook
 params:
-  input_dir: "data/data_analysis_outputs/"
+  input_dir: "data/simulation_outputs/"
 ---
 
 ```{r}
-library(readr)
+library(dplyr)
 library(ggplot2)
 library(lfboot)
-library(dplyr)
+library(pdist)
 library(purrr)
+library(readr)
+library(reshape2)
+library(reticulate)
 library(stringr)
 source("visualization_functions.R")
 theme_set(min_theme())
+
+# links K's if they correspond to the same overall model complexity
+expand_k <- function(k) {
+  if (k == 32) {
+    k_ <- c(32, 256)
+  } else if (k == 64) {
+    k_ <- c(64, 512)
+  } else if (k == 128) {
+    k_ <- c(128, 1024)
+  }
+  
+  k_
+}
 ```
 
 ```{r}
@@ -29,9 +45,11 @@ coordinates <- map_dfr(paths, ~ read_csv(.), .id = "path") %>%
     s = as.integer(str_remove(s, "_")),
     bootstrap = str_extract(path, "[A-z]+.csv"),
     bootstrap = str_remove(bootstrap, ".csv"),
-    bootstrap = str_remove(bootstrap, "_")
+    bootstrap = str_remove(bootstrap, "_"),
+    bootstrap = factor(bootstrap, levels = c("parametric", "nonparametric", "compromise")),
+    X1 = ifelse(bootstrap == "nonparametric" & str_detect(model, "rcf"), X1 + runif(n(), -0.01, 0.01), X1),
+    X2 = ifelse(bootstrap == "nonparametric" & str_detect(model, "rcf"), X2 + runif(n(), -0.01, 0.01), X2),
   ) %>%
-  filter(i < 100) %>%
   group_by(bootstrap, model, k, s)
 
 means <- coordinates %>%
@@ -44,9 +62,10 @@ if (str_detect(params$input_dir, "simulation")) {
   for (s_ in c(15, 50, 90)) {
     for (k_ in c(32, 64, 128)) {
       coordinates %>%
-        filter(s == s_, k == k_) %>%
-        filter(k == k_) %>%
-        plot_overlay_combined(means %>% filter(s == s_, k == k_)) +
+        filter(s == s_, k %in% expand_k(k_)) %>%
+        mutate(model = factor(model, levels = c("cnn", "vae", "rcf"))) %>%
+        plot_overlay_combined(means %>% filter(s == s_, k %in% expand_k(k_))) +
+        labs(x = "Dimension 1", y = "Dimension 2") +
         facet_wrap(model ~ bootstrap, scale = "free", ncol = 3)
       ggsave(str_c(params$input_dir, "/", s_, "_", k_, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
     }
@@ -54,31 +73,72 @@ if (str_detect(params$input_dir, "simulation")) {
   
   for (m in c("vae", "cnn", "rcf")) {
     for (bt in c("nonparametric", "parametric", "compromise")) {
-      configuration <- coordinates %>%
+      coordinates %>%
         filter(bootstrap == bt, model == m) %>%
-      plot_overlay_combined(means %>% filter(bootstrap == bt, model == m)) +
+        plot_overlay_combined(means %>% filter(bootstrap == bt, model == m)) +
+        labs(x = "Dimension 1", y = "Dimension 2") +
         facet_wrap(k ~ s, ncol = 3, scale = "free")
-      ggsave(str_c(params$input_dir, m, "_", bt, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
+      ggsave(str_c(params$input_dir, "/", m, "_", bt, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
         
     }
   }
 } else {
     for (k_ in c(32, 64, 128)) {
       coordinates %>%
-        filter(k == k_) %>%
-        plot_overlay_combined(means %>% filter(k == k_)) +
-        facet_wrap(model ~ bootstrap, scale = "free", ncol = 3)
-      ggsave(str_c(params$input_dir, "/", s_, "_", k_, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
+        filter(k %in% expand_k(k_)) %>%
+        mutate(model = factor(model, levels = c("tnbc_cnn", "tnbc_vae", "tnbc_rcf"))) %>%
+        plot_overlay_combined(means %>% filter(k %in% expand_k(k_))) +
+        facet_wrap(model ~ bootstrap, scale = "free", ncol = 3) +
+        labs(x = "Dimension 1", y = "Dimension 2") +
+        theme(legend.position = "right")
+      ggsave(str_c(params$input_dir, "/", k_, "_", "coordinates.png"), dpi = 600, height = 7, width = 8)
     }
   
-    for (m in c("vae", "cnn", "rcf")) {
-      for (bt in c("nonparametric", "parametric", "compromise")) {
-        configuration <- coordinates %>%
-          filter(bootstrap == bt, model == m) %>%
-        plot_overlay_combined(means %>% filter(bootstrap == bt, model == m)) +
-          facet_wrap(~ k, ncol = 3, scale = "free")
-        ggsave(str_c(params$input_dir, m, "_", bt, "_", "coordinates.png"), dpi = 600, height = 6, width = 4)
-      }
+    for (bt in c("nonparametric", "parametric", "compromise")) {
+      coordinates %>%
+        filter(bootstrap == bt) %>%
+        mutate(model = factor(model, levels = c("tnbc_cnn", "tnbc_vae", "tnbc_rcf"))) %>%
+        plot_overlay_combined(means %>% filter(bootstrap == bt)) +
+        facet_wrap(model ~ k, ncol = 3, scale = "free") +
+        labs(x = "Dimension 1", y = "Dimension 2") +
+        theme(legend.position = "right")
+      ggsave(str_c(params$input_dir, "/", bt, "_", "coordinates.png"), dpi = 600, height = 7, width = 8)
     }
 }
 ```
+
+```{r}
+Xy <- read_csv(list.files(params$input_dir, "Xy.csv", recursive = T, full = T)[1])
+ix <- list.files(params$input_dir, "*subset*", recursive = T, full = T) %>%
+  .[[1]] %>%
+  read_csv() %>%
+  rename(ix = X1) %>%
+  left_join(Xy)
+```
+
+```{r, fig.height = 8}
+models <- c("tnbc_cnn", "tnbc_vae", "tnbc_rcf")
+sizes <- c(0.3, 0.01, 50)
+min_dists <- c(0.1, 0.1, 100)
+for (mi in seq_along(models)) {
+  tmp <- means %>%
+    filter(bootstrap == "nonparametric", k %in% c(128, 1024), model == models[mi]) %>%
+    left_join(coordinates %>% ungroup() %>% select(i, ix) %>% unique())
+  
+  paths <- tmp %>%
+    select(ix) %>%
+    left_join(ix %>% select(ix, path)) %>%
+    pull(path)
+  paths <- file.path("data/stability_data_tnbc/stability_data/", paths) # folder after unzipping "stability_data_tnbc.tar.gz"
+  
+  tmp %>%
+    ungroup() %>%
+    select(X1, X2) %>%
+    rename(x = X1, y = X2) %>%
+#    mutate(x = 10 * x, y = 10 * y) %>%
+    image_grid(paths, imsize = sizes[mi], density = 20, min_dist = min_dists[mi]) +
+    labs(x = "Dimension 1", y = "Dimension 2")
+  #ggsave(str_c("~/Desktop/image_grid_", models[mi], ".png"), dpi = 150, width = 12, height = 9)
+}
+```
+

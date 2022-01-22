@@ -3,8 +3,8 @@ title: "R Notebook"
 output: html_notebook
 params:
   input_dir: "data/simulation_outputs/"
-  subset: "cnn-k128-15"
-  layer_prefix: "linear_best*"
+  subset: "vae-k64-90"
+  layer_prefix: "mu_best**"
   B: 100
   transform: "none"
 ---
