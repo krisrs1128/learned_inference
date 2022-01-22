@@ -17,6 +17,6 @@ train:
   save_subset: 2000
   z_dim: 64
 bootstrap:
-  path: "bootstraps_0.i-train.csv"
+  path: "bootstraps_0.9-train.csv"
   index: null
   B: 100
